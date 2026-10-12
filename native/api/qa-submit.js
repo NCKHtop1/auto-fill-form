@@ -2,30 +2,29 @@
 const auth=require('../lib/auth');
 const forms=require('../lib/forms');
 const qa=require('../lib/qa-submit');
-
-function fail(res,status,msg){return res.status(status).json({ok:false,error:msg})}
+function fail(res,status,msg){return res.status(status).json({ok:false,error:msg});}
 module.exports=async function handler(req,res){
-  res.setHeader('Cache-Control','no-store');
-  if(req.method!=='POST')return fail(res,405,'Chỉ hỗ trợ POST.');
-  try{
-    if(req.headers.origin&&req.headers.origin!==auth.origin(req))
-      return fail(res,403,'Yêu cầu không cùng tên miền.');
-    const b=typeof req.body==='string'?JSON.parse(req.body):req.body;
-    if(!b||typeof b.formUrl!=='string'||!b.answers||
-       b.confirmedTestOnly!==true)
-      return fail(res,400,'Thiếu Form, dữ liệu hoặc xác nhận biểu mẫu kiểm thử.');
-    forms.formIdFromUrl(b.formUrl);
-    if(!auth.configured())
-      return fail(res,503,'Chưa cấu hình Google OAuth trên Vercel.');
-    const session=await auth.session(req,res);
-    // Only the owner/editor may use the respondent submission bridge.
-    const f=await forms.loadOwnedForm(b.formUrl,session.access_token);
-    if(!f.questions.length||f.questions.some(q=>!q.supported))
-      return fail(res,400,'Form có câu hỏi chưa hỗ trợ gửi.');
-    const outcome=await qa.sendOne({form:f,answers:b.answers});
-    return res.status(200).json({ok:true,...outcome});
-  }catch(e){
-    console.error('[PandaStudy QA]',e.status||400,e.message);
-    return fail(res,e.status>=400&&e.status<=500?e.status:400,e.message||'Gửi thất bại.');
-  }
+ res.setHeader('Cache-Control','no-store');
+ if(req.method!=='POST')return fail(res,405,'Chỉ hỗ trợ POST.');
+ try{
+  if(req.headers.origin&&req.headers.origin!==auth.origin(req))
+   return fail(res,403,'Yêu cầu không cùng tên miền.');
+  const b=typeof req.body==='string'?JSON.parse(req.body):req.body;
+  if(!b||typeof b.formUrl!=='string'||!b.answers||b.confirmedTestOnly!==true)
+   return fail(res,400,'Thiếu Form, dữ liệu hoặc xác nhận chỉ gửi vào Form kiểm thử.');
+  forms.formIdFromUrl(b.formUrl);
+  if(!auth.configured())return fail(res,503,'Chưa cấu hình Google OAuth trên Vercel.');
+  await auth.session(req,res);
+  // Read and submit the same published form as a respondent; Forms API
+  // forms.get may return 403, and it has no create-response method.
+  const f=await forms.loadPublicForm(b.formUrl);
+  if(!f.acceptingResponses)return fail(res,409,'Google Form chưa mở nhận phản hồi.');
+  if(!f.questions.length||f.questions.some(q=>!q.supported))
+   return fail(res,400,'Form có câu hỏi chưa hỗ trợ gửi hoặc chưa được xuất bản.');
+  const outcome=await qa.sendOne({form:f,answers:b.answers});
+  return res.status(200).json({ok:true,...outcome});
+ }catch(e){
+  console.error('[PandaStudy QA]',e.status||400,e.message);
+  return fail(res,e.status>=400&&e.status<=500?e.status:400,e.message||'Gửi thất bại.');
+ }
 };
