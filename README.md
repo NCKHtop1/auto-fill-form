@@ -36,4 +36,12 @@ python3 -m http.server 8000
 
 ## Kiểm thử
 
-`tests/smoke.py` dùng Chromium qua Playwright và tạo CSV/XLSX fixtures. Nó kiểm tra cả input hợp lệ và các lỗi phổ biến. Chạy: `python3 tests/smoke.py`.
+`tests/smoke.py` dùng Chromium qua Playwright và tạo CSV/XLSX fixtures. Nó kiểm tra 21 ca: input hợp lệ, file sai định dạng, Excel UTF-8, hàng/cột sai, ngày không tồn tại và xuất liên kết. Chạy: `python3 tests/smoke.py`.
+
+## Tạo dự án Vercel bằng một lần bấm
+
+Nếu tài khoản công cụ tự động không được cấp quyền tạo Vercel project (403), chủ tài khoản có thể import repo tại:
+
+https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNCKHtop1%2Fauto-fill-form&project-name=pandastudy
+
+Chọn team `ngochailuong`, giữ build framework Other / no build; Vercel dùng `pandastudy.vercel.app` nếu tên còn trống.
