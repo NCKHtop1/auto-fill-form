@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Auto Fill Form - tạo liên kết Google Forms điền sẵn từ dữ liệu cá nhân hoặc CSV. Dữ liệu xử lý trên trình duyệt.">
+  <meta name="theme-color" content="#10263f">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none';">
+  <title>Auto Fill Form | Điền biểu mẫu thông minh</title>
+  <style>
+    :root { color-scheme:light;--ink:#14273f;--muted:#61738a;--line:#dee7f0;--blue:#1666dd;--light:#f4f8fc;--cyan:#23b9a8;--danger:#be3b47;--shadow:0 18px 45px rgba(24,50,78,.07);font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;}
+    *{box-sizing:border-box}body{margin:0;background:#f5f8fc;color:var(--ink);line-height:1.52}button,input,select,textarea{font:inherit}
+    button{cursor:pointer}button:disabled{opacity:.48;cursor:not-allowed}a{color:var(--blue)}
+    .shell{max-width:1250px;margin:0 auto;padding:0 24px}
+    .top{background:#10263f;color:white;border-bottom:1px solid rgba(255,255,255,.1)}
+    .top-inner{min-height:76px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+    .brand{display:flex;align-items:center;gap:13px;font-weight:800;letter-spacing:-.03em;font-size:19px}
+    .brand-icon{display:grid;place-items:center;width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,#23b9a8,#347dec);color:white;font-weight:900;font-size:19px}
+    .top-note{display:flex;align-items:center;gap:9px;color:#d6e7fa;font-size:12px;font-weight:650}
+    .dot{width:8px;height:8px;border-radius:50%;background:#39d6b6;box-shadow:0 0 0 4px rgba(57,214,182,.12)}
+    .hero{background:linear-gradient(115deg,#10263f 0%,#183d61 67%,#225676 100%);color:#fff;padding:52px 0 94px;position:relative;overflow:hidden}
+    .hero:after{content:"";position:absolute;width:330px;height:330px;border:1px solid #ffffff16;border-radius:50%;right:-80px;top:-160px;box-shadow:0 0 0 65px #ffffff07,0 0 0 135px #ffffff06;pointer-events:none}
+    .eyebrow{display:inline-flex;padding:6px 12px;border-radius:99px;border:1px solid #92bad84d;color:#a8e8ed;background:#ffffff09;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+    h1{font-size:clamp(32px,4.5vw,54px);line-height:1.13;letter-spacing:-.045em;max-width:770px;margin:17px 0}
+    .hero p{color:#d5e5f2;font-size:16px;max-width:710px;margin:0}
+    .hero-features{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+    .hero-features span{padding:7px 13px;border-radius:99px;background:#ffffff12;border:1px solid #ffffff1b;font-size:12px}
+    main{position:relative;margin-top:-54px;padding-bottom:50px}
+    .notice{background:#f5fffd;border:1px solid #b5e6da;border-radius:16px;padding:13px 17px;display:flex;align-items:flex-start;gap:12px;color:#18584f;font-size:13px;margin-bottom:20px;box-shadow:var(--shadow)}
+    .notice strong{display:block;margin-bottom:1px}
+    .layout{display:grid;grid-template-columns:minmax(355px,.95fr) minmax(400px,1.3fr);gap:22px;align-items:start}
+    .stack{display:grid;gap:20px}
+    .card{background:white;border:1px solid var(--line);box-shadow:var(--shadow);border-radius:20px;padding:25px;min-width:0}
+    .card-title{display:flex;align-items:center;gap:12px;margin-bottom:17px}
+    .number{flex:0 0 auto;width:31px;height:31px;border-radius:10px;background:#e9f3ff;display:grid;place-items:center;color:#125ec7;font-size:13px;font-weight:850}
+    .card-title h2{font-size:18px;letter-spacing:-.025em;margin:0}
+    .label{font-size:13px;font-weight:750;margin:0 0 8px;display:block}
+    .help{font-size:12px;color:var(--muted);line-height:1.55;margin:7px 0}
+    .input{width:100%;padding:11px 12px;border-radius:11px;background:#fff;border:1px solid #cfdce8;color:var(--ink);outline:0;font-size:13px;min-width:0}
+    .input:focus{border-color:#4e99ed;box-shadow:0 0 0 3px #4e99ed25}
+    .input::placeholder{color:#93a1b0}.row{display:flex;gap:9px;align-items:center}.row>*{min-width:0}
+    .btn{border:1px solid #d5e0ec;background:#fff;border-radius:11px;padding:11px 16px;font-weight:750;font-size:13px;color:#193a5c;display:inline-flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;white-space:nowrap}
+    .btn:hover:not(:disabled){background:#f3f8ff;border-color:#b9cfe3}.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}.btn.primary:hover:not(:disabled){background:#0f57bf}
+    .btn.mint{background:#e7f7f4;border-color:#a8ded6;color:#1a6b62}.btn.danger{color:#a5323f}.btn.small{font-size:12px;padding:7px 9px}.btn.wide{width:100%}
+    .between{justify-content:space-between}.field-item{border:1px solid #e3eaf1;padding:13px;border-radius:13px;background:#fafcff;margin-bottom:10px}
+    .field-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:8px}
+    .field-head strong{font-size:12px;color:#4f6882}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+    .field-grid .label{margin-bottom:4px;font-size:11px}.field-grid .input{padding:9px 10px}
+    .empty{padding:22px 15px;border:1px dashed #cbd8e7;background:#f9fcff;border-radius:13px;text-align:center;color:var(--muted);font-size:13px}
+    .tip{margin:13px 0 0;padding:12px 14px;border-radius:12px;background:#eef5fd;color:#44617f;font-size:12px}
+    .tabs{display:flex;border:1px solid #d9e4ee;background:#f3f7fb;padding:4px;border-radius:13px;margin:0 0 21px}
+    .tab{border:0;background:transparent;flex:1;padding:10px 5px;border-radius:10px;font-weight:750;color:#607791;font-size:13px}
+    .tab.active{background:white;color:#165fc6;box-shadow:0 3px 10px #3458791a}
+    .tab-panel[hidden]{display:none}.section-sub{font-size:13px;color:var(--muted);margin-top:-4px;margin-bottom:18px}
+    .input-pair{margin-bottom:14px}.input-pair .label{margin-bottom:6px}
+    .preview{border-radius:12px;background:#f1f6fb;border:1px solid #d9e7f5;min-height:70px;padding:13px;margin:17px 0;word-break:break-all;font-size:12px;color:#345b83;overflow-wrap:anywhere}
+    .preview small{display:block;color:#72839a;margin-bottom:5px;font-weight:800;letter-spacing:.06em}
+    .action-bar{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
+    .upload-zone{padding:20px;border:1px dashed #a9bfd5;border-radius:14px;background:#f9fcff;text-align:center}
+    .upload-zone input{width:100%;max-width:320px;font-size:12px;color:#516b82}
+    .upload-zone strong{display:block;margin-bottom:6px}
+    .pill{background:#eaf4ff;color:#145eb9;border-radius:99px;display:inline-block;padding:4px 10px;font-size:11px;font-weight:800}
+    .mapping{display:grid;grid-template-columns:1fr 1fr;gap:9px;align-items:center;padding:9px 0;border-bottom:1px solid #ebf1f5;font-size:12px}
+    .mapping strong{overflow-wrap:anywhere}.mapping .input{padding:8px}
+    .table-box{overflow-x:auto;border:1px solid var(--line);border-radius:12px;margin-top:12px}
+    table{border-collapse:collapse;width:100%;font-size:12px}th{background:#f5f9fc;text-align:left;color:#61758c;font-weight:800}
+    th,td{border-bottom:1px solid #e9eff5;padding:11px 12px;text-align:left;vertical-align:middle}
+    td:last-child,th:last-child{text-align:right}.table-box tr:last-child td{border:0}
+    .url-cell{max-width:210px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#1a67c0}
+    .warn{font-size:12px;color:#ae5542;background:#fff8f3;border:1px solid #f8dccd;border-radius:10px;padding:10px 12px}
+    .footer{border-top:1px solid var(--line);padding:20px 0 30px;color:#698096;font-size:12px;display:flex;justify-content:space-between;gap:15px}
+    #toast{position:fixed;right:22px;bottom:22px;z-index:9;background:#15324f;color:#fff;padding:12px 17px;border-radius:11px;box-shadow:0 14px 38px #10263f45;font-size:13px;max-width:330px}
+    #toast[hidden]{display:none}.muted{color:var(--muted)}
+    @media(max-width:960px){.layout{grid-template-columns:1fr}.hero{padding:40px 0 86px}}
+    @media(max-width:560px){.shell{padding:0 14px}.top-inner{min-height:68px}.top-note{display:none}.hero{padding:35px 0 84px}h1{font-size:32px}.card{padding:18px}.field-grid{grid-template-columns:1fr}.row.mobile-stack{flex-direction:column;align-items:stretch}.row.mobile-stack>*{width:100%}.action-bar .btn{flex:1}.footer{flex-direction:column}}
+  </style>
+  <script src="/app.js" defer></script>
+</head>
+<body>
+<header class="top"><div class="shell top-inner"><div class="brand"><div class="brand-icon">AF</div><span>AUTO FILL FORM</span></div><div class="top-note"><span class="dot"></span>Website độc lập · Dữ liệu chỉ xử lý trên máy của bạn</div></div></header>
+<section class="hero"><div class="shell"><span class="eyebrow">Google Forms · Công cụ tạo link điền sẵn</span><h1>Điền form nhanh hơn.<br>Kiểm soát từng câu trả lời.</h1><p>Nhập liên kết biểu mẫu, ghép câu hỏi với dữ liệu và tạo một hoặc nhiều liên kết Google Forms đã được điền sẵn. Không cần cài phần mềm và không cần mua tên miền.</p><div class="hero-features"><span>✓ Dữ liệu CSV</span><span>✓ Tiếng Việt có dấu</span><span>✓ Không lưu danh sách trả lời lên máy chủ</span></div></div></section>
+<main class="shell">
+  <div class="notice"><span aria-hidden="true">🔒</span><div><strong>Chế độ riêng tư</strong>Mã nguồn chạy trong trình duyệt. Dữ liệu cá nhân và file CSV không được gửi lên máy chủ của ứng dụng. Khi mở link, Google Forms sẽ nhận các giá trị đã điền trong địa chỉ URL.</div></div>
+  <div class="layout">
+    <div class="stack">
+      <section class="card" aria-labelledby="sourceTitle">
+        <div class="card-title"><span class="number">01</span><h2 id="sourceTitle">Liên kết Google Forms</h2></div>
+        <label class="label" for="formLink">Dán liên kết biểu mẫu hoặc link mẫu đã điền sẵn</label>
+        <input id="formLink" class="input" type="url" placeholder="https://docs.google.com/forms/d/e/.../viewform?entry.123=..." autocomplete="off" spellcheck="false">
+        <div class="help">Nếu có link mẫu được tạo bằng chức năng “Nhận đường liên kết điền trước”, hệ thống sẽ tự nhận diện các mã <code>entry.123...</code> và câu trả lời mẫu.</div>
+        <div class="action-bar"><button type="button" class="btn primary" id="importLink">Nhận diện liên kết</button><button type="button" class="btn" id="resetAll">Xóa cấu hình</button></div>
+        <p id="linkStatus" class="help" role="status">Chưa có biểu mẫu.</p>
+      </section>
+      <section class="card" aria-labelledby="fieldsTitle">
+        <div class="card-title"><span class="number">02</span><h2 id="fieldsTitle">Danh sách câu hỏi</h2></div>
+        <p class="section-sub">Đặt tên cho câu hỏi và kiểm tra mã <code>entry</code>. Mã phải khớp với biểu mẫu gốc.</p>
+        <div id="fieldsList" aria-live="polite"></div>
+        <button type="button" id="addField" class="btn mint wide">+ Thêm câu hỏi thủ công</button>
+        <p class="tip">Mẹo: Chủ sở hữu Google Forms có thể dùng <strong>⋮ → Nhận đường liên kết điền trước</strong>, sau đó dán liên kết đó vào Bước 01 để lấy mã câu hỏi dễ hơn.</p>
+      </section>
+    </div>
+    <section class="card" aria-labelledby="resultsTitle">
+      <div class="card-title"><span class="number">03</span><h2 id="resultsTitle">Tạo liên kết điền sẵn</h2></div>
+      <div class="tabs" role="tablist" aria-label="Chế độ điền biểu mẫu">
+        <button type="button" class="tab active" id="tabSingle" role="tab" aria-controls="singlePanel" aria-selected="true">Một lượt điền</button>
+        <button type="button" class="tab" id="tabBatch" role="tab" aria-controls="batchPanel" aria-selected="false">Hàng loạt từ CSV</button>
+      </div>
+      <div id="singlePanel" class="tab-panel" role="tabpanel" aria-labelledby="tabSingle">
+        <p class="section-sub">Điền nội dung từng câu hỏi. Link tạo ra sẽ mở Google Forms với các giá trị có sẵn để bạn kiểm tra trước khi gửi.</p>
+        <div id="singleInputs"></div>
+        <div class="preview" id="singlePreview"><small>LIÊN KẾT ĐƯỢC TẠO</small><span>Chưa đủ thông tin để tạo link.</span></div>
+        <div class="action-bar"><button type="button" class="btn primary" id="openSingle">↗ Mở form đã điền</button><button type="button" class="btn" id="copySingle">Sao chép link</button></div>
+      </div>
+      <div id="batchPanel" class="tab-panel" role="tabpanel" aria-labelledby="tabBatch" hidden>
+        <p class="section-sub">Nhập CSV với dòng đầu là tên cột. Ghép cột dữ liệu tương ứng với từng câu hỏi rồi tải về danh sách link đã điền sẵn.</p>
+        <div class="upload-zone"><strong>Chọn file CSV (.csv)</strong><input type="file" id="csvFile" accept=".csv,text/csv,text/plain"><div class="help">UTF-8 (có dấu), dấu phẩy hoặc dấu chấm phẩy; tối đa 1 MB, 2.000 dòng.</div></div>
+        <p id="csvStatus" class="help" role="status">Chưa nhập file CSV.</p>
+        <div id="mappingWrap" hidden><h3 style="font-size:14px;margin:20px 0 8px">Ghép cột CSV với câu hỏi</h3><div id="csvMappings"></div><div class="row between" style="margin-top:18px"><strong style="font-size:14px">Xem trước kết quả</strong><span id="rowCount" class="pill">0 dòng</span></div><div id="csvPreview" class="table-box"></div><div class="action-bar"><button type="button" class="btn primary" id="downloadBatch">↓ Tải CSV chứa các link</button><button type="button" class="btn" id="clearCsv">Xóa file CSV</button></div></div>
+      </div>
+      <div style="margin-top:27px" class="warn"><strong>Lưu ý:</strong> Công cụ này tạo liên kết <em>điền sẵn</em>, không tự gửi câu trả lời. Google Forms có thể yêu cầu đăng nhập hoặc kiểm tra các trường bắt buộc, file tải lên và câu hỏi đặc biệt. Hãy mở thử một link để xác nhận trước khi dùng hàng loạt.</div>
+    </section>
+  </div>
+  <footer class="footer"><span>Auto Fill Form · Công cụ độc lập, không liên kết với FinQuery</span><span>Website chạy trên Vercel · Không cần tài khoản</span></footer>
+</main>
+<div id="toast" role="status" hidden></div>
+</body>
+</html>
