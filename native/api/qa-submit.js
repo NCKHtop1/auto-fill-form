@@ -14,11 +14,10 @@ module.exports=async function handler(req,res){
     if(!b||typeof b.formUrl!=='string'||!b.answers||
        b.confirmedTestOnly!==true)
       return fail(res,400,'Thiếu Form, dữ liệu hoặc xác nhận biểu mẫu kiểm thử.');
-    const id=forms.formIdFromUrl(b.formUrl);
+    forms.formIdFromUrl(b.formUrl);
     if(!auth.configured())
       return fail(res,503,'Chưa cấu hình Google OAuth trên Vercel.');
     const session=await auth.session(req,res);
-      return fail(res,403,'Tài khoản Google này không có quyền gửi kiểm thử.');
     // Only the owner/editor may use the respondent submission bridge.
     const f=await forms.loadOwnedForm(b.formUrl,session.access_token);
     if(!f.questions.length||f.questions.some(q=>!q.supported))
