@@ -36,3 +36,5 @@ jobs:
         run: node --test native/tests/live-form.test.js
       - name: PandaStudy blog and editor browser QA
         run: .venv/bin/python tests/native_smoke.py
+      - name: QA submission flow browser test (mocked; no Google writes)
+        run: .venv/bin/python tests/qa_browser.py

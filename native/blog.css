@@ -136,3 +136,20 @@
  .workflow-result,.export-help{font-size:.8rem;padding:12px;}
  #previewSection .action-row button,#planStep .action-row button{flex:1 1 auto;}
 }
+
+
+/* Controlled Google Form QA submission and verification step */
+.qa-run-panel{scroll-margin-top:95px;border-top:1px solid #dbe8d6;}
+.qa-run-panel .qa-settings{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;}
+.qa-run-panel .qa-settings .workflow-result{flex:1 1 300px;}
+.qa-run-panel .qa-sheet-label{display:grid;gap:8px;font-size:.87rem;font-weight:600;color:#335b3c;margin:16px 0;}
+.qa-run-panel .qa-sheet-input{font:inherit;font-weight:400;width:100%;max-width:920px;
+ border:1px solid #d1e0d1;border-radius:11px;padding:13px 15px;color:#203d2d;background:white;}
+.qa-run-panel .qa-sheet-input:focus-visible{outline:2px solid #54a273;outline-offset:1px;}
+.qa-run-panel .check-line{margin:13px 0;}
+.qa-run-panel .action-row{margin-top:17px;gap:10px;}
+.qa-run-panel .action-row .btn{min-height:42px;font-weight:600;}
+.qa-run-panel .action-row .btn:disabled{opacity:.5;cursor:not-allowed;}
+.qa-run-panel #qaRunCounters{padding-top:10px;font-weight:550;line-height:1.75;color:#3c6349;}
+.qa-run-panel #qaRunMessage{margin-top:16px;}
+@media(max-width:650px){.qa-run-panel .action-row .btn{flex:1 1 calc(50% - 10px);}}

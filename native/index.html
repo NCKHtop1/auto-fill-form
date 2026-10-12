@@ -13,6 +13,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="/blog.js" defer></script>
+  <script src="/qa-run.js" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -1236,6 +1237,22 @@
       let value = (I18N[state.lang] && I18N[state.lang][key]) || (I18N.vi[key]) || key;
       Object.keys(vars).forEach(name => value = value.replaceAll(`{${name}}`, vars[name]));
       return value;
+    };
+
+    // Read-only access to the existing verified preview plan for the separate QA step.
+    window.PandaStudyQA = {
+      getUrl() { return $('formUrl').value.trim(); },
+      getRows() { return state.plan.map(r => ({
+        index: r.index, status: r.status, answers: r.answers
+      })); },
+      updateRow(position, status, receivedAt, error) {
+        const r = state.plan[position];
+        if (!r) return;
+        r.status = status;
+        r.googleTimestamp = receivedAt || '';
+        r.error = error || '';
+        renderPlan();
+      }
     };
 
     document.addEventListener('DOMContentLoaded', init);
@@ -2485,7 +2502,7 @@
           state.billing = {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:data.email};
           $('submitPlanBtn').dataset.submissionEnabled=String(!!data.submissionEnabled);
           $('authorizationRow').hidden=!data.submissionEnabled;
-          $('submitPlanBtn').hidden=!data.submissionEnabled;
+          $('submitPlanBtn').hidden=true; // legacy submission is replaced by authenticated QA Step 6
           $('downloadReportBtn').hidden=!data.submissionEnabled;
           updateSubmitButtonLabel();
           if (!data.submissionEnabled) {
