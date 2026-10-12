@@ -4,11 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="color-scheme" content="light">
-  <title>PandaStudy — Nhập dữ liệu cho Google Form</title>
+  <title>PandaStudy</title>
+  <meta name="theme-color" content="#245936">
+  <meta name="description" content="PandaStudy: công cụ Google Form, Excel/CSV và blog về phân tích dữ liệu.">
+  <link rel="icon" type="image/svg+xml" href="/panda.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <script src="/blog.js" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -714,15 +718,17 @@
   .hero h1 { line-height: 1.2; }
   .nav-links a, .btn, .hero .pill, .step-title h3, .blog-grid h3, .steps-strip strong { font-weight: 600; }
 </style>
+<link rel="stylesheet" href="/blog.css">
 </head>
 <body>
   <header class="topbar" id="top"><div class="nav-wrap">
-   <a class="brand" href="#top"><span class="brand-mark">🐼</span><span>Panda<span class="brand-green">Study</span></span></a>
-   <nav class="nav-links"><a href="#top">Trang chủ</a><a href="#app">Thiết lập form</a><a href="#dropZone">Nhập dữ liệu</a><a href="#previewSection">Kiểm tra &amp; xuất</a><a href="#blog">Blog</a><a href="#how">Hướng dẫn</a></nav>
-   <div class="nav-actions"><span class="lang-switch"><button type="button" id="langVi" class="active">VI</button><button type="button" id="langEn">EN</button></span><span id="googleStatus" class="google-status">Chưa kết nối Google</span><a class="btn btn-primary" id="googleConnectBtn" href="/api/auth/start">Kết nối Google →</a></div>
+   <a class="brand" href="#home" aria-label="PandaStudy - Trang chủ"><img class="brand-mark" src="/panda.svg" width="38" height="38" alt="" aria-hidden="true"><span>Panda<span class="brand-green">Study</span></span></a>
+   <button type="button" class="mobile-toggle" id="mobileMenu" aria-controls="mainNav" aria-expanded="false" aria-label="Mở menu">☰</button>
+   <nav class="nav-links" id="mainNav" aria-label="Điều hướng chính"><a href="#home">Trang chủ</a><a href="#app">Thiết lập form</a><a href="#dropZone">Nhập dữ liệu</a><a href="#previewSection">Kiểm tra &amp; xuất</a><a href="#blog">Blog</a><a href="#how">Hướng dẫn</a><a href="#about">Về PandaStudy</a></nav>
+   <div class="nav-actions"><span id="googleStatus" class="google-status">Chưa kết nối Google</span><a class="btn btn-primary" id="googleConnectBtn" href="/api/auth/start">Kết nối Google →</a></div>
  </div></header>
 
-  <section class="hero"><div class="hero-inner"><div class="hero-copy">
+  <section class="hero" id="home"><div class="hero-inner"><div class="hero-copy">
  <span class="pill">🌿 Dữ liệu nghiên cứu · Google Form</span>
  <h1>Tạo dữ liệu cho<br><strong>Google Form</strong><br>từ Excel hoặc CSV</h1>
  <p>Tải file lên, ghép cột với câu hỏi, kiểm tra dữ liệu rồi xuất kết quả. Bạn cũng có thể tạo dữ liệu mẫu để kiểm thử form.</p>
@@ -995,13 +1001,71 @@
 
 
 
-<section class="blog-section" id="blog"><div class="blog-head"><div><h2>Bài viết nổi bật</h2><p>Hướng dẫn và kinh nghiệm xử lý dữ liệu nghiên cứu.</p></div><span>Bài viết đang cập nhật</span></div><div class="blog-grid">
- <article><div class="blog-thumb thumb-blue">SPSS</div><h3>Hướng dẫn phân tích dữ liệu với SPSS</h3><p>Bắt đầu từ nhập dữ liệu, làm sạch đến thống kê cơ bản.</p></article>
- <article><div class="blog-thumb thumb-red">Stata</div><h3>Làm quen với Stata</h3><p>Một số lệnh hay dùng khi phân tích dữ liệu nghiên cứu.</p></article>
- <article><div class="blog-thumb thumb-python">🐍</div><h3>Phân tích dữ liệu bằng Python</h3><p>Đọc dữ liệu, xử lý và trực quan hóa với Python.</p></article>
- <article><div class="blog-thumb thumb-green">✓</div><h3>Cách làm sạch dữ liệu</h3><p>Kiểm tra dữ liệu trống, dữ liệu trùng và giá trị bất thường.</p></article>
- <article><div class="blog-thumb thumb-brown">▥</div><h3>Chọn phương pháp nghiên cứu</h3><p>Phân biệt định lượng và định tính để chọn cách phù hợp.</p></article>
- </div></section>
+<section class="blog-section" id="blog">
+  <div id="blogIndex">
+    <div class="blog-head">
+      <div><h2>Bài viết nổi bật</h2><p>SPSS, Stata, Python và kinh nghiệm xử lý dữ liệu.</p></div>
+      <div class="blog-head-actions"><a class="blog-write-btn" href="#blog-viet-bai">Viết bài mới ↗</a></div>
+    </div>
+    <div class="blog-toolbar">
+      <input class="blog-search" id="blogSearch" type="search" placeholder="Tìm bài viết..." aria-label="Tìm bài viết">
+      <select class="blog-select" id="blogCategory" aria-label="Lọc theo chủ đề">
+        <option>Tất cả</option><option>SPSS</option><option>Stata</option><option>Python</option>
+        <option>Dữ liệu</option><option>Phương pháp</option><option>Khác</option>
+      </select>
+    </div>
+    <p id="blogLoadStatus" role="status">Đang tải bài viết...</p>
+    <p id="blogCount" class="blog-count" aria-live="polite"></p>
+    <div class="blog-grid" id="blogGrid"></div>
+    <div id="blogEmpty" class="blog-empty" hidden><p>Không có bài phù hợp.</p><button id="blogClear" type="button">Xem tất cả bài viết</button></div>
+  </div>
+
+  <article class="blog-panel blog-reading" id="blogReader" hidden>
+    <a href="#blog" class="blog-back">← Quay lại Blog</a>
+    <div class="article-header">
+      <div class="article-kicker" id="articleCategory"></div>
+      <h2 id="articleTitle"></h2>
+      <p class="article-summary" id="articleSummary"></p>
+      <time class="article-date" id="articleDate"></time>
+    </div>
+    <div class="article-cover" id="articleCover" aria-hidden="true"></div>
+    <div class="article-prose" id="articleContent"></div>
+    <a href="#blog" class="blog-back" style="margin-top:30px">← Xem các bài khác</a>
+  </article>
+
+  <section class="blog-panel blog-editor" id="blogEditor" hidden>
+    <a href="#blog" class="blog-back">← Quay lại Blog</a>
+    <h2>Viết bài mới</h2>
+    <p>Soạn bài, xem trước rồi gửi lên GitHub để xác nhận xuất bản.</p>
+    <form id="postEditorForm">
+      <div class="blog-editor-fields">
+        <label>Tiêu đề <input id="postTitle" type="text" maxlength="130" minlength="8" required placeholder="Tiêu đề bài viết"></label>
+        <label>Chuyên mục <select id="postCategory"><option>SPSS</option><option>Stata</option><option>Python</option><option>Dữ liệu</option><option>Phương pháp</option><option>Khác</option></select></label>
+        <label>Tóm tắt <textarea id="postSummary" maxlength="280" minlength="15" required rows="3" placeholder="Nội dung chính của bài"></textarea></label>
+        <label>Nội dung <textarea id="postBody" class="long-form" rows="15" maxlength="18000" minlength="80" required placeholder="# Tiêu đề phần&#10;Viết nội dung ở đây...&#10;&#10;## Phần tiếp theo&#10;- Ý thứ nhất&#10;- Ý thứ hai"></textarea></label>
+      </div>
+      <div class="blog-editor-actions">
+        <button type="button" id="saveBlogDraft">Lưu nháp</button>
+        <button type="button" id="previewBlogDraft">Xem trước</button>
+        <button type="submit">Đăng bài qua GitHub ↗</button>
+      </div>
+      <p id="blogEditorStatus" role="status" aria-live="polite"></p>
+    </form>
+    <div class="blog-github-note">
+      <strong>Ai được đăng?</strong>
+      <p>Chỉ tài khoản GitHub <strong>NCKHtop1</strong> được duyệt đăng bài. Khi bấm đăng, hãy xác nhận trên GitHub. Bài viết sẽ tự cập nhật lên PandaStudy sau khi hệ thống xử lý.</p>
+      <p><a href="https://github.com/NCKHtop1/auto-fill-form/issues" target="_blank" rel="noopener noreferrer">Kiểm tra bài đã gửi trên GitHub ↗</a></p>
+    </div>
+    <div id="issueCopyBox" hidden class="blog-github-note">
+      <label>Nội dung cần dán vào GitHub <textarea id="issueCopyText" readonly></textarea></label>
+      <div class="blog-editor-actions"><button id="copyIssueText" type="button">Sao chép nội dung</button></div>
+    </div>
+    <div id="blogEditorPreview" class="blog-editor-preview" hidden>
+      <h3 id="blogEditorPreviewTitle"></h3>
+      <div id="blogEditorPreviewBody" class="article-prose"></div>
+    </div>
+  </section>
+</section>
     <section class="section-block" id="how">
       <div class="section-heading">
         <h2 data-i18n="how_title">Cách hoạt động</h2>
@@ -1010,7 +1074,7 @@
       <div class="cards-3">
         <article class="how-card"><div class="icon">1</div><h3 data-i18n="how1_title">Nhập biểu mẫu</h3><p data-i18n="how1_desc">Dán URL /edit và để Google kiểm tra quyền chỉnh sửa của tài khoản.</p></article>
         <article class="how-card"><div class="icon">2</div><h3 data-i18n="how2_title">Ánh xạ hoặc tạo dữ liệu</h3><p data-i18n="how2_desc">Chọn cột Excel/CSV/JSON hoặc thiết lập quy tắc random, tỷ lệ và giá trị mẫu.</p></article>
-        <article class="how-card"><div class="icon">3</div><h3 data-i18n="how3_title">Xem trước và xác thực</h3><p data-i18n="how3_desc">Tạo tối đa 50 dòng, kiểm tra câu bắt buộc và giá trị có khớp lựa chọn Google Form hay không.</p></article>
+        <article class="how-card"><div class="icon">3</div><h3 data-i18n="how3_title">Xem trước và xác thực</h3><p data-i18n="how3_desc">Kiểm tra dữ liệu theo từng lô. Bạn có thể chọn 50, 100 hoặc số dòng khác.</p></article>
         <article class="how-card"><div class="icon">4</div><h3 data-i18n="how4_title">Gửi ngay hoặc lên lịch</h3><p data-i18n="how4_desc">Theo dõi trạng thái, timestamp và tải báo cáo sau khi hoàn tất.</p></article>
       </div>
     </section>
@@ -1045,50 +1109,26 @@
         </details>
         <details>
           <summary data-i18n="faq_upload_q">Câu hỏi tải tệp có được hỗ trợ không?</summary>
-          <p data-i18n="faq_upload_a">Không. Apps Script không cung cấp cách an toàn để gắn tệp vào phản hồi mới theo luồng này. Nếu câu tải tệp là bắt buộc, kế hoạch sẽ bị chặn.</p>
+          <p data-i18n="faq_upload_a">Chưa hỗ trợ gửi câu trả lời cho câu hỏi tải tệp. Nếu câu hỏi bắt buộc, hệ thống sẽ báo lỗi trước khi gửi.</p>
         </details>
       </div>
     </section>
 
 
 
+    <section class="section-block" id="about">
+      <div class="section-heading"><h2>Về PandaStudy</h2><p>Công cụ nhập dữ liệu Google Form và những bài viết thực hành về phân tích dữ liệu.</p></div>
+    </section>
     <footer>
       <div class="footer-row">
         <span>© <span id="year"></span> PandaStudy</span>
-        <span>Chỉ dùng với dữ liệu và biểu mẫu bạn được phép quản lý.</span>
         <div class="links">
-          <button type="button" data-dialog="termsDialog" data-i18n="terms">Điều khoản sử dụng</button>
-          <button type="button" data-dialog="privacyDialog" data-i18n="privacy">Chính sách bảo mật</button>
+          <a href="/dieu-khoan.html">Điều khoản sử dụng</a>
+          <a href="/bao-mat.html">Chính sách bảo mật</a>
         </div>
       </div>
     </footer>
   </main>
-
-  <dialog id="termsDialog">
-    <div class="dialog-head"><h3 data-i18n="terms">Điều khoản sử dụng</h3><button type="button" data-close-dialog>×</button></div>
-    <div class="dialog-body">
-      <h4 data-i18n="terms_h1">1. Phạm vi được phép</h4>
-      <p data-i18n="terms_p1">Chỉ gửi phản hồi vào biểu mẫu do bạn sở hữu hoặc được chủ sở hữu cho phép kiểm thử. Không sử dụng để giả mạo người tham gia, can thiệp khảo sát, tạo đánh giá giả, né giới hạn hoặc gây quá tải dịch vụ.</p>
-      <h4 data-i18n="terms_h2">2. Trách nhiệm dữ liệu</h4>
-      <p data-i18n="terms_p2">Bạn chịu trách nhiệm về tính hợp pháp, độ chính xác, quyền sử dụng và thời hạn lưu trữ của dữ liệu được nhập hoặc tạo.</p>
-      <h4 data-i18n="terms_h3">3. Giới hạn kỹ thuật</h4>
-      <p>Chức năng gửi phản hồi trực tiếp phải được chủ hệ thống bật riêng; Google Forms có thể thay đổi cách tiếp nhận. Với số lượng lớn, ứng dụng xử lý theo từng lô và cần giữ trang mở.</p>
-      <h4 data-i18n="terms_h4">4. Thanh toán</h4>
-      <p>Phiên bản Vercel hiện chưa tích hợp thanh toán.</p>
-    </div>
-  </dialog>
-
-  <dialog id="privacyDialog">
-    <div class="dialog-head"><h3 data-i18n="privacy">Chính sách bảo mật</h3><button type="button" data-close-dialog>×</button></div>
-    <div class="dialog-body">
-      <h4 data-i18n="privacy_h1">Dữ liệu tệp</h4>
-      <p>File Excel, CSV và JSON được đọc trực tiếp trong trình duyệt. Chỉ các câu trả lời được yêu cầu kiểm tra hoặc gửi mới truyền đến máy chủ.</p>
-      <h4 data-i18n="privacy_h2">Quyền Google</h4>
-      <p>Ứng dụng dùng Google OAuth để đọc biểu mẫu và kiểm tra quyền truy cập. Mã truy cập được lưu trong cookie mã hóa, không gửi cho bên thứ ba.</p>
-      <h4 data-i18n="privacy_h3">Dữ liệu cá nhân</h4>
-      <p data-i18n="privacy_p3">Không nhập dữ liệu nhạy cảm hoặc dữ liệu cá nhân khi chưa có căn cứ xử lý phù hợp. Không bán hoặc chia sẻ dữ liệu cá nhân nếu chưa có quyền và sự đồng ý cần thiết.</p>
-    </div>
-  </dialog>
 
   <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
 
@@ -1108,9 +1148,9 @@
         billing_hint:'Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.', step5_title:'Xem trước, gửi và tải báo cáo', step5_desc:'Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.', plan_empty:'Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.', th_scheduled:'Thời điểm', th_data_row:'Dòng dữ liệu', th_preview:'Xem trước câu trả lời', th_status:'Trạng thái', th_google_time:'Google timestamp', download_plan:'Tải kế hoạch CSV', submit_plan:'Gửi vào Google Form', schedule_plan:'Tạo lịch chạy nền', download_report:'Tải báo cáo CSV', refresh_count:'Cập nhật tổng phản hồi',
         scheduled_runs_title:'Lịch chạy nền', scheduled_runs_desc:'Theo dõi, hủy hoặc xóa các lịch đã tạo bằng tài khoản Google hiện tại.', refresh_jobs:'Làm mới lịch', jobs_empty:'Chưa có lịch chạy nền.', job_form:'Biểu mẫu', job_created:'Ngày tạo', job_progress:'Tiến độ', job_next:'Lần tiếp theo', job_actions:'Thao tác', cancel:'Hủy', delete:'Xóa',
         features_title:'Tính năng phục vụ kiểm thử và thu thập dữ liệu có kiểm soát', features_desc:'Từ tạo dữ liệu mẫu đến nhập dữ liệu sẵn có, lên lịch và xuất báo cáo.', feature_random_title:'Tạo câu trả lời ngẫu nhiên', feature_random_desc:'Random đều, chọn giá trị cố định hoặc cấu hình tỷ lệ phần trăm tùy chỉnh cho câu hỏi lựa chọn và Likert.', feature_import_title:'Nhập Excel, CSV, JSON', feature_import_desc:'Ánh xạ cột vào từng câu hỏi. Thang Likert chấp nhận cả nhãn chữ và mã 1–5 theo thứ tự lựa chọn.', feature_schedule_title:'Lên lịch chạy nền', feature_schedule_desc:'Gửi theo khoảng cách thời gian hoặc phân bổ trong khung giờ của nhiều ngày mà không cần giữ trang mở.', feature_grid_title:'Hỗ trợ Likert dạng lưới', feature_grid_desc:'Hỗ trợ Multiple-choice grid và Checkbox grid, ánh xạ từng hàng của lưới với cột dữ liệu tương ứng.', feature_report_title:'Kế hoạch và báo cáo CSV', feature_report_desc:'Tải danh sách dự kiến, trạng thái gửi, response ID, timestamp và liên kết chỉnh sửa khi Google cung cấp.', feature_service_title:'Dịch vụ dữ liệu theo yêu cầu', feature_service_desc:'Khu vực giới thiệu dịch vụ thu thập dữ liệu công khai hoặc dữ liệu được cấp phép. Giao dịch thực tế thực hiện qua liên hệ và thỏa thuận riêng.',
-        how_title:'Cách hoạt động', how_desc:'Quy trình rõ ràng để tránh gửi nhầm dữ liệu.', how1_title:'Nhập biểu mẫu', how1_desc:'Dán URL /edit và để Google kiểm tra quyền chỉnh sửa của tài khoản.', how2_title:'Ánh xạ hoặc tạo dữ liệu', how2_desc:'Chọn cột Excel/CSV/JSON hoặc thiết lập quy tắc random, tỷ lệ và giá trị mẫu.', how3_title:'Xem trước và xác thực', how3_desc:'Tạo tối đa 50 dòng, kiểm tra câu bắt buộc và giá trị có khớp lựa chọn Google Form hay không.', how4_title:'Gửi ngay hoặc lên lịch', how4_desc:'Theo dõi trạng thái, timestamp và tải báo cáo sau khi hoàn tất.',
+        how_title:'Cách hoạt động', how_desc:'Quy trình rõ ràng để tránh gửi nhầm dữ liệu.', how1_title:'Nhập biểu mẫu', how1_desc:'Dán URL /edit và để Google kiểm tra quyền chỉnh sửa của tài khoản.', how2_title:'Ánh xạ hoặc tạo dữ liệu', how2_desc:'Chọn cột Excel/CSV/JSON hoặc thiết lập quy tắc random, tỷ lệ và giá trị mẫu.', how3_title:'Xem trước và xác thực', how3_desc:'Kiểm tra dữ liệu theo từng lô. Bạn có thể chọn 50, 100 hoặc số dòng khác.', how4_title:'Gửi ngay hoặc lên lịch', how4_desc:'Theo dõi trạng thái, timestamp và tải báo cáo sau khi hoàn tất.',
         pricing_title:'Bảng giá', pricing_desc:'Giá rõ ràng, nạp bao nhiêu dùng bấy nhiêu.', price_main_title:'Điền biểu mẫu', per_response:'/ phiếu', price_main_desc:'Số dư chỉ trừ khi phản hồi được gửi thành công.', price_item_topup:'Nạp tiền bằng mã QR ngân hàng', price_item_auto:'Quản trị viên xác nhận sau khi kiểm tra ngân hàng', price_item_balance:'Số dư được lưu theo tài khoản Google', price_tools_title:'Công cụ đầy đủ', included:'Đã gồm', price_tools_desc:'Không thu thêm phí dùng Excel, tạo dữ liệu, lên lịch hay xuất báo cáo.', price_item_50:'Tối đa 50 phiếu mỗi lượt', price_item_import:'Nhập Excel/CSV/JSON', price_item_report:'Xuất kế hoạch và báo cáo', price_support_title:'Hỗ trợ riêng', price_contact:'Liên hệ', price_support_desc:'Hỗ trợ cài đặt, tùy chỉnh biểu mẫu và xử lý dữ liệu theo yêu cầu.', price_item_setup:'Cài đặt và hướng dẫn', price_item_custom:'Tùy chỉnh theo nhu cầu', price_item_support:'Hỗ trợ kỹ thuật',
-        faq_desc:'Giải thích các phần dễ gây nhầm lẫn trong giao diện.', faq_mapping_q:'“Excel / data column” dùng để làm gì?', faq_mapping_a:'Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.', faq_100_q:'Tại sao có tổng 100%?', faq_100_a:'Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.', faq_delay_q:'Khoảng nghỉ tối thiểu/tối đa để làm gì?', faq_delay_a:'Nó tạo thời gian chờ giữa các phản hồi trong chế độ gửi ngay. Nếu cần 1 giờ/lần hoặc 10 phản hồi ở các thời điểm khác nhau trong ngày, dùng chế độ lịch chạy nền.', faq_likert_q:'Dữ liệu Likert có bắt buộc mã hóa 1–5 không?', faq_likert_a:'Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.', faq_url_q:'Có dùng đường dẫn /viewform được không?', faq_url_a:'Không. Ứng dụng chỉ nhận URL /edit để Google xác minh tài khoản hiện tại có quyền chỉnh sửa biểu mẫu.', faq_upload_q:'Câu hỏi tải tệp có được hỗ trợ không?', faq_upload_a:'Không. Apps Script không cung cấp cách an toàn để gắn tệp vào phản hồi mới theo luồng này. Nếu câu tải tệp là bắt buộc, kế hoạch sẽ bị chặn.',
+        faq_desc:'Giải thích các phần dễ gây nhầm lẫn trong giao diện.', faq_mapping_q:'“Excel / data column” dùng để làm gì?', faq_mapping_a:'Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.', faq_100_q:'Tại sao có tổng 100%?', faq_100_a:'Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.', faq_delay_q:'Khoảng nghỉ tối thiểu/tối đa để làm gì?', faq_delay_a:'Nó tạo thời gian chờ giữa các phản hồi trong chế độ gửi ngay. Nếu cần 1 giờ/lần hoặc 10 phản hồi ở các thời điểm khác nhau trong ngày, dùng chế độ lịch chạy nền.', faq_likert_q:'Dữ liệu Likert có bắt buộc mã hóa 1–5 không?', faq_likert_a:'Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.', faq_url_q:'Có dùng đường dẫn /viewform được không?', faq_url_a:'Không. Ứng dụng chỉ nhận URL /edit để Google xác minh tài khoản hiện tại có quyền chỉnh sửa biểu mẫu.', faq_upload_q:'Câu hỏi tải tệp có được hỗ trợ không?', faq_upload_a:'Chưa hỗ trợ gửi câu trả lời cho câu hỏi tải tệp. Nếu câu hỏi bắt buộc, hệ thống sẽ báo lỗi trước khi gửi.',
         contact_title:'Cần tùy biến biểu mẫu hoặc dịch vụ dữ liệu?', contact_desc:'Gửi cấu trúc biểu mẫu, tệp mẫu và yêu cầu đầu ra để được tư vấn phạm vi triển khai.', footer_note:'Chỉ dùng cho QA có ủy quyền.', terms:'Điều khoản sử dụng', privacy:'Chính sách bảo mật', terms_h1:'1. Phạm vi được phép', terms_p1:'Chỉ gửi phản hồi vào biểu mẫu do bạn sở hữu hoặc được chủ sở hữu cho phép kiểm thử. Không sử dụng để giả mạo người tham gia, can thiệp khảo sát, tạo đánh giá giả, né giới hạn hoặc gây quá tải dịch vụ.', terms_h2:'2. Trách nhiệm dữ liệu', terms_p2:'Bạn chịu trách nhiệm về tính hợp pháp, độ chính xác, quyền sử dụng và thời hạn lưu trữ của dữ liệu được nhập hoặc tạo.', terms_h3:'3. Giới hạn kỹ thuật', terms_p3:'Các lượt gửi ngay lớn được tự động chia thành lô kỹ thuật 50 phản hồi. Lịch chạy nền vẫn giới hạn 50 phản hồi cho mỗi lịch để phù hợp hạn mức Apps Script. Câu hỏi tải tệp và một số quy tắc đặc biệt của Google Forms có thể không được hỗ trợ.', terms_h4:'4. Thanh toán', terms_p4:'Đơn giá là 500 đồng cho một phản hồi gửi thành công. Phản hồi lỗi được hoàn lại số dư tự động. Quản trị viên chỉ cộng số dư sau khi đối chiếu giao dịch ngân hàng. Khoản nạp đã được cộng vào số dư không quy đổi thành tiền mặt, trừ trường hợp pháp luật yêu cầu.', privacy_h1:'Dữ liệu tệp', privacy_p1:'Tệp Excel, CSV và JSON được đọc trong trình duyệt. Khi bạn tạo lịch chạy nền, các câu trả lời trong kế hoạch được lưu nén vào User Properties của chính tài khoản Apps Script đang sử dụng.', privacy_h2:'Quyền Google', privacy_p2:'Ứng dụng yêu cầu quyền truy cập Google Forms và quyền tạo trigger để thực hiện chức năng bạn chọn. Google quyết định tài khoản có được mở và gửi vào biểu mẫu hay không.', privacy_h3:'Dữ liệu cá nhân', privacy_p3:'Không nhập dữ liệu nhạy cảm hoặc dữ liệu cá nhân khi chưa có căn cứ xử lý phù hợp. Không bán hoặc chia sẻ dữ liệu cá nhân nếu chưa có quyền và sự đồng ý cần thiết.',
         form_title:'Tên biểu mẫu', responses:'Phản hồi hiện có', questions:'Câu hỏi hỗ trợ', unsupported:'Không hỗ trợ', accepting:'Đang nhận phản hồi', not_accepting:'Đã đóng phản hồi', collects_email:'Thu email', limit_one:'Giới hạn 1 phản hồi', yes:'Có', no:'Không',
         file_rows:'Dòng dữ liệu', file_columns:'Cột dữ liệu', file_name:'Tệp', clear_data:'Xóa dữ liệu', no_column:'Không chọn cột — dùng quy tắc bên dưới', data_column:'Cột Excel / dữ liệu', mapping_help:'Nếu ô dữ liệu trống, hệ thống sẽ dùng quy tắc tạo dự phòng.', question_type:'Loại', required:'Bắt buộc', optional:'Không bắt buộc', unsupported_question:'Loại câu hỏi này chưa được hỗ trợ.',
@@ -1169,7 +1209,7 @@
     const STATIC_QR_FALLBACK_DATA_URI = '';
 
     const state = {
-      lang: localStorage.getItem('aff_lang') || 'vi',
+      lang: 'vi',
       form: null,
       dataFileName: '',
       dataRows: [],
@@ -1212,8 +1252,6 @@
     }
 
     function bindEvents() {
-      $('langVi').addEventListener('click', () => setLanguage('vi'));
-      $('langEn').addEventListener('click', () => setLanguage('en'));
       $('importFormBtn').addEventListener('click', importForm);
       $('dataFile').addEventListener('change', event => event.target.files[0] && loadDataFile(event.target.files[0]));
       $('dropZone').addEventListener('dragover', event => { event.preventDefault(); $('dropZone').classList.add('dragover'); });
@@ -1229,7 +1267,7 @@
       $('downloadPlanBtn').addEventListener('click', () => downloadPlan(false));
       $('downloadReportBtn').addEventListener('click', () => downloadPlan(true));
       $('refreshCountBtn').addEventListener('click', refreshResponseCount);
-      $('refreshJobsBtn').addEventListener('click', loadScheduledRuns);
+      if ($('refreshJobsBtn')) $('refreshJobsBtn').addEventListener('click', loadScheduledRuns);
       $('topupQuantity').addEventListener('input', updateTopupTotal);
       $('topupQuantity').addEventListener('keydown', event => {
         if (event.key === 'Enter') {
@@ -1247,11 +1285,10 @@
     }
 
     function setLanguage(lang) {
+      lang = 'vi';
       state.lang = lang;
       localStorage.setItem('aff_lang', lang);
       document.documentElement.lang = lang;
-      $('langVi').classList.toggle('active', lang === 'vi');
-      $('langEn').classList.toggle('active', lang === 'en');
       document.querySelectorAll('[data-i18n]').forEach(el => {
         const key = el.dataset.i18n;
         if (I18N[lang][key]) el.textContent = I18N[lang][key];
@@ -2315,6 +2352,7 @@
 
     function renderScheduledRuns() {
       const jobs = state.scheduledRuns || [];
+      if (!$('jobsEmpty') || !$('jobsTableWrap') || !$('jobsTableBody')) return;
       $('jobsEmpty').classList.toggle('hidden', jobs.length > 0);
       $('jobsTableWrap').classList.toggle('hidden', jobs.length === 0);
       if (!jobs.length) return;

@@ -1,0 +1,22 @@
+name: Publish PandaStudy blog
+on:
+  issues:
+    types: [opened]
+permissions:
+  contents: write
+  issues: write
+jobs:
+  publish:
+    if: github.event.issue.user.login == 'NCKHtop1' && startsWith(github.event.issue.title, '[PandaStudy] ')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Validate and publish article
+        run: node .github/scripts/publish-blog.cjs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          GH_EVENT_PATH: ${{ github.event_path }}

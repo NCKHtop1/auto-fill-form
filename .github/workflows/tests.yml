@@ -24,3 +24,11 @@ jobs:
         run: node --check blog-data.js
       - name: Browser QA
         run: .venv/bin/python tests/smoke.py
+      - name: PandaStudy native JavaScript and backend tests
+        run: |
+          node --check native/blog.js
+          node --check .github/scripts/publish-blog.cjs
+          node --test tests/publish-blog.test.cjs
+          (cd native && npm test && npm run check)
+      - name: PandaStudy blog and editor browser QA
+        run: .venv/bin/python tests/native_smoke.py
