@@ -1,7 +1,6 @@
 'use strict';
 const auth=require('../lib/auth');
 const forms=require('../lib/forms');
-const qa=require('../lib/qa-submit');
 const publicSheet=require('../lib/public-sheet');
 function fail(res,status,message){return res.status(status).json({ok:false,error:message})}
 module.exports=async function handler(req,res){
@@ -15,7 +14,7 @@ module.exports=async function handler(req,res){
     if(auth.configured()){
       let s;
       try{s=await auth.session(req,res)}catch{}
-      if(s&&qa.allowedAdmin(s.email)){
+      if(s){
         try{
           const count=await forms.responseCount(id,s.access_token);
           return res.status(200).json({ok:true,count,source:'google-forms-api',
@@ -29,7 +28,7 @@ module.exports=async function handler(req,res){
       const result=await publicSheet.publicSheetCount(data.sheetUrl);
       return res.status(200).json({ok:true,...result});
     }
-    return fail(res,409,'Để xem số phản hồi, hãy kết nối Google quản trị hoặc dán Google Sheet được chia sẻ công khai.');
+    return fail(res,409,'Để xem số phản hồi, hãy kết nối tài khoản Google có quyền truy cập Form hoặc dán Google Sheet được chia sẻ công khai.');
   }catch(e){
     console.error('[PandaStudy count]',e.message);
     return fail(res,e.status>=400&&e.status<=500?e.status:400,e.message||'Không đọc được số phản hồi.');
