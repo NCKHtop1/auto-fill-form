@@ -99,3 +99,40 @@
   .blog-reading { padding: 22px 17px 35px; }
   .blog-editor { padding: 23px 17px; }
 }
+
+
+/* Huong dan 5 buoc va ket qua kiem tra - PandaStudy */
+.steps-strip {grid-template-columns:repeat(5,minmax(0,1fr));}
+.steps-strip a{min-width:0;}
+.steps-strip a:focus-visible{outline:3px solid #58a76b;outline-offset:2px;}
+.step[id],#previewSection,#dropZone{scroll-margin-top:90px;}
+.workflow-result{
+ margin-bottom:14px;padding:15px 17px;border:1px solid #cbdcc9;
+ background:#f4f9f0;color:#315d3c;border-radius:12px;
+ font-size:.89rem;line-height:1.75;font-weight:550;
+}
+.workflow-result.is-success{border-color:#a9d3b0;background:#edf8ef;color:#226337;}
+.workflow-result.is-error{border-color:#e3bbb0;background:#fff1ec;color:#924032;}
+.form-warning{
+ border:1px solid #e0c488;background:#fff8e9;color:#795220;
+ border-radius:12px;padding:13px 16px;margin:13px 0;
+ font-size:.85rem;line-height:1.7;
+}
+.export-help{
+ margin:14px 0 0;padding:13px 16px;border-radius:12px;
+ background:#f1f6ec;color:#46654e;font-size:.83rem;line-height:1.8;
+}
+#previewSection .action-row button{font-weight:650;}
+#previewSection .table-wrap table{min-width:650px;}
+#previewSection .preview-cell{max-width:550px;line-height:1.65;}
+#planTableBody .status-chip{white-space:nowrap;font-size:.75rem;}
+@media(max-width:1090px){.steps-strip{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media(max-width:640px){
+ .steps-strip{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px;padding:8px;}
+ .steps-strip a{gap:7px;padding:10px 7px;}
+ .steps-strip strong{font-size:.75rem;}
+ .steps-strip small{font-size:.68rem;}
+ .steps-strip a>b{width:26px;height:26px;font-size:.76rem;}
+ .workflow-result,.export-help{font-size:.8rem;padding:12px;}
+ #previewSection .action-row button,#planStep .action-row button{flex:1 1 auto;}
+}

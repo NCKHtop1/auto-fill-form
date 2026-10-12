@@ -735,14 +735,14 @@
  <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay ↗</a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
 </div>
  <div class="hero-art" role="img" aria-label="Gấu trúc PandaStudy, bảng Excel và Google Form"><img src="/assets/hero.png" alt="PandaStudy" loading="eager"></div></div></section>
- <div class="steps-strip"><a href="#dropZone"><b>1</b><span><strong>Nhập dữ liệu</strong><small>Excel, CSV hoặc JSON</small></span></a><a href="#app"><b>2</b><span><strong>Thiết lập form</strong><small>Ghép cột với câu hỏi</small></span></a><a href="#previewSection"><b>3</b><span><strong>Kiểm tra &amp; xuất</strong><small>Xem trước từng dòng</small></span></a><a href="#how"><b>4</b><span><strong>Hoàn thành</strong><small>Tải kết quả</small></span></a></div>
+ <div class="steps-strip" aria-label="5 bước sử dụng"><a href="#dropZone"><b>1</b><span><strong>Chọn file</strong><small>Có thể bỏ qua</small></span></a><a href="#formSetupStep"><b>2</b><span><strong>Nhập Google Form</strong><small>Dán link /edit</small></span></a><a href="#mappingStep"><b>3</b><span><strong>Ghép dữ liệu</strong><small>Chọn cột câu hỏi</small></span></a><a href="#planStep"><b>4</b><span><strong>Tạo &amp; kiểm tra</strong><small>50, 100 dòng...</small></span></a><a href="#previewSection"><b>5</b><span><strong>Tải dữ liệu</strong><small>CSV cho Sheets</small></span></a></div>
 
   <main>
     <section class="workspace" id="app">
       <div class="workspace-head">
         <div>
           <h2 data-i18n="workspace_title">Công cụ nhập dữ liệu</h2>
-          <p data-i18n="workspace_subtitle">Chọn file và Google Form để bắt đầu.</p>
+          <p>Đi lần lượt từ Bước 1 đến Bước 5. Nếu chưa có file Excel, bỏ qua Bước 1.</p>
         </div>
         
       </div>
@@ -797,7 +797,7 @@
         </div>
       </section>
 
-      <div class="step">
+      <div class="step" id="fileStep">
         <div class="step-title">
           <span class="step-number">1</span>
           <div>
@@ -816,12 +816,12 @@
         <div id="dataSummary" class="data-summary hidden"></div>
       </div>
 
-      <div class="step">
+      <div class="step" id="formSetupStep">
         <div class="step-title">
           <span class="step-number">2</span>
           <div>
             <h3 data-i18n="step1_title">Nhập Google Form</h3>
-            <p data-i18n="step1_desc">Dán đường dẫn chỉnh sửa kết thúc bằng /edit. Tài khoản đang đăng nhập phải có quyền chỉnh sửa.</p>
+            <p>Dán link kết thúc bằng /edit rồi bấm Nhập biểu mẫu. Form công khai không cần đăng nhập.</p>
           </div>
         </div>
 
@@ -832,12 +832,12 @@
         <div id="formSummary" class="form-summary hidden"></div>
       </div>
 
-      <div class="step">
+      <div class="step" id="mappingStep">
         <div class="step-title">
           <span class="step-number">3</span>
           <div>
             <h3 data-i18n="step3_title">Ánh xạ dữ liệu và quy tắc tạo câu trả lời</h3>
-            <p data-i18n="step3_desc">Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.</p>
+            <p>Chọn cột từ file. Nếu chưa có file, chỉ tạo dữ liệu mẫu để thử quy trình.</p>
           </div>
         </div>
 
@@ -846,18 +846,18 @@
         <div id="questionList" class="question-list"></div>
       </div>
 
-      <div class="step">
+      <div class="step" id="planStep">
         <div class="step-title">
           <span class="step-number">4</span>
           <div>
-            <h3 data-i18n="step4_title">Số lượng và thời gian gửi</h3>
-            <p data-i18n="step4_desc">Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.</p>
+            <h3>Chọn số dòng và kiểm tra</h3>
+            <p>Nhập 50, 100 hoặc số dòng cần xem trước; tiếp theo bấm 4a rồi 4b bên dưới.</p>
           </div>
         </div>
 
         <div class="field-grid four">
           <div class="field">
-            <label for="responseCount" data-i18n="response_count">Số phản hồi</label>
+            <label for="responseCount">Số dòng cần kiểm tra</label>
             <input id="responseCount" type="number" min="1" value="10" step="1">
           </div>
           <div class="field">
@@ -867,8 +867,8 @@
               <option value="random" data-i18n="row_random">Ngẫu nhiên</option>
             </select>
           </div>
-          <div class="field">
-            <label for="scheduleMode" data-i18n="schedule_mode">Chế độ gửi</label>
+          <div class="field" hidden>
+            <label for="scheduleMode">Chế độ</label>
             <select id="scheduleMode">
               <option value="now" data-i18n="mode_now">Gửi ngay trên trang</option>
               <option value="interval" disabled data-i18n="mode_interval">Gửi theo khoảng thời gian</option>
@@ -881,7 +881,7 @@
           </div>
         </div>
 
-        <div id="scheduleNow" class="schedule-panel">
+        <div id="scheduleNow" class="schedule-panel" hidden>
           <div class="field-grid two">
             <div class="field">
               <label for="minDelay" data-i18n="min_delay">Khoảng nghỉ tối thiểu (giây)</label>
@@ -947,14 +947,14 @@
           </div>
         </div>
 
-        <label class="check-line">
+        <label class="check-line" id="authorizationRow" hidden>
           <input id="authorizationAck" type="checkbox">
           <span data-i18n="authorization_ack">Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.</span>
         </label>
 
         <div class="action-row">
-          <button id="buildPlanBtn" class="btn btn-primary" type="button" data-i18n="build_plan">Tạo kế hoạch xem trước</button>
-          <button id="validatePlanBtn" class="btn btn-outline" type="button" disabled data-i18n="validate_plan">Kiểm tra kế hoạch</button>
+          <button id="buildPlanBtn" class="btn btn-primary" type="button">4a. Tạo bảng xem trước</button>
+          <button id="validatePlanBtn" class="btn btn-outline" type="button" disabled>4b. Kiểm tra dữ liệu</button>
         </div>
       </div>
 
@@ -962,12 +962,14 @@
         <div class="step-title">
           <span class="step-number">5</span>
           <div>
-            <h3 data-i18n="step5_title">Xem trước, gửi và tải báo cáo</h3>
-            <p data-i18n="step5_desc">Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.</p>
+            <h3>Kiểm tra kết quả và tải CSV</h3>
+            <p>Đây là bảng xem trước. Kiểm tra hợp lệ không tự gửi vào Google Form hoặc Google Sheets.</p>
           </div>
         </div>
 
-        <div id="planMessage" class="warning-box" data-i18n="plan_empty">Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.</div>
+        <div id="workflowResult" class="workflow-result" role="status" aria-live="polite">Chưa có dữ liệu. Bắt đầu ở Bước 2, sau đó bấm 4a và 4b.</div>
+        <div id="formWarning" class="form-warning" hidden></div>
+        <div id="planMessage" class="warning-box">Chưa có bảng xem trước. Bấm “4a. Tạo bảng xem trước”.</div>
         <div id="progressWrap" class="hidden">
           <div id="progressText" class="small muted"></div>
           <div class="progress"><div id="progressBar"></div></div>
@@ -977,24 +979,23 @@
             <thead>
               <tr>
                 <th>#</th>
-                <th data-i18n="th_scheduled">Thời điểm</th>
-                <th data-i18n="th_data_row">Dòng dữ liệu</th>
-                <th data-i18n="th_preview">Xem trước câu trả lời</th>
-                <th data-i18n="th_status">Trạng thái</th>
-                <th data-i18n="th_google_time">Google timestamp</th>
+                <th>Dòng dữ liệu</th>
+                <th>Câu trả lời xem trước</th>
+                <th>Kiểm tra</th>
               </tr>
             </thead>
             <tbody id="planTableBody"></tbody>
           </table>
         </div>
 
-        <div id="billingHint" class="info-box" data-i18n="billing_hint">Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.</div>
+        <div id="billingHint" class="info-box">Chưa gửi phản hồi nào. Bấm 4b để kiểm tra, sau đó tải CSV ở Bước 5.</div>
         <div class="action-row">
-          <button id="downloadPlanBtn" class="btn btn-soft" type="button" disabled data-i18n="download_plan">Tải kế hoạch CSV</button>
-          <button id="submitPlanBtn" class="btn btn-secondary" type="button" disabled data-i18n="submit_plan">Gửi vào Google Form</button>
-          <button id="downloadReportBtn" class="btn btn-success" type="button" disabled data-i18n="download_report">Tải báo cáo CSV</button>
-          <button id="refreshCountBtn" class="btn btn-outline" type="button" disabled data-i18n="refresh_count">Cập nhật tổng phản hồi</button>
+          <button id="downloadPlanBtn" class="btn btn-success" type="button" disabled>5. Tải CSV theo từng câu hỏi</button>
+          <button id="submitPlanBtn" class="btn btn-secondary" type="button" disabled hidden>Gửi vào Google Form (chưa bật)</button>
+          <button id="downloadReportBtn" class="btn btn-soft" type="button" disabled hidden>Tải báo cáo gửi thật</button>
+          <button id="refreshCountBtn" class="btn btn-outline" type="button" disabled hidden>Cập nhật số phản hồi thật</button>
         </div>
+        <p class="export-help">CSV chỉ tải về máy, <strong>không cập nhật Google Sheet tự động</strong>. Muốn xem dữ liệu trong Sheets: mở Sheet → Tệp → Nhập → Tải lên, chọn một trang tính mới để phân biệt với phản hồi khảo sát thật.</p>
       </div>
 
     </section>
@@ -1321,7 +1322,7 @@
     }
 
     function updateSubmitButtonLabel() {
-      $('submitPlanBtn').textContent = $('submitPlanBtn').dataset.submissionEnabled === 'true' ? ($('scheduleMode').value === 'now' ? t('submit_plan') : t('schedule_plan')) : 'Gửi trực tiếp chưa được bật';
+      $('submitPlanBtn').textContent = $('submitPlanBtn').dataset.submissionEnabled === 'true' ? t('submit_plan') : 'Gửi Form (chưa bật)';
     }
 
 
@@ -1385,26 +1386,14 @@
     function updateRunCost() {
       if (!$('runCost')) return;
       const count = Math.max(0, Math.floor(Number($('responseCount').value || 0)));
-      $('runCost').textContent = `${count.toLocaleString('vi-VN')} dòng · không thu phí`;
+      $('runCost').textContent = `${count.toLocaleString('vi-VN')} dòng để kiểm tra`;
       updateBillingHint();
     }
 
     function updateBillingHint() {
       if (!$('billingHint')) return;
-      const need = state.plan.length || Math.max(0, Math.floor(Number($('responseCount')?.value || 0)));
-      const have = Number(state.billing?.availableCredits || 0);
-      if (!state.billing?.configured) {
-        $('billingHint').className = 'warning-box';
-        $('billingHint').textContent = state.billing?.lastError
-          ? `${t('payment_not_configured')} — ${state.billing.lastError}`
-          : t('payment_not_configured');
-      } else if (state.billing.billingEnabled !== false && need > have) {
-        $('billingHint').className = 'warning-box';
-        $('billingHint').textContent = t('insufficient_balance', { need, have });
-      } else {
-        $('billingHint').className = 'info-box';
-        $('billingHint').textContent = 'Chỉ dùng cho biểu mẫu bạn quản lý hoặc được phép kiểm thử. Kiểm tra dữ liệu trước khi gửi.';
-      }
+      $('billingHint').className='info-box';
+      $('billingHint').textContent='Kiểm tra dữ liệu không ghi vào Google Form hoặc Sheet. Sau khi đạt, bạn có thể tải CSV về máy và nhập vào một trang tính riêng để xem.';
     }
 
     async function createPaymentOrder(autoResume = false) {
@@ -1674,10 +1663,14 @@
         renderQuestions();
         $('questionEmpty').classList.add('hidden');
         $('refreshCountBtn').disabled = state.form.responseCount == null;
-        $('refreshCountBtn').title = state.form.responseCount == null ? 'Số phản hồi chỉ xem được khi đăng nhập tài khoản có quyền chỉnh sửa.' : '';
+        $('refreshCountBtn').title = state.form.responseCount == null ? 'Số phản hồi thật chỉ xem được khi đăng nhập tài khoản có quyền chỉnh sửa.' : '';
+        $('workflowResult').className = 'workflow-result';
+        $('workflowResult').textContent = `Đã nhập ${state.form.questions.length} câu hỏi. Tiếp theo: Bước 3 ghép dữ liệu, rồi bấm 4a và 4b. Chưa gửi phản hồi nào.`;
         toast(t('toast_form_imported'), 'success');
       } catch (error) {
         state.form = null;
+        $('workflowResult').className = 'workflow-result is-error';
+        $('workflowResult').textContent = `Chưa nhập được Form: ${messageOf(error)}`;
         toast(`${t('err_import_form')} ${messageOf(error)}`, 'error');
       } finally {
         setButtonLoading($('importFormBtn'), false);
@@ -1700,6 +1693,15 @@
         </div>
         ${f.limitOneResponsePerUser ? `<div class="warning-box">${escapeHtml(t('limit_one'))}: ${escapeHtml(t('yes'))}. Programmatic QA submissions may be restricted by the form settings.</div>` : ''}
       `;
+      const unusual = (f.questions || []).filter(q => ['grid','checkbox_grid'].includes(q.type) &&
+        (q.columns || []).length === 1 && /^(?:column|cột)\s*\d+$/i.test(String(q.columns[0]).trim()));
+      if (unusual.length) {
+        const titles = unusual.map(q => q.title).join('; ');
+        const text = `Cần xem lại Google Form: nhóm “${titles}” đang chỉ có lựa chọn “${unusual[0].columns[0]}”. Nếu đây là thang Likert 5 mức, hãy sửa các cột trong Form trước khi thu thập dữ liệu thật.`;
+        const box = document.createElement('div');box.className='form-warning';box.textContent=text;
+        $('formSummary').appendChild(box);
+        $('formWarning').textContent=text;$('formWarning').hidden=false;
+      } else {$('formWarning').hidden=true;$('formWarning').textContent='';}
       $('formSummary').classList.remove('hidden');
     }
 
@@ -1972,8 +1974,14 @@
     function buildPlanSafe() {
       try {
         buildPlan();
-        toast(t('toast_plan_built'), 'success');
+        $('progressWrap').classList.add('hidden');
+        $('workflowResult').className = 'workflow-result';
+        $('workflowResult').textContent = `Đã tạo bảng ${state.plan.length} dòng xem trước. Chưa kiểm tra, chưa gửi Google Form/Sheet. Tiếp theo bấm 4b. Kiểm tra dữ liệu.`;
+        $('previewSection').scrollIntoView({behavior:'smooth',block:'start'});
+        toast(`Đã tạo ${state.plan.length} dòng xem trước. Bấm 4b để kiểm tra.`, 'success');
       } catch (error) {
+        $('workflowResult').className = 'workflow-result is-error';
+        $('workflowResult').textContent = `Không tạo được bảng: ${messageOf(error)}`;
         toast(`${t('err_plan')} ${messageOf(error)}`, 'error');
       }
     }
@@ -2133,7 +2141,7 @@
       $('planMessage').classList.toggle('hidden', hasPlan);
       $('planTableWrap').classList.toggle('hidden', !hasPlan);
       $('validatePlanBtn').disabled = !hasPlan || state.sending;
-      $('downloadPlanBtn').disabled = !hasPlan;
+      $('downloadPlanBtn').disabled = !hasPlan || state.sending || !state.plan.every(row=>row.status==='valid');
       // Button is gated by Google connection and explicit owner authorization.
       // submitCurrentPlan() will retry billing and show the real server error.
       $('submitPlanBtn').disabled = !hasPlan || state.sending || $('submitPlanBtn').dataset.submissionEnabled !== 'true';
@@ -2144,14 +2152,12 @@
       let html = visibleRows.map(row => `
         <tr>
           <td>${row.index}</td>
-          <td class="nowrap">${escapeHtml(formatDateTime(row.scheduledAt))}</td>
-          <td>${row.dataRow || t('data_row_none')}</td>
+          <td>${row.dataRow || 'Dữ liệu mẫu'}</td>
           <td class="preview-cell">${escapeHtml(row.preview)}</td>
           <td>${statusChip(row.status, row.error)}</td>
-          <td class="nowrap">${escapeHtml(row.googleTimestamp ? formatDateTime(row.googleTimestamp) : '—')}</td>
         </tr>`).join('');
       if (state.plan.length > PLAN_RENDER_LIMIT) {
-        html += `<tr><td colspan="6" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng để giữ trang mượt. Toàn bộ ${state.plan.length} dòng vẫn được xử lý và có trong CSV báo cáo.</td></tr>`;
+        html += `<tr><td colspan="4" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng. Toàn bộ ${state.plan.length} dòng sẽ có trong CSV.</td></tr>`;
       }
       $('planTableBody').innerHTML = html;
     }
@@ -2187,8 +2193,14 @@
           state.plan[index].error = res.issues.join(' | ');
         });
         renderPlan();
-        if (!result.valid) throw new Error(`${result.invalid}/${result.total} invalid.`);
-        toast(t('toast_plan_valid'), 'success');
+        if (!result.valid) {
+          $('workflowResult').className='workflow-result is-error';
+          $('workflowResult').textContent=`${result.invalid}/${result.total} dòng có lỗi. Xem cột Kiểm tra bên dưới, sửa dữ liệu rồi kiểm tra lại. Chưa gửi Google Form/Sheet.`;
+          throw new Error(`${result.invalid}/${result.total} dòng chưa hợp lệ.`);
+        }
+        $('workflowResult').className = 'workflow-result is-success';
+        $('workflowResult').textContent = `Đã kiểm tra ${result.total}/${result.total} dòng hợp lệ. Chưa gửi vào Google Form hay Google Sheet. Tiếp theo: Bước 5, bấm “Tải CSV theo từng câu hỏi”.`;
+        toast(`Đã kiểm tra ${result.total}/${result.total} dòng. Chưa gửi Google Form/Sheet.`, 'success');
       } catch (error) {
         toast(`${t('err_validate')} ${messageOf(error)}`, 'error');
       } finally {
@@ -2321,7 +2333,7 @@
 
 
     function updateProgress(done, total) {
-      $('progressText').textContent = t('sending_progress', { done, total });
+      $('progressText').textContent = `Đã kiểm tra ${done}/${total} dòng · Chưa gửi Google Form/Sheet`;
       $('progressBar').style.width = `${total ? done / total * 100 : 0}%`;
     }
 
@@ -2382,19 +2394,56 @@
     }
 
     function downloadPlan(reportOnly) {
+      if (!state.plan.length) return toast('Chưa có dữ liệu để tải.', 'error');
+      if (!reportOnly) {
+        if (!state.form || !state.plan.every(row => row.status === 'valid'))
+          return toast('Hãy bấm 4b. Kiểm tra dữ liệu và sửa các dòng lỗi trước khi tải CSV.', 'error');
+        // One Google Form question, or one grid row, becomes one CSV column.
+        const columns = [];
+        const used = new Set(['STT', 'Trạng thái']);
+        function unique(label) {
+          let name = label || 'Câu hỏi', number = 2;
+          while (used.has(name)) name = label + ' (' + number++ + ')';
+          used.add(name);
+          return name;
+        }
+        for (const q of state.form.questions) {
+          if (!q.supported) continue;
+          if (['grid', 'checkbox_grid'].includes(q.type))
+            (q.rows || []).forEach((label, index) => columns.push({
+              key: unique(q.title + ' / ' + label),
+              questionId: q.id, rowIndex: index
+            }));
+          else columns.push({key: unique(q.title), questionId: q.id, rowIndex: null});
+        }
+        const rows = state.plan.map(row => {
+          const result = {'STT': row.index, 'Trạng thái': 'Hợp lệ (chưa gửi)'};
+          for (const col of columns) {
+            const original = row.answers?.[col.questionId];
+            const value = col.rowIndex === null ? original :
+              (Array.isArray(original) ? original[col.rowIndex] : '');
+            result[col.key] = Array.isArray(value) ? value.join('; ') : (value ?? '');
+          }
+          return result;
+        });
+        downloadBlob(objectsToCsv(rows),
+          'pandastudy-du-lieu-' + rows.length + '-dong-chua-gui.csv',
+          'text/csv;charset=utf-8');
+        $('workflowResult').className = 'workflow-result is-success';
+        $('workflowResult').textContent =
+          'Đã tải ' + rows.length + ' dòng CSV theo từng câu hỏi. File lưu trên máy, chưa gửi Google Form hoặc ghi vào Sheet. Hãy nhập CSV vào trang tính kiểm thử riêng.';
+        toast('Đã tải ' + rows.length + ' dòng CSV. Không có phản hồi nào được gửi vào Google Form.', 'success');
+        return;
+      }
       const rows = state.plan.map(row => ({
-        '#': row.index,
-        scheduled_at: row.scheduledAt,
-        data_row: row.dataRow || '',
-        answer_preview: row.preview,
-        status: row.status,
-        google_timestamp: row.googleTimestamp,
-        response_id: row.responseId,
-        edit_response_url: row.editResponseUrl,
+        '#': row.index, scheduled_at: row.scheduledAt,
+        data_row: row.dataRow || '', answer_preview: row.preview,
+        status: row.status, google_timestamp: row.googleTimestamp,
+        response_id: row.responseId, edit_response_url: row.editResponseUrl,
         error: row.error
       }));
-      const csv = objectsToCsv(rows);
-      downloadBlob(csv, reportOnly ? 'autofillform-report.csv' : 'autofillform-plan.csv', 'text/csv;charset=utf-8');
+      downloadBlob(objectsToCsv(rows), 'pandastudy-bao-cao-gui-thuc.csv',
+        'text/csv;charset=utf-8');
     }
 
     function invalidatePlan() {
@@ -2406,7 +2455,8 @@
         ready:['status_ready',''], valid:['status_valid','success'], invalid:['status_invalid','danger'], sending:['status_sending','warning'], sent:['status_sent','success'], error:['status_error','danger'], queued:['status_queued','warning'], canceled:['status_canceled','danger'], completed:['status_completed','success'], completed_with_errors:['status_completed_with_errors','warning'], scheduled:['status_scheduled','warning'], running:['status_running','warning']
       };
       const [key, cls] = map[status] || [status,''];
-      return `<span class="status-chip ${cls}" title="${escapeAttr(error)}">${escapeHtml(t(key))}</span>`;
+      const caption=status==='ready'?'Chưa kiểm tra':status==='valid'?'Hợp lệ · chưa gửi':t(key);
+      return `<span class="status-chip ${cls}" title="${escapeAttr(error)}">${escapeHtml(caption)}</span>`;
     }
 
     async function serverCall(name, ...args) {
@@ -2429,16 +2479,20 @@
           st.textContent = 'Nhập Google Form công khai';
           btn.textContent = 'Nhập Google Form'; btn.href = '#app';
           $('submitPlanBtn').dataset.submissionEnabled = 'false';
+          $('authorizationRow').hidden=true;
         } else if (data.signedIn) {
           st.textContent = data.email || 'Đã kết nối Google'; btn.textContent = 'Đã kết nối ✓';btn.href = '#app';
           state.billing = {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:data.email};
           $('submitPlanBtn').dataset.submissionEnabled=String(!!data.submissionEnabled);
+          $('authorizationRow').hidden=!data.submissionEnabled;
+          $('submitPlanBtn').hidden=!data.submissionEnabled;
+          $('downloadReportBtn').hidden=!data.submissionEnabled;
           updateSubmitButtonLabel();
           if (!data.submissionEnabled) {
             $('submitPlanBtn').textContent='Gửi trực tiếp chưa được bật';
             $('submitPlanBtn').disabled=true;
           }
-        } else {st.textContent='Có thể nhập form công khai';btn.textContent='Kết nối Google';btn.href='/api/auth/start';$('submitPlanBtn').dataset.submissionEnabled='false';}
+        } else {st.textContent='Có thể nhập form công khai';btn.textContent='Kết nối Google';btn.href='/api/auth/start';$('submitPlanBtn').dataset.submissionEnabled='false';$('authorizationRow').hidden=true;}
         renderPlan();
       } catch(error) { $('googleStatus').textContent = 'Dán liên kết để nhập form'; }
     }
@@ -2508,7 +2562,7 @@
         .map(line => line.map(csvCell).join(','))
         .join('\r\n');
     }
-    function csvCell(value) { const s = String(value ?? ''); return `"${s.replaceAll('"','""')}"`; }
+    function csvCell(value) { const raw = String(value ?? ''); const s = /^\s*[=+@-]/.test(raw) ? "'" + raw : raw; return '"' + s.replaceAll('"','""') + '"'; }
     function downloadBlob(content, name, type) {
       const url = URL.createObjectURL(new Blob([content], { type }));
       const a = document.createElement('a'); a.href = url; a.download = name; a.click();
