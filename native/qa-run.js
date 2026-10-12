@@ -4,6 +4,7 @@
 const $=id=>document.getElementById(id);
 const wait=ms=>new Promise(done=>setTimeout(done,ms));
 let state={working:false,attempted:new Set(),history:[],before:null,after:null,source:'',runKey:'',stopped:false};
+let permissionVersion=0,permissionTimer=null;
 
 function node(tag,klass,label){
  const el=document.createElement(tag);
@@ -68,6 +69,7 @@ function rememberAttempt(index){
   JSON.stringify({attempted:Array.from(state.attempted),at:new Date().toISOString()}));}catch{}
 }
 async function permission(){
+ const version=++permissionVersion;
  const bridge=window.PandaStudyQA;
  const q=bridge?'?formUrl='+encodeURIComponent(bridge.getUrl()):'';
  let data;
@@ -75,9 +77,10 @@ async function permission(){
   const resp=await fetch('/api/qa-status'+q,{credentials:'same-origin',cache:'no-store'});
   data=await resp.json();
  }catch{data={canSend:false,reasons:['Không tải được trạng thái kết nối Google.']};}
+ if(version!==permissionVersion)return false;
  $('qaConfigStatus').textContent=data.canSend
-  ?'Đã xác minh quản trị và Form kiểm thử. Có thể gửi sau khi hoàn tất 4a, 4b và xác nhận.'
-  :'Chưa bật gửi thật: '+(data.reasons||[]).join(' ');
+  ?'Đã xác minh tài khoản Google có quyền truy cập Form. Hoàn tất 4a, 4b và xác nhận trước khi gửi.'
+  :'Chưa sẵn sàng gửi: '+(data.reasons||[]).join(' ');
  $('qaRunStartOne').dataset.allowed=String(!!data.canSend);
  $('qaRunStartAll').dataset.allowed=String(!!data.canSend);
  // Buttons show state but sending also checks permission at click time.
@@ -85,7 +88,7 @@ async function permission(){
  $('qaRunStartAll').disabled=!data.canSend;
  if(!data.configured)$('qaConnectBtn').hidden=true;
  else $('qaConnectBtn').hidden=!!data.signedIn;
- if(state.stopped)updateCounts();
+ updateCounts();
  return !!data.canSend;
 }
 async function verify(isInitial=false){
@@ -121,7 +124,7 @@ async function run(maxRows){
   return status('Còn dòng chưa kiểm tra. Bấm 4b trước khi gửi.',true);
  if(state.stopped)return status('Đã dừng vì có lỗi hoặc kết quả chưa rõ. Kiểm tra số phản hồi trước.',true);
  const allowed=await permission();
- if(!allowed)return status('Chưa đủ cấu hình hoặc quyền quản trị để gửi.',true);
+ if(!allowed)return status('Chưa đăng nhập hoặc tài khoản Google không truy cập được Form này. Xem thông báo quyền ở bước 6.',true);
  if(state.history.length===0){state.attempted=new Set();recoverAttempts();}
  const unsent=rows.filter(r=>r.status==='valid'&&!state.attempted.has(r.index));
  if(!unsent.length)return status('Không có dòng hợp lệ chưa gửi; tránh gửi trùng.',true);
@@ -235,7 +238,10 @@ function init(){
   catch(e){status('Không đọc được tổng: '+e.message,true);}
  });
  $('qaRunExport').addEventListener('click',download);
- $('formUrl').addEventListener('change',()=>{state.before=null;state.after=null;state.history=[];state.attempted.clear();state.stopped=false;permission();updateCounts();});
+ const refreshForm=()=>{state.before=null;state.after=null;state.history=[];state.attempted.clear();state.stopped=false;clearTimeout(permissionTimer);permissionTimer=setTimeout(permission,350);updateCounts();};
+ $('formUrl').addEventListener('input',refreshForm);
+ $('formUrl').addEventListener('change',()=>{clearTimeout(permissionTimer);permission();});
+ $('importFormBtn')?.addEventListener('click',()=>{clearTimeout(permissionTimer);permissionTimer=setTimeout(permission,500);});
  permission();updateCounts();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
