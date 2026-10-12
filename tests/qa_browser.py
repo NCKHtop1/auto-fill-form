@@ -89,6 +89,7 @@ try:
     assert len(submitted)==1
     page.locator('#qaRunStartAll').click()
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Trang Google báo nhận: 2')",timeout=15000)
+    page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Tăng: 2')",timeout=15000)
     assert len(submitted)==2
     assert 'Tăng: 2' in page.locator('#qaRunCounters').inner_text()
     assert 'Đối chiếu tổng khớp' in page.locator('#qaRunMessage').inner_text()
