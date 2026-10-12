@@ -6,6 +6,7 @@ from threading import Thread
 import functools
 import socket
 import json
+import csv
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent / "native"
@@ -51,9 +52,11 @@ try:
             "supportedCount": 2, "unsupportedCount": 0,
             "questions": sample_questions
         }
+        bridge_operations = []
         def mock_bridge(route):
             request = route.request.post_data_json
             name = request.get("name")
+            bridge_operations.append(name)
             if name == "importOwnedForm":
                 result = sample_form
             elif name == "validatePlan":
@@ -79,17 +82,51 @@ try:
         page.locator("#questionList .question-card").first.wait_for(timeout=10000)
         assert page.locator("#questionList .question-card").count() == 2
         assert "Google Form thử nghiệm" in page.locator("#formSummary").inner_text()
+        assert page.locator(".steps-strip a").count() == 5
+        assert page.locator("#buildPlanBtn").inner_text().startswith("4a.")
+        assert page.locator("#validatePlanBtn").inner_text().startswith("4b.")
+        assert page.locator("#downloadPlanBtn").is_disabled()
         assert page.locator("#refreshCountBtn").is_disabled()
         assert "Chưa cấu hình Google" not in page.locator("#googleStatus").inner_text()
         for count in (50, 100):
             page.locator("#responseCount").fill(str(count))
             page.locator("#buildPlanBtn").click()
             assert page.locator("#planTableBody tr").count() == count
+            assert page.locator("#downloadPlanBtn").is_disabled()
+            assert "Chưa kiểm tra" in page.locator("#workflowResult").inner_text()
             page.locator("#validatePlanBtn").click()
             page.locator("#planTableBody tr .status-chip.success").first.wait_for(timeout=10000)
             assert page.locator("#planTableBody tr .status-chip.success").count() == count
+            assert "Chưa gửi" in page.locator("#workflowResult").inner_text()
+            assert page.locator("#downloadPlanBtn").is_enabled()
+            assert "Đã kiểm tra" in page.locator("#progressText").inner_text()
+            with page.expect_download(timeout=12000) as download_event:
+                page.locator("#downloadPlanBtn").click()
+            csv_download = download_event.value
+            assert "chua-gui" in csv_download.suggested_filename
+            with open(csv_download.path(), encoding="utf-8-sig", newline="") as f:
+                csv_rows = list(csv.reader(f))
+            assert len(csv_rows) == count + 1, (count, len(csv_rows))
+            assert len(csv_rows[0]) == 5, csv_rows[0]
+            assert csv_rows[0][:2] == ["STT", "Trạng thái"]
+            assert csv_rows[1][2] in ("Nam", "Nữ")
+            assert all(x[1] == "Hợp lệ (chưa gửi)" for x in csv_rows[1:])
+            assert "Không có phản hồi" not in page.locator("#workflowResult").inner_text() or "chưa gửi" in page.locator("#workflowResult").inner_text().lower()
+        assert "submitOneResponse" not in bridge_operations
         assert page.locator("#submitPlanBtn").is_disabled()
+        assert page.locator("#submitPlanBtn").is_hidden()
 
+        sample_form["questions"].append({
+            "id": "103", "index": 2, "title": "Ý định mua lại",
+            "helpText": "", "required": True, "supported": True,
+            "type": "grid", "options": ["Column 1"],
+            "rows": ["Câu cần thang 5 mức"], "columns": ["Column 1"],
+            "entryIds": ["903"]
+        })
+        sample_form["supportedCount"] = 3
+        page.locator("#importFormBtn").click()
+        page.locator("#formWarning").wait_for(state="visible", timeout=10000)
+        assert "Column 1" in page.locator("#formWarning").inner_text()
         page.locator("#blogGrid article").first.wait_for(timeout=15000)
         assert page.title() == "PandaStudy", page.title()
         assert page.locator("#blogGrid article").count() == 5
