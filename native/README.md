@@ -1,41 +1,56 @@
-# PandaStudy — Bản Vercel (không dùng Apps Script)
+# PandaStudy native Vercel application
 
-Trang PandaStudy được chuyển từ HTML cũ sang Vercel. Phần quản lý file, ghép cột, tạo dữ liệu mẫu, lập kế hoạch, xem lỗi và tải báo cáo CSV vẫn chạy trên trình duyệt. Backend là các Vercel Functions Node.js.
+Production: https://auto-fill-form-liard.vercel.app
 
-## Chạy và kiểm thử
+## Working features
 
-- `npm test`: kiểm tra ghép cột, câu hỏi lựa chọn, lưới và kế hoạch 50/100/500 dòng.
-- `npm run check`: kiểm tra cú pháp backend.
-- Đưa thư mục này lên Vercel với `Root Directory` là `native` nếu nằm trong kho GitHub `auto-fill-form`; không cần lệnh build.
+- Import public Google Forms by the /edit link without Apps Script.
+- Preview and validate 50, 100 or another number of rows.
+- Download question-by-question CSV. PREVIEW CSV DOES NOT SEND RESPONSES.
+- Read a public Google Sheet's row count from a user-supplied Sheet link.
+- Authorized QA step 6: send 1 test row into a duplicate Google Form, then the remaining validated rows. Stop on any ambiguous response, compare the count before/after and export a submission report.
+- Read the real response count via official Google Forms API after administrator sign-in. The Google Forms API does NOT provide a create-response method.
 
-## Đăng nhập Google
+## Configure Google OAuth in Vercel
 
-Tạo OAuth 2.0 Web Application tại Google Cloud Console, bật **Google Forms API** và thêm redirect URI:
+In Google Cloud Console, enable the Google Forms API, configure the OAuth consent screen, and create an OAuth Client ID of type Web application.
 
-`https://TEN-TRANG.vercel.app/api/auth/callback`
+Authorized JavaScript origin: https://auto-fill-form-liard.vercel.app
 
-Đặt trong Vercel → Project → Settings → Environment Variables:
+Authorized redirect URI: https://auto-fill-form-liard.vercel.app/api/auth/callback
 
-- `GOOGLE_CLIENT_ID`: OAuth Client ID
-- `GOOGLE_CLIENT_SECRET`: OAuth Client Secret
-- `APP_SESSION_SECRET`: chuỗi ngẫu nhiên từ 32 ký tự trở lên
-- `PUBLIC_SITE_URL`: địa chỉ website Vercel chính thức, không có dấu `/` cuối
-- `ENABLE_QA_SUBMISSIONS`: mặc định `false`; chỉ bật `true` sau khi thử bằng **biểu mẫu kiểm thử do bạn quản lý**
+Vercel project: ngochailuong/auto-fill-form. Root Directory: native.
 
-Đăng nhập có yêu cầu quyền đọc cấu trúc và đọc phản hồi Google Forms. Ứng dụng kiểm tra quyền truy cập bằng Google API, chỉ nhận link dạng `docs.google.com/forms/d/.../edit`.
+Set these Vercel environment variables for Production (and Preview as needed):
 
-## Gửi phản hồi và giới hạn
+- GOOGLE_CLIENT_ID: OAuth web client ID.
+- GOOGLE_CLIENT_SECRET: OAuth client secret.
+- APP_SESSION_SECRET: a random secret with at least 32 characters.
+- PUBLIC_SITE_URL: https://auto-fill-form-liard.vercel.app
+- PANDASTUDY_ADMIN_EMAILS: comma-separated administrator Google email addresses.
+- PANDASTUDY_TEST_FORM_IDS: comma-separated IDs of COPIES of forms made for testing.
+- ENABLE_QA_SUBMISSIONS: true only after the copy is ready and restrictions are correct.
 
-Google Forms API **không có endpoint chính thức tạo phản hồi**. Do đó chức năng “Gửi trực tiếp” trong bản Vercel dùng đường xử lý công khai `formResponse`, **không phải Google Forms API chính thức**. Nó có thể ngừng hoạt động hoặc thất bại với các biểu mẫu bắt đăng nhập, thu email được xác minh, tải file, phân nhánh nhiều trang hoặc giới hạn 1 phản hồi/người. Theo mặc định `ENABLE_QA_SUBMISSIONS=false` để không gửi thật khi chưa kiểm thử. Không có cách bảo đảm 100% thành công chỉ từ mã nguồn.
+Enter secrets directly in Vercel Settings > Environment Variables. Do not paste secrets in chat or GitHub. Redeploy after updating environment variables.
 
-Nếu được bật, phần gửi ngay chia kế hoạch thành lô 25, mỗi dòng được gọi riêng; tự hiển thị số thành công/thất bại. Giữ trang web mở cho đến khi kết thúc. Không gửi lại dòng lỗi mà chưa kiểm tra trên Google Form vì có thể gây trùng. Giới hạn nhập trên giao diện là **100.000 dòng mỗi kế hoạch**, không còn 50 dòng; kết quả thực tế còn phụ thuộc vào Google và thời gian chạy.
+## Workflow
 
-## Chưa chuyển
+1. Upload Excel/CSV with data you are authorized to handle, or use a duplicate Form with synthetic QA data.
+2. Import the Google Form link, map its questions to data.
+3. Build the plan (4a), validate the data (4b).
+4. Step 5 exports PREVIEW CSV only, not a Google submission.
+5. Step 6 is admin-only and test-form-only: provide a link to its response Sheet, confirm permission, send 1 test row, inspect the result, send the remaining rows, and download the submission report.
 
-- **Thanh toán, ví và đối soát ngân hàng**: Mã nguồn `ManualBillingService` chưa được cung cấp, nên giao diện thanh toán ẩn, không dùng số dư hoặc đơn giá cũ. Không đưa secret từ `Code.gs` cũ lên GitHub. Cần thay secret cũ đã chia sẻ nếu vẫn đang hoạt động.
-- **Chạy nền theo lịch**: cần hàng đợi và kho lưu trữ bền vững trên Vercel; chưa được bật. Chế độ gửi ngay vẫn hỗ trợ >50 dòng với tab mở.
-- Form cần đăng nhập, CAPTCHA hoặc hạn chế quyền nhận phản hồi không được tự động vượt qua.
+Results distinguish page-confirmed, failed and unverified. Google Forms response creation via the public formResponse URL is unofficial and may change. There is no official Forms API response.create endpoint. Never assume a 200 HTTP status implies a response was recorded. There are no automatic retries after ambiguous results.
 
-## Ghi chú bảo mật
+A difference in the public Sheet's count is evidence of a change to that Sheet, NOT proof that a particular submitted response is included if other users can submit concurrently.
 
-Cookie phiên Google được mã hóa bằng AES-GCM, `HttpOnly`, `SameSite=Lax`. Không đưa Google OAuth secret, session secret hay thông tin ngân hàng vào GitHub. `ENABLE_QA_SUBMISSIONS` phải do người quản trị bật và chỉ dùng để QA biểu mẫu được phép kiểm thử.
+Do not inject synthetic responses into a live study. Only test with a Form COPY, preserving genuine research responses. The user-provided live study Form and Sheet may be used for READ-ONLY verification.
+
+## Quality checks
+
+From the native directory run: npm test ; npm run check
+
+CI browser tests include tests/qa_browser.py (mocked network, no real Google writes).
+
+No Apps Script runtime. FinQuery is never modified.
