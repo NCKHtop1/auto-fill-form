@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#111c2b">
+  <meta name="description" content="PandaStudy - nhập CSV/XLSX, kiểm tra lỗi chi tiết và tạo liên kết Google Forms đã điền sẵn.">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
+  <title>PandaStudy — Auto Fill Form</title>
+  <link rel="icon" type="image/svg+xml" href="/panda.svg">
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <div class="workspace">
+    <aside class="sidebar">
+      <a class="brand" href="#top" aria-label="PandaStudy - Trang chủ">
+        <img src="/panda.svg" alt="Biểu tượng gấu trúc PandaStudy" width="48" height="48">
+        <span><strong>Panda<span class="brand-accent">Study</span></strong><small>AUTO FILL WORKSPACE</small></span>
+      </a>
+      <div class="sidebar-label">KHÔNG GIAN LÀM VIỆC</div>
+      <nav class="side-nav" aria-label="Điều hướng">
+        <a class="active" href="#overview"><span class="nav-icon">◈</span> Tổng quan</a>
+        <a href="#form-config"><span class="nav-icon">▦</span> Cấu hình biểu mẫu</a>
+        <a href="#data-import"><span class="nav-icon">⇧</span> Nhập dữ liệu</a>
+        <a href="#quality"><span class="nav-icon">✓</span> Kiểm tra dữ liệu</a>
+        <a href="#export"><span class="nav-icon">↗</span> Xuất kết quả</a>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="sidebar-tip"><span>✦</span><strong>Dữ liệu của bạn, quyền kiểm soát của bạn.</strong><p>Excel/CSV được xử lý ngay trong trình duyệt, không gửi lên máy chủ.</p></div>
+        <a class="legacy-link" href="https://script.google.com/macros/s/AKfycbzhDxCiSjqj0ZomIbpKdHBLUCuCdVz_mATzzvbQ3ncD3k-aBM5CsLh9lebgk__mplM/exec" target="_blank" rel="noopener noreferrer">Mở Apps Script gốc ↗</a>
+      </div>
+    </aside>
+    <div class="main-area" id="top">
+      <header class="topbar"><div class="mobile-brand"><img src="/panda.svg" alt="" width="31" height="31"><strong>PandaStudy</strong></div><div class="crumb">Ứng dụng / <b>Auto Fill Form</b></div><div class="top-actions"><span class="live-dot"></span><span class="secure-label">Chạy trên trình duyệt</span><button class="plain-btn" id="resetBtn" type="button">Đặt lại</button></div></header>
+      <main class="content">
+        <section id="overview" class="overview">
+          <div class="hero-content"><span class="eyebrow">✦ SMART FORM ASSISTANT</span><h1>Điền form thông minh.<br><em>Giảm lỗi, tiết kiệm thời gian.</em></h1><p>Nhập danh sách từ Excel hoặc CSV, tự động ghép cột và kiểm tra từng dòng trước khi tạo liên kết Google Forms điền sẵn.</p><div class="hero-tags"><span>✓ Excel .xlsx</span><span>✓ CSV / TSV</span><span>✓ Lỗi rõ ràng, có cách sửa</span></div></div>
+          <div class="hero-art" aria-hidden="true"><div class="hero-orbit orbit-1"></div><div class="hero-orbit orbit-2"></div><img src="/panda.svg" alt=""><div class="floating-icon star">✦</div><div class="floating-icon check">✓</div></div>
+        </section>
+        <div class="metrics" aria-live="polite">
+          <div class="metric"><span>TRƯỜNG DỮ LIỆU</span><strong id="metricFields">0</strong><small>Đã cấu hình</small></div>
+          <div class="metric"><span>DÒNG IMPORT</span><strong id="metricRows">0</strong><small>Được đọc từ file</small></div>
+          <div class="metric"><span>LỖI CẦN SỬA</span><strong id="metricErrors">0</strong><small id="metricErrorDesc">Chưa kiểm tra</small></div>
+          <div class="metric"><span>SẴN SÀNG</span><strong id="metricReady">0</strong><small>Link có thể xuất</small></div>
+        </div>
+        <div class="steps"><span><b>01</b> Kết nối form</span><span class="steps-line"></span><span><b>02</b> Nhập dữ liệu</span><span class="steps-line"></span><span><b>03</b> Rà soát</span><span class="steps-line"></span><span><b>04</b> Xuất liên kết</span></div>
+        <section id="form-config" class="panel">
+          <div class="panel-heading"><span class="step-num">01</span><div><h2>Kết nối Google Forms</h2><p>Dán liên kết điền sẵn để hệ thống lấy các mã câu hỏi <code>entry.123...</code>.</p></div><span class="section-tag">CẤU HÌNH</span></div>
+          <label for="formUrl" class="label">Đường dẫn Google Forms</label>
+          <div class="url-input-group"><input id="formUrl" type="url" spellcheck="false" placeholder="https://docs.google.com/forms/d/e/.../viewform?entry.123=..." autocomplete="off"><button id="inspectUrl" type="button" class="button primary">Phân tích link</button></div>
+          <p id="formStatus" class="helper" role="status">Chưa kết nối biểu mẫu. Bạn có thể thêm mã câu hỏi thủ công bên dưới.</p>
+          <div class="subsection-title"><h3>Danh sách trường điền</h3><div class="row-actions"><button id="addField" class="button secondary small" type="button">＋ Thêm câu hỏi</button><button id="templateButton" class="button ghost small" type="button">↓ Tải CSV mẫu</button></div></div>
+          <div id="fieldList" class="field-list" aria-live="polite"><div class="placeholder">Chưa có trường. Dán link điền sẵn hoặc bấm “Thêm câu hỏi”.</div></div>
+          <div class="hint"><b>Mẹo:</b> Trong Google Forms, chọn <strong>⋮ → Nhận đường liên kết điền trước</strong>, thử nhập một câu trả lời rồi sao chép liên kết. Nếu dán link <code>forms.gle</code> rút gọn, hãy mở link và sao chép địa chỉ đầy đủ.</div>
+        </section>
+        <section id="data-import" class="panel">
+          <div class="panel-heading"><span class="step-num">02</span><div><h2>Nhập danh sách dữ liệu</h2><p>Hỗ trợ <strong>.xlsx, .csv, .tsv</strong>, tối đa 5 MB và 2.000 dòng dữ liệu.</p></div><span class="section-tag">DỮ LIỆU</span></div>
+          <div class="upload-area" id="dropZone" tabindex="0" role="button" aria-label="Nhấn để chọn file hoặc kéo thả file CSV, XLSX, TSV">
+            <div class="upload-symbol">⇧</div><strong>Thả file vào đây hoặc chọn từ máy tính</strong><p>Excel .xlsx · CSV UTF-8 · TSV</p><button type="button" class="button primary" id="chooseFile">Chọn file</button><input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden>
+          </div>
+          <div class="file-line" id="fileLine" hidden><div><strong id="fileName"></strong><span id="fileMeta"></span></div><button id="clearFile" type="button" class="button ghost small">Xóa file</button></div>
+          <p class="helper" id="fileStatus" role="status">File chỉ được đọc trên thiết bị của bạn; không tải lên bất kỳ server nào.</p>
+          <div id="mapPanel" hidden><div class="subsection-title"><h3>Ghép cột với biểu mẫu</h3><span class="muted-small">Tự gợi ý theo tên cột</span></div><div id="mappingList" class="mapping-list"></div></div>
+          <div id="dataPreviewWrap" hidden><div class="subsection-title"><h3>Xem trước dữ liệu</h3><span id="previewCount" class="pill">0 dòng</span></div><div class="table-scroll"><table id="dataPreview"></table></div><p class="helper">Hiển thị 8 dòng đầu để kiểm tra nhanh. Toàn bộ các dòng được dùng khi xuất.</p></div>
+        </section>
+        <section id="quality" class="panel">
+          <div class="panel-heading"><span class="step-num">03</span><div><h2>Kiểm tra và hướng dẫn sửa lỗi</h2><p>Mỗi thông báo chỉ rõ <strong>nguyên nhân · vị trí · cách sửa</strong>.</p></div><button type="button" id="validateBtn" class="button secondary">↻ Kiểm tra lại</button></div>
+          <div id="qualitySummary" class="quality-summary neutral"><span class="quality-icon">ℹ</span><div><strong>Chưa có dữ liệu để kiểm tra</strong><p>Hãy nhập link Google Forms và tải file dữ liệu.</p></div></div>
+          <div class="issue-toolbar"><strong id="issueTitle">Chi tiết kiểm tra</strong><div><button type="button" id="showAllIssues" class="filter active">Tất cả</button><button type="button" id="showErrors" class="filter">Lỗi</button><button type="button" id="showWarnings" class="filter">Lưu ý</button></div></div>
+          <div id="issues" class="issues"><div class="placeholder small-placeholder">Lỗi và hướng dẫn sửa sẽ hiển thị ở đây.</div></div>
+          <div class="row-actions issue-footer"><button id="downloadIssues" type="button" class="button ghost small" disabled>↓ Tải báo cáo lỗi CSV</button><span class="muted-small">Chỉ xuất dữ liệu khi không còn lỗi nghiêm trọng.</span></div>
+        </section>
+        <section id="export" class="panel">
+          <div class="panel-heading"><span class="step-num">04</span><div><h2>Tạo liên kết điền sẵn</h2><p>Mở từng form để kiểm tra hoặc tải CSV chứa liên kết cho tất cả các dòng hợp lệ.</p></div><span class="section-tag">KẾT QUẢ</span></div>
+          <div class="export-bar"><div><small>ĐÃ SẴN SÀNG</small><strong><span id="exportCount">0</span> liên kết</strong><p>Google Forms vẫn là nơi người dùng kiểm tra và nhấn Gửi.</p></div><button id="downloadLinks" type="button" class="button primary" disabled>↓ Xuất file liên kết CSV</button></div>
+          <div id="linksTableWrap" hidden class="table-scroll"><table id="linksTable"></table></div>
+          <div id="linksEmpty" class="placeholder">Chưa có liên kết. Hoàn thành các bước ở trên và kiểm tra lỗi trước khi xuất.</div>
+          <div class="important"><b>Quan trọng:</b> PandaStudy tạo <strong>link đã điền sẵn</strong>, không tự bấm Gửi hay vượt yêu cầu đăng nhập, CAPTCHA hoặc quyền truy cập của Google Forms. Đây là công cụ riêng trên Vercel; mã xử lý Apps Script gốc chưa được sao chép.</div>
+        </section>
+        <footer class="footer"><span>🐼 PandaStudy · Auto Fill Form</span><span>Hoạt động độc lập với FinQuery · Không lưu file lên server</span></footer>
+      </main>
+    </div>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
