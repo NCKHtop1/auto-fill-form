@@ -7,7 +7,7 @@
   <title>PandaStudy — Nhập dữ liệu cho Google Form</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <style>
     :root {
@@ -34,7 +34,7 @@
       margin: 0;
       background: var(--bg);
       color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.55;
     }
 
@@ -185,7 +185,7 @@
     .hero h1 {
       margin: 22px auto 16px;
       max-width: 930px;
-      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-family: 'Be Vietnam Pro', ui-sans-serif, system-ui, sans-serif;
       font-weight: 900;
       text-transform: uppercase;
       font-size: clamp(2.35rem, 5.5vw, 4.55rem);
@@ -707,6 +707,13 @@
  @media(max-width:920px){.nav-links{display:none}.hero-inner{grid-template-columns:1fr 1fr}.hero h1{font-size:2rem}.steps-strip{grid-template-columns:repeat(2,1fr);margin:0 12px}.hero-art{height:300px}.google-status{display:none}}
  @media(max-width:650px){.nav-wrap{height:63px}.hero-inner{grid-template-columns:1fr}.hero-copy{padding:35px 23px 12px}.hero h1{font-size:2.3rem}.hero-art{height:210px}.hero-points{gap:9px}.steps-strip{grid-template-columns:repeat(2,1fr);padding:5px}.steps-strip a{padding:9px;gap:7px}.steps-strip strong{font-size:.73rem}.steps-strip small{font-size:.64rem}.steps-strip a>b{width:25px;height:25px}.blog-grid{grid-template-columns:repeat(2,1fr)}.blog-grid article:last-child{display:none}.blog-thumb{height:85px}.hero-buttons .btn{min-width:0}.nav-actions .btn{font-size:.75rem}.brand{font-size:1.13rem}}
 </style>
+<style id="pandastudy-typography">
+  body, button, input, select, textarea { font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif; }
+  body { font-size: 15px; line-height: 1.65; }
+  .brand, .hero h1, .workspace-head h2, .section-heading h2, .blog-head h2 { font-weight: 700; letter-spacing: -.032em; }
+  .hero h1 { line-height: 1.2; }
+  .nav-links a, .btn, .hero .pill, .step-title h3, .blog-grid h3, .steps-strip strong { font-weight: 600; }
+</style>
 </head>
 <body>
   <header class="topbar" id="top"><div class="nav-wrap">
@@ -720,7 +727,7 @@
  <h1>Tạo dữ liệu cho<br><strong>Google Form</strong><br>từ Excel hoặc CSV</h1>
  <p>Tải file lên, ghép cột với câu hỏi, kiểm tra dữ liệu rồi xuất kết quả. Bạn cũng có thể tạo dữ liệu mẫu để kiểm thử form.</p>
  <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay ↗</a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
- <div class="hero-points"><span>✓ Nhập Excel / CSV</span><span>✓ Kiểm tra dữ liệu</span><span>✓ Chọn số dòng tùy ý</span></div></div>
+</div>
  <div class="hero-art" role="img" aria-label="Gấu trúc PandaStudy, bảng Excel và Google Form"><img src="/assets/hero.png" alt="PandaStudy" loading="eager"></div></div></section>
  <div class="steps-strip"><a href="#dropZone"><b>1</b><span><strong>Nhập dữ liệu</strong><small>Excel, CSV hoặc JSON</small></span></a><a href="#app"><b>2</b><span><strong>Thiết lập form</strong><small>Ghép cột với câu hỏi</small></span></a><a href="#previewSection"><b>3</b><span><strong>Kiểm tra &amp; xuất</strong><small>Xem trước từng dòng</small></span></a><a href="#how"><b>4</b><span><strong>Hoàn thành</strong><small>Tải kết quả</small></span></a></div>
 
@@ -731,7 +738,7 @@
           <h2 data-i18n="workspace_title">Công cụ nhập dữ liệu</h2>
           <p data-i18n="workspace_subtitle">Chọn file và Google Form để bắt đầu.</p>
         </div>
-        <span class="status-chip success">Không dùng Apps Script</span>
+        
       </div>
 
 
@@ -797,7 +804,7 @@
           <input id="dataFile" type="file" accept=".xlsx,.xls,.csv,.json">
           <div>
             <strong data-i18n="drop_title">Chọn hoặc kéo tệp vào đây</strong>
-            <div class="muted small" data-i18n="drop_desc">Excel / CSV / JSON — đọc ngay trên trình duyệt</div>
+            <div class="muted small" data-i18n="drop_desc">Excel, CSV hoặc JSON</div>
           </div>
         </label>
         <div id="dataSummary" class="data-summary hidden"></div>
@@ -1090,12 +1097,12 @@
       vi: {
         nav_wallet:'Nạp tiền', nav_features:'Tính năng', nav_how:'Cách hoạt động', wallet_title:'Nạp tiền vào tài khoản', wallet_balance_label:'Số dư hiện tại:', wallet_account:'Tài khoản:', payment_info_title:'Thông tin chuyển khoản', bank_name:'Ngân hàng', account_number:'Số tài khoản', account_name:'Tên tài khoản', payment_amount:'Số tiền cần chuyển', transfer_content:'Nội dung chuyển tiền', payment_request_code:'Mã yêu cầu', qr_placeholder:'Mã QR sẽ xuất hiện sau khi bạn tạo yêu cầu nạp tiền.', qr_fallback_note:'Đang dùng QR dự phòng. Hãy nhập đúng số tiền và nội dung chuyển khoản hiển thị phía trên.', available_balance:'Số dư có thể dùng', refresh_wallet:'Làm mới', topup_quantity:'Số phiếu cần nạp', unit_price:'Đơn giá mỗi phiếu', total_payment:'TỔNG CỘNG', payment_auto_note:'Sau khi bạn chuyển khoản, quản trị viên sẽ kiểm tra ngân hàng và xác nhận. Trang này tự cập nhật số dư.', create_payment:'Tạo yêu cầu nạp tiền', check_payment:'Kiểm tra trạng thái', copy_payment:'Sao chép thông tin', open_payment:'Mở mã QR lớn', payment_note:'Không chuyển tiền khi chưa tạo yêu cầu. Hãy chuyển đúng số tiền và đúng nội dung. Giữ trang này mở để hệ thống tự tiếp tục sau khi được xác nhận.', payment_waiting:'Đã gửi yêu cầu. Đang chờ quản trị viên kiểm tra ngân hàng và xác nhận.', payment_paid:'Quản trị viên đã xác nhận. Số dư đã được cập nhật.', payment_cancelled:'Yêu cầu đã bị từ chối hoặc hết hạn.', payment_not_configured:'Hệ thống nạp tiền chưa được cấu hình. Vui lòng liên hệ quản trị viên.', insufficient_balance:'Số dư chưa đủ. Bạn cần {need} phiếu nhưng hiện có {have} phiếu.', auto_topup_started:'Đã tạo yêu cầu nạp phần còn thiếu. Sau khi quản trị viên xác nhận, hệ thống sẽ tự tiếp tục thao tác đang chờ.', auto_resume_started:'Số dư đã được cộng. Hệ thống đang tự tiếp tục thao tác của bạn...', auto_resume_cancelled:'Kế hoạch đã thay đổi nên hệ thống không tự chạy. Hãy kiểm tra và bấm gửi lại.', nav_pricing:'Bảng giá', nav_faq:'FAQ', nav_contact:'Liên hệ',
         hero_pill:'Auto Google Forms • Form Autofill',
-        hero_title:'CÔNG CỤ ĐIỀN KHẢO SÁT TỰ ĐỘNG',
-        hero_subtitle:'AutoFillForm Live giúp bạn tự động hoàn thành Google Forms thông minh chỉ trong vài bước.',
+        hero_title:'Nhập dữ liệu cho Google Form',
+        hero_subtitle:'Chọn file Excel/CSV, ghép cột, kiểm tra dữ liệu và xuất kết quả.',
         hero_notice:'Chỉ sử dụng với biểu mẫu bạn sở hữu hoặc được cho phép kiểm thử. Không dùng để giả mạo người tham gia, né kiểm soát hoặc làm sai lệch kết quả khảo sát.',
         workspace_title:'Bảng điều khiển', workspace_subtitle:'Thực hiện theo các bước bên dưới.', workspace_chip:'Không dùng Apps Script',
         step1_title:'Nhập Google Form', step1_desc:'Dán đường dẫn chỉnh sửa kết thúc bằng /edit. Tài khoản đang đăng nhập phải có quyền chỉnh sửa.', import_btn:'Nhập biểu mẫu', importing:'Đang nhập...',
-        step2_title:'Tải dữ liệu có sẵn — không bắt buộc', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel / CSV / JSON — đọc ngay trên trình duyệt',
+        step2_title:'Tải dữ liệu có sẵn — không bắt buộc', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel, CSV hoặc JSON',
         step3_title:'Ánh xạ dữ liệu và quy tắc tạo câu trả lời', step3_desc:'Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.', mapping_explain:'“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.', question_empty:'Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.',
         step4_title:'Số lượng và thời gian gửi', step4_desc:'Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.', response_count:'Số phản hồi', estimated_cost:'Chi phí dự kiến', row_strategy:'Cách lấy dòng dữ liệu', row_sequential:'Tuần tự, lặp lại khi hết dòng', row_random:'Ngẫu nhiên', schedule_mode:'Chế độ gửi', mode_now:'Gửi ngay trên trang', mode_interval:'Gửi theo khoảng thời gian', mode_daily_random:'Phân bổ ngẫu nhiên theo ngày', min_delay:'Khoảng nghỉ tối thiểu (giây)', max_delay:'Khoảng nghỉ tối đa (giây)', delay_explain:'Hai ô này chỉ tạo khoảng nghỉ giữa các phản hồi khi “Gửi ngay”. Trang web phải được mở trong suốt quá trình. Với lịch 1 giờ/lần hoặc nhiều giờ, hãy chọn chế độ chạy nền.', start_time:'Bắt đầu lúc', repeat_every:'Lặp lại mỗi', unit:'Đơn vị', minutes:'Phút', hours:'Giờ', days:'Ngày', from_date:'Từ ngày', to_date:'Đến ngày', window_start:'Khung giờ từ', window_end:'Khung giờ đến', per_day:'Số phản hồi tối đa mỗi ngày', daily_note_title:'Mục đích', daily_note:'Chức năng này phân bổ lịch QA trong một khung giờ để kiểm thử tải và quy trình. Không dùng để che giấu tự động hóa hoặc giả danh người trả lời thật.', authorization_ack:'Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.', build_plan:'Tạo kế hoạch xem trước', validate_plan:'Kiểm tra kế hoạch',
         billing_hint:'Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.', step5_title:'Xem trước, gửi và tải báo cáo', step5_desc:'Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.', plan_empty:'Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.', th_scheduled:'Thời điểm', th_data_row:'Dòng dữ liệu', th_preview:'Xem trước câu trả lời', th_status:'Trạng thái', th_google_time:'Google timestamp', download_plan:'Tải kế hoạch CSV', submit_plan:'Gửi vào Google Form', schedule_plan:'Tạo lịch chạy nền', download_report:'Tải báo cáo CSV', refresh_count:'Cập nhật tổng phản hồi',

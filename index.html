@@ -9,7 +9,7 @@
   <title>PandaStudy — Dữ liệu, biểu mẫu và chuyện nghiên cứu</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <link rel="icon" type="image/svg+xml" href="/panda.svg">
   <link rel="stylesheet" href="/style.css">
   <script src="/blog-data.js" defer></script>
@@ -36,7 +36,6 @@
       </nav>
       <div class="sidebar-bottom">
         <div class="sidebar-help"><span class="help-emoji">✳</span><strong>Mới dùng PandaStudy?</strong><p>Có hướng dẫn ngay trong web.</p><button type="button" class="text-link" data-go="guide">Xem hướng dẫn <span aria-hidden="true">↗</span></button></div>
-        <p class="privacy-sidebar">File được đọc trên trình duyệt, không chuyển lên máy chủ của PandaStudy.</p>
       </div>
     </aside>
 
@@ -44,7 +43,7 @@
       <header class="topbar">
         <div class="mobile-brand"><img src="/panda.svg" alt="" width="34" height="34"><strong>PandaStudy</strong></div>
         <div class="crumb"><span>PandaStudy</span><span class="crumb-sep">/</span><strong id="currentPageLabel">Trang chủ</strong></div>
-        <div class="top-actions"><span class="live-dot" aria-hidden="true"></span><span class="secure-label">Xử lý file ngay trên máy bạn</span><button class="plain-btn" id="resetBtn" type="button" title="Xóa thiết lập và dữ liệu đang nhập">Đặt lại</button></div>
+        <div class="top-actions"><button class="plain-btn" id="resetBtn" type="button" title="Xóa thiết lập và dữ liệu đang nhập">Đặt lại</button></div>
       </header>
       <main class="content" id="mainContent">
 
@@ -53,7 +52,7 @@
           <div class="welcome-line"><span>PandaStudy · Công cụ và bài viết</span><span class="welcome-line-right">Google Forms, SPSS, Stata, Python.</span></div>
           <div class="home-hero">
             <div class="hero-copy">
-              <span class="eyebrow"><span class="eyebrow-dot"></span> DÀNH CHO NGƯỜI HAY LÀM VIỆC VỚI EXCEL</span>
+              <span class="eyebrow"><span class="eyebrow-dot"></span> EXCEL · GOOGLE FORMS</span>
               <h1 id="home-title">Đã có dữ liệu trong Excel?<br><em>Đừng nhập lại từng dòng.</em></h1>
               <p>Dán link Google Forms, chọn file Excel rồi ghép các cột. Chỗ nào sai, PandaStudy chỉ đúng dòng cần sửa. Xong xuôi, bạn tải danh sách link điền sẵn.</p>
               <div class="hero-buttons"><button type="button" class="button hero-primary" data-go="form">Bắt đầu sử dụng <span aria-hidden="true">↗</span></button><button type="button" class="button hero-secondary" data-go="guide">Xem cách hoạt động <span aria-hidden="true">→</span></button></div>
@@ -123,7 +122,7 @@
                 <div class="panel-heading"><span class="step-num">02</span><div><h2>Tải file lên</h2><p>Nhận <strong>.xlsx, .csv, .tsv</strong> · tối đa 5 MB và 2.000 dòng.</p></div></div>
                 <div class="upload-area" id="dropZone" tabindex="0" role="button" aria-label="Chọn file hoặc kéo thả file Excel, CSV, TSV"><div class="upload-symbol">⇧</div><strong>Kéo file vào đây, hoặc chọn từ máy tính</strong><p>Excel (.xlsx), CSV UTF-8 hoặc TSV</p><button type="button" class="button primary" id="chooseFile">Chọn file của bạn</button><input type="file" id="fileInput" accept=".csv,.tsv,.xlsx,text/csv,text/tab-separated-values,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" hidden></div>
                 <div class="file-line" id="fileLine" hidden><div><strong id="fileName"></strong><span id="fileMeta"></span></div><button id="clearFile" type="button" class="button ghost small">Xóa file</button></div>
-                <p class="helper" id="fileStatus" role="status">File được đọc trực tiếp trong trình duyệt, không gửi về máy chủ PandaStudy.</p>
+                <p class="helper" id="fileStatus" role="status">Chưa chọn file.</p>
                 <div id="quickErrors" class="quick-errors" hidden aria-live="polite"></div>
                 <div id="mapPanel" hidden><div class="subsection-title"><h3>Ghép cột dữ liệu</h3><span class="muted-small">Đã thử nhận diện dựa trên tên cột</span></div><div id="mappingList" class="mapping-list"></div></div>
                 <div id="dataPreviewWrap" hidden><div class="subsection-title"><h3>Xem trước file</h3><span id="previewCount" class="pill">0 dòng</span></div><div class="table-scroll"><table id="dataPreview"></table></div><p class="helper">Đây là 8 dòng đầu; lúc xuất sẽ dùng toàn bộ dữ liệu hợp lệ.</p></div>
@@ -205,11 +204,11 @@
         <section id="page-about" class="page-view" data-view="about" role="tabpanel" aria-labelledby="about-page-title" hidden>
           <div class="page-heading"><div><span class="overline">VỀ PANDASTUDY</span><h1 id="about-page-title">Bắt đầu từ một bảng Excel.</h1><p>PandaStudy có công cụ chuẩn bị dữ liệu cho Google Forms và blog về SPSS, Stata, Python dành cho người làm nghiên cứu.</p></div><span class="page-sticker"><img src="/panda.svg" alt="" width="54" height="54"></span></div>
           <div class="about-hero"><div><span class="overline">VÌ SAO CÓ PANDASTUDY?</span><h2>Kiểm tra dữ liệu trước khi dùng.</h2><p>Nhập lại hàng chục dòng Excel vào biểu mẫu không khó, nhưng dễ gõ nhầm và rất tốn thời gian. PandaStudy giúp bạn chuẩn bị sẵn dữ liệu, biết lỗi trước khi thao tác và giữ quyền kiểm tra kết quả.</p><p>Phần Blog là nơi chia sẻ những việc hay gặp khi làm đề tài: dữ liệu thiếu, mã hóa biến, chạy SPSS, Stata hoặc Python. Bài nào cũng có ví dụ để thử.</p></div><div class="about-panda"><img src="/panda.svg" alt="PandaStudy — hình gấu trúc" width="175" height="175"><span>HỌC TỪ DỮ LIỆU THẬT</span></div></div>
-          <div class="principles"><article><span class="principle-symbol">◇</span><h3>Nói rõ lỗi, chỉ cách sửa</h3><p>Thông báo phải chỉ đúng dòng, cột và hướng dẫn sửa ngay tại chỗ.</p></article><article><span class="principle-symbol">◎</span><h3>Không đưa file của bạn lên mạng</h3><p>File nhập được xử lý trong trình duyệt. Không cần đưa danh sách lên máy chủ của PandaStudy.</p></article><article><span class="principle-symbol">↗</span><h3>Link điền sẵn chưa phải là phiếu đã gửi</h3><p>Công cụ hiện tạo link điền trước; việc gửi Google Forms vẫn do bạn quyết định.</p></article></div>
+          <div class="principles"><article><span class="principle-symbol">◇</span><h3>Nói rõ lỗi, chỉ cách sửa</h3><p>Thông báo phải chỉ đúng dòng, cột và hướng dẫn sửa ngay tại chỗ.</p></article><article><span class="principle-symbol">◎</span><h3>Kiểm tra trước khi xuất</h3><p>Xem lại cột đã ghép và dữ liệu còn thiếu.</p></article><article><span class="principle-symbol">↗</span><h3>Link điền sẵn chưa phải là phiếu đã gửi</h3><p>Công cụ hiện tạo link điền trước; việc gửi Google Forms vẫn do bạn quyết định.</p></article></div>
           <div class="legacy-panel"><div><span class="overline">ỨNG DỤNG BAN ĐẦU</span><h2>Đang dùng bản Google Apps Script?</h2><p>Nếu đang dùng phiên bản chạy trên Apps Script, bạn vẫn có thể mở từ đây. Bản web mới hoạt động riêng; phần xử lý cũ chỉ được chuyển sang sau khi đã kiểm tra mã nguồn.</p></div><a class="button ghost" href="https://script.google.com/macros/s/AKfycbzhDxCiSjqj0ZomIbpKdHBLUCuCdVz_mATzzvbQ3ncD3k-aBM5CsLh9lebgk__mplM/exec" target="_blank" rel="noopener noreferrer">Mở Apps Script cũ ↗</a></div>
         </section>
 
-        <footer class="footer"><span><img src="/panda.svg" alt="" width="25" height="25"> PandaStudy <span class="footer-divider">·</span> Học và làm với dữ liệu</span><span>Ví dụ trong blog dùng để học tập <span class="footer-divider">·</span> File nhập được xử lý trên máy bạn</span></footer>
+        <footer class="footer"><span><img src="/panda.svg" alt="" width="25" height="25"> PandaStudy</span></footer>
       </main>
     </div>
   </div>
