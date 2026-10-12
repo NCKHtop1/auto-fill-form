@@ -81,14 +81,18 @@ try:
     assert page.locator('#planTableBody .status-chip.success').count()==2
     page.locator('#qaSheetUrl').fill('https://docs.google.com/spreadsheets/d/1T_gGTt8xFY_-Jylbm_Di-90J69BdNsElyv2lLNaiks8/edit?gid=1197897507')
     page.locator('#qaConsent').check()
+    assert page.locator('#qaRunStep .step-title h3').inner_text() == 'Gửi Form và đối chiếu kết quả'
+    assert page.locator('#qaConsent').locator('..').inner_text().strip() == 'Tôi xác nhận'
+    assert page.locator('#qaRunStartOne').inner_text() == '6a. Gửi 1 dòng'
+    assert 'Chưa sẵn sàng gửi:' not in page.locator('#qaRunStep').inner_text()
     page.locator('#qaRunStartOne').wait_for(state='visible')
     page.wait_for_function("document.getElementById('qaRunStartOne').disabled===false")
     page.locator('#qaRunStartOne').click()
-    page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Trang Google báo nhận: 1')")
+    page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 1')")
     page.wait_for_function("document.getElementById('qaRunStartAll').disabled===false")
     assert len(submitted)==1
     page.locator('#qaRunStartAll').click()
-    page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Trang Google báo nhận: 2')",timeout=15000)
+    page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 2')",timeout=15000)
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Tăng: 2')",timeout=15000)
     assert len(submitted)==2
     assert 'Tăng: 2' in page.locator('#qaRunCounters').inner_text()
