@@ -808,9 +808,8 @@
         <div class="step-title">
           <span class="step-number">1</span>
           <div>
-            <h3 data-i18n="step2_title">Tải dữ liệu có sẵn — không bắt buộc</h3>
-            <p data-i18n="step2_desc">Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.</p>
-          </div>
+            <h3 data-i18n="step2_title">Tải dữ liệu (tùy chọn)</h3>
+                      </div>
         </div>
 
         <label id="dropZone" class="drop-zone">
@@ -844,11 +843,10 @@
           <span class="step-number">3</span>
           <div>
             <h3 data-i18n="step3_title">Ánh xạ dữ liệu và quy tắc tạo câu trả lời</h3>
-            <p>Chọn cột từ file. Nếu chưa có file, chỉ tạo dữ liệu mẫu để thử quy trình.</p>
+            <p>Chọn cột dữ liệu hoặc tạo câu trả lời.</p>
           </div>
         </div>
 
-        <div class="info-box" data-i18n="mapping_explain">“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.</div>
         <div id="questionEmpty" class="warning-box" data-i18n="question_empty">Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.</div>
         <div id="questionList" class="question-list"></div>
       </div>
@@ -858,7 +856,6 @@
           <span class="step-number">4</span>
           <div>
             <h3>Chọn số dòng và kiểm tra</h3>
-            <p>Nhập 50, 100 hoặc số dòng cần xem trước; tiếp theo bấm 4a rồi 4b bên dưới.</p>
           </div>
         </div>
 
@@ -970,7 +967,6 @@
           <span class="step-number">5</span>
           <div>
             <h3>Kiểm tra kết quả và tải CSV</h3>
-            <p>Kiểm tra dữ liệu trước khi gửi.</p>
           </div>
         </div>
 
@@ -1150,7 +1146,7 @@
         hero_notice:'Chỉ sử dụng với biểu mẫu bạn sở hữu hoặc được cho phép kiểm thử. Không dùng để giả mạo người tham gia, né kiểm soát hoặc làm sai lệch kết quả khảo sát.',
         workspace_title:'Bảng điều khiển', workspace_subtitle:'Thực hiện theo các bước bên dưới.', workspace_chip:'Không dùng Apps Script',
         step1_title:'Nhập Google Form', step1_desc:'Dán đường dẫn /edit để nhập Google Form.', import_btn:'Nhập biểu mẫu', importing:'Đang nhập...',
-        step2_title:'Tải dữ liệu có sẵn — không bắt buộc', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel, CSV hoặc JSON',
+        step2_title:'Tải dữ liệu (tùy chọn)', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel, CSV hoặc JSON',
         step3_title:'Ánh xạ dữ liệu và quy tắc tạo câu trả lời', step3_desc:'Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.', mapping_explain:'“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.', question_empty:'Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.',
         step4_title:'Số lượng và thời gian gửi', step4_desc:'Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.', response_count:'Số phản hồi', estimated_cost:'Chi phí dự kiến', row_strategy:'Cách lấy dòng dữ liệu', row_sequential:'Tuần tự, lặp lại khi hết dòng', row_random:'Ngẫu nhiên', schedule_mode:'Chế độ gửi', mode_now:'Gửi ngay trên trang', mode_interval:'Gửi theo khoảng thời gian', mode_daily_random:'Phân bổ ngẫu nhiên theo ngày', min_delay:'Khoảng nghỉ tối thiểu (giây)', max_delay:'Khoảng nghỉ tối đa (giây)', delay_explain:'Hai ô này chỉ tạo khoảng nghỉ giữa các phản hồi khi “Gửi ngay”. Trang web phải được mở trong suốt quá trình. Với lịch 1 giờ/lần hoặc nhiều giờ, hãy chọn chế độ chạy nền.', start_time:'Bắt đầu lúc', repeat_every:'Lặp lại mỗi', unit:'Đơn vị', minutes:'Phút', hours:'Giờ', days:'Ngày', from_date:'Từ ngày', to_date:'Đến ngày', window_start:'Khung giờ từ', window_end:'Khung giờ đến', per_day:'Số phản hồi tối đa mỗi ngày', daily_note_title:'Mục đích', daily_note:'Chức năng này phân bổ lịch QA trong một khung giờ để kiểm thử tải và quy trình. Không dùng để che giấu tự động hóa hoặc giả danh người trả lời thật.', authorization_ack:'Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.', build_plan:'Tạo kế hoạch xem trước', validate_plan:'Kiểm tra kế hoạch',
         billing_hint:'Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.', step5_title:'Xem trước, gửi và tải báo cáo', step5_desc:'Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.', plan_empty:'Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.', th_scheduled:'Thời điểm', th_data_row:'Dòng dữ liệu', th_preview:'Xem trước câu trả lời', th_status:'Trạng thái', th_google_time:'Google timestamp', download_plan:'Tải kế hoạch CSV', submit_plan:'Gửi vào Google Form', schedule_plan:'Tạo lịch chạy nền', download_report:'Tải báo cáo CSV', refresh_count:'Cập nhật tổng phản hồi',
