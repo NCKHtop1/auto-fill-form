@@ -90,3 +90,22 @@ test('Read-only Sheet public count returns no respondent data',async()=>{
  assert.equal(result.source,'google-sheet-public-csv');
  assert.equal(JSON.stringify(result).includes('one,one'),false);
 });
+
+test('Legacy unaudited submission API is blocked even if QA feature flag is enabled',async()=>{
+ const bridge=require('../api/bridge');
+ const before=process.env.ENABLE_QA_SUBMISSIONS;
+ process.env.ENABLE_QA_SUBMISSIONS='true';
+ function fakeRes(){return {code:200,status(n){this.code=n;return this},setHeader(){},json(v){this.body=v;return this}}}
+ try{
+  for(const name of ['beginPaidRun','submitOneResponse']){
+   const req={method:'POST',headers:{host:'localhost:3000',origin:'http://localhost:3000'},body:{name,args:[]}};
+   const res=fakeRes();
+   await bridge(req,res);
+   assert.equal(res.code,403);
+   assert.match(res.body.error,/Đường gửi cũ đã khóa/);
+  }
+ }finally{
+  if(before===undefined)delete process.env.ENABLE_QA_SUBMISSIONS;
+  else process.env.ENABLE_QA_SUBMISSIONS=before;
+ }
+});
