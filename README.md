@@ -1,62 +1,62 @@
-# PandaStudy — Form workspace
+# PandaStudy
 
-Website hỗ trợ chuẩn bị dữ liệu Excel/CSV để tạo liên kết Google Forms đã điền sẵn. Giao diện được chia thành sáu tab và có hướng dẫn riêng cho người mới sử dụng.
+PandaStudy có hai phần: công cụ chuẩn bị liên kết Google Forms từ Excel/CSV và **Blog nghiên cứu** với những bài viết thực hành SPSS, Stata, Python. Giao diện tiếng Việt, dùng trên máy tính và điện thoại, không cần cài ứng dụng.
 
-## Các tab trong ứng dụng
+## Các trang
 
-| Tab | Nội dung |
+| Trang | Làm gì ở đây? |
 | --- | --- |
-| Trang chủ | Giới thiệu PandaStudy, ba bước làm việc, tình huống thường gặp |
-| Thiết lập form | Nhận liên kết điền trước, xác định các mã `entry`, đặt tên và kiểu dữ liệu |
-| Nhập dữ liệu | Tải Excel/CSV/TSV, ghép cột, xem trước dữ liệu và lỗi ngay trên tab |
-| Kiểm tra & xuất | Hiển thị nguyên nhân, dòng/cột lỗi, cách sửa; tải báo cáo và link CSV |
-| Hướng dẫn | Hướng dẫn từng bước, tải file mẫu, câu hỏi thường gặp |
-| Về PandaStudy | Giới thiệu sản phẩm, cách xử lý dữ liệu, liên kết Apps Script trước đây |
+| Trang chủ | Bắt đầu với công cụ và xem những bài blog mới |
+| Thiết lập form | Đọc liên kết Google Forms điền trước; xác định `entry.<số>`, tên và kiểu câu hỏi |
+| Nhập dữ liệu | Chọn `.xlsx`, `.csv`, `.tsv`; xem file và ghép cột với câu hỏi |
+| Kiểm tra & xuất | Xem lỗi ở dòng/cột nào, cách sửa; xuất link điền sẵn và báo cáo lỗi |
+| **Blog nghiên cứu** | Đọc 5 bài SPSS, Stata, Python, dữ liệu thiếu, chọn phép kiểm định; tìm kiếm/lọc theo chủ đề |
+| Hướng dẫn | Ví dụ file mẫu, từng bước thao tác và những lỗi hay gặp |
+| Về PandaStudy | Giới thiệu sản phẩm và cách xử lý file trên trình duyệt |
 
-Việc chuyển tab không làm mất dữ liệu đang nhập. Giao diện tương thích máy tính và điện thoại; bàn phím có thể chuyển qua các tab. Cấu hình form được lưu ở `localStorage` trong trình duyệt, file dữ liệu không được tải lên server.
+## 5 bài blog có sẵn
 
-## Hỗ trợ dữ liệu
+1. **Nhận file khảo sát rồi, mở SPSS kiểm tra gì trước?** — codebook, thống kê mô tả, thang đo, syntax.
+2. **Stata: viết một do-file để không phải làm lại từ đầu** — nhập dữ liệu, kiểm tra biến, hồi quy, sai số chuẩn robust.
+3. **Python & pandas: dọn bảng khảo sát mà không phải sửa tay** — kiểm tra ID trùng, giá trị tuổi bất thường, dữ liệu thiếu.
+4. **Dữ liệu trống không có nghĩa là số 0** — phân biệt mã thiếu, missing patterns, lưu ý khi loại/bù dữ liệu.
+5. **Chọn kiểm định từ câu hỏi nghiên cứu, đừng chọn theo tên phần mềm** — loại biến, t-test, Chi-square, tương quan, hồi quy và cách diễn giải.
 
-- Google Forms dạng `docs.google.com/forms/d/.../viewform`, ưu tiên đường liên kết điền trước có mã `entry.<số>`.
-- Kiểu câu hỏi: văn bản, email, số, điện thoại, ngày `YYYY-MM-DD`, checkbox đa lựa chọn ngăn cách bằng dấu `;`.
-- File CSV UTF-8 (phân cách bằng dấu phẩy hoặc chấm phẩy), TSV, Excel `.xlsx` (đọc sheet đầu tiên).
-- Giới hạn 5 MB, 2.000 dòng dữ liệu, 100 cột.
-- Phát hiện đuôi file sai hoặc giả định dạng, mã hóa không phải UTF-8, lỗi dấu ngoặc kép trong CSV, tiêu đề cột thiếu/trùng, số cột không đều, chưa ghép cột, ô bắt buộc trống, email/số/điện thoại/ngày không hợp lệ.
-- Lỗi xuất hiện dưới dạng tiêu đề dễ hiểu bằng tiếng Việt. Phần chi tiết ghi vị trí, nguyên nhân và hướng sửa. Báo cáo tải về có cả mã lỗi kỹ thuật để đối chiếu khi cần.
+Bài viết là nội dung gốc của PandaStudy, có ví dụ lệnh và liên kết đến tài liệu chính thức của IBM SPSS, Stata, pandas hoặc statsmodels. **Các ví dụ dùng để học, không thay thế việc xem thiết kế và dữ liệu thực của nghiên cứu.**
 
-## Phạm vi chức năng hiện tại
+- Vào blog: `/#blog`
+- Mỗi bài có đường dẫn chia sẻ: `/#blog/<slug>`
+- Có tìm kiếm không phân biệt dấu tiếng Việt, lọc chủ đề, mục lục, thanh tiến độ đọc, sao chép mã và bài liên quan.
+- Khi chuyển giữa Blog và công cụ, file nhập và cấu hình form trong phiên làm việc vẫn được giữ.
+- Chuyển động nhẹ có hỗ trợ `prefers-reduced-motion` và các thành phần điều khiển có trạng thái focus bàn phím.
 
-PandaStudy **tạo liên kết Google Forms đã điền sẵn**, không tự bấm Gửi hoặc bỏ qua quyền truy cập/đăng nhập/CAPTCHA. Hãy mở thử các link trước khi gửi cho người khác.
+## Phạm vi công cụ Google Forms
 
-Bản Google Apps Script cũ vẫn chạy riêng. Link `/exec` công khai không trả về mã nguồn `Code.gs`; khi có mã nguồn, cần đối chiếu chức năng backend trước khi tích hợp. Không tự ý sao chép hay thay đổi FinQuery.
+- Đọc liên kết điền trước `docs.google.com/forms/d/.../viewform`, ưu tiên link có mã `entry.<số>`.
+- Hỗ trợ văn bản, email, số, điện thoại, ngày `YYYY-MM-DD`, checkbox đa lựa chọn phân tách bằng `;`.
+- Đọc `.xlsx` (sheet đầu tiên), CSV UTF-8 (dấu phẩy hoặc chấm phẩy) và TSV; giới hạn 5 MB, 2.000 dòng, 100 cột.
+- Báo lỗi đuôi file không đúng/giả định dạng, ký tự UTF-8, CSV đóng ngoặc kép sai, cột thiếu hoặc trùng, độ dài dòng sai, chưa ghép cột, ô bắt buộc trống, email/điện thoại/số/ngày không hợp lệ. Mỗi lỗi có vị trí, giải thích và cách sửa.
+- **Không tự gửi Google Forms.** Công cụ tạo liên kết điền sẵn để bạn mở, kiểm tra và tự bấm Gửi.
+- File Excel/CSV được xử lý trong trình duyệt; không đưa file lên máy chủ của PandaStudy. Chỉ cấu hình form được lưu trên `localStorage` của trình duyệt.
+- Mã nguồn Google Apps Script bản cũ chưa được tích hợp; cần đối chiếu `Code.gs` và các file HTML gốc trước khi chuyển chức năng phía máy chủ. Không có thay đổi đối với FinQuery.
 
 ## Chạy cục bộ
 
-```sh
+```bash
 python3 -m http.server 8000
 # Mở http://localhost:8000
 ```
 
 ## Kiểm thử
 
-Kiểm tra cú pháp JavaScript và chạy Chromium bằng Playwright:
-
-```sh
+```bash
 node --check app.js
+node --check blog-data.js
 python3 tests/smoke.py
 ```
 
-Bộ kiểm thử hiện có **28 tình huống**, từ các lỗi tệp và dữ liệu đến điều hướng tab, hướng dẫn, nhập Excel thật, xuất liên kết và giao diện mobile. GitHub Actions chạy tự động sau mỗi lần push lên `main`.
+`tests/smoke.py` dùng Chromium, Playwright và openpyxl. Workflow `.github/workflows/tests.yml` chạy kiểm thử sau mỗi lần push/pull request. Kiểm thử bao gồm 5 bài viết, deep link, tìm kiếm, điều hướng tab, import thật Excel/CSV, thông báo lỗi, xuất kết quả, trang blog và bài viết trên thiết bị di động.
 
-## Đưa lên Vercel
+## Triển khai
 
-Import repository `NCKHtop1/auto-fill-form` vào một project mới mang tên `pandastudy`.
-
-- Framework: Other.
-- Root Directory: `/` (gốc repository).
-- Build Command: để trống.
-- Output Directory: mặc định cho website tĩnh.
-- Không cần kết nối database hoặc khai báo token.
-- Địa chỉ sẽ có dạng `https://pandastudy.vercel.app` nếu tên còn khả dụng. Không nên coi URL đó là đã hoạt động cho đến khi Vercel trả trạng thái **READY**.
-
-Đi thẳng tới luồng import: https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNCKHtop1%2Fauto-fill-form&project-name=pandastudy
+Đây là website tĩnh, có thể import repository lên Vercel (framework: **Other**, root: repository root). `vercel.json` cung cấp security headers và clean URLs. Website có thể chạy trên subdomain `.vercel.app`, không cần mua domain.

@@ -14,11 +14,11 @@ def run():
   import re
   html=re.sub(r'<meta http-equiv="Content-Security-Policy"[^>]*>', '', html)
   html=html.replace('<link rel="stylesheet" href="/style.css">','<style>'+ (ROOT/'style.css').read_text(encoding='utf-8') +'</style>')
-  html=html.replace('<script src="/app.js" defer></script>','')
+  html=html.replace('<script src="/app.js" defer></script>','').replace('<script src="/blog-data.js" defer></script>','')
   import base64
   panda='data:image/svg+xml;base64,'+base64.b64encode((ROOT/'panda.svg').read_bytes()).decode('ascii')
   html=html.replace('src="/panda.svg"','src="'+panda+'"').replace('href="/panda.svg"','href="'+panda+'"')
-  html=html.replace('</body>','<script>'+ (ROOT/'app.js').read_text(encoding='utf-8') +'</script></body>')
+  html=html.replace('</body>','<script>'+ (ROOT/'blog-data.js').read_text(encoding='utf-8') +'</script><script>'+ (ROOT/'app.js').read_text(encoding='utf-8') +'</script></body>')
   passed=0
   errors=[]
   with TemporaryDirectory() as td, sync_playwright() as p:
@@ -33,7 +33,7 @@ def run():
     assert page.locator('#page-home').is_visible()
     assert page.locator('#page-form').is_hidden()
     assert page.locator('[data-tab="guide"]').count()==1
-    print('PASS: home landing, six visible navigation tabs, and hidden inactive views');passed+=1
+    print('PASS: home landing, seven visible navigation tabs, and hidden inactive views');passed+=1
     def go(name):
       page.locator('[data-tab="'+name+'"]').click()
       assert page.locator('#page-'+name).is_visible(),name
@@ -58,6 +58,66 @@ def run():
     assert 'Apps Script' in page.locator('.legacy-panel').inner_text()
     go('form')
     print('PASS: tab navigation, help/FAQ, example download and About page');passed+=1
+
+    # Blog UX: seven tabs, full original articles, filtering and deep links.
+    go('blog')
+    assert page.locator('.blog-grid .blog-card').count()==5
+    assert page.locator('.home-blog-grid .blog-card').count()==3
+    assert page.locator('[data-tab]').count()==7
+    assert page.locator('#blogCount').inner_text().startswith('5 bài')
+    print('PASS: separate blog tab, five articles and three homepage recommendations');passed+=1
+    page.locator('[data-blog-filter="python"]').click()
+    assert page.locator('.blog-grid .blog-card').count()==1
+    assert 'Python' in page.locator('#blogCards').inner_text()
+    page.locator('[data-blog-filter="all"]').click()
+    page.locator('#blogSearch').fill('cronbach')
+    assert page.locator('.blog-grid .blog-card').count()==1
+    assert 'SPSS' in page.locator('.blog-grid .blog-card').inner_text()
+    page.locator('#blogSearch').fill('tu-khoa-khong-co')
+    assert page.locator('#blogEmpty').is_visible()
+    page.locator('#blogClear').click()
+    assert page.locator('.blog-grid .blog-card').count()==5
+    page.locator('#blogSearch').fill('DU LIEU THIEU')
+    assert page.locator('.blog-grid .blog-card').count()>=1
+    page.locator('#blogSearch').fill('')
+    print('PASS: topic chips, Vietnamese content search and empty-search reset');passed+=1
+    slugs=['spss-kiem-tra-du-lieu-khao-sat','stata-do-file-tu-csv-den-hoi-quy','python-pandas-lam-sach-du-lieu-khao-sat','du-lieu-thieu-khong-phai-so-khong','chon-kiem-dinh-theo-cau-hoi-nghien-cuu']
+    for slug in slugs:
+      page.locator('[data-blog-filter="all"]').click()
+      page.locator('.blog-grid [data-blog-link="'+slug+'"]').click()
+      assert page.locator('#blogArticle').is_visible()
+      assert page.locator('#blogIndex').is_hidden()
+      assert page.locator('#blogArticleContent h2').count()>=5
+      assert page.locator('#blogArticleContent p').count()>=7
+      assert page.locator('#blogToc a').count()>=5
+      assert page.locator('#blogArticleContent .article-sources a').count()>=2
+      assert page.title().endswith('PandaStudy')
+      assert page.evaluate('location.hash')=='#blog/'+slug
+      page.locator('#blogBack').click()
+      assert page.locator('#blogIndex').is_visible()
+    print('PASS: all five full articles, references, table of contents, back links and shareable URLs');passed+=1
+    page.evaluate("location.hash='#blog/du-lieu-thieu-khong-phai-so-khong'")
+    page.wait_for_function("document.querySelector('#blogReaderTitle').textContent.includes('Dữ liệu trống')")
+    assert page.locator('#blogArticle').is_visible()
+    page.evaluate('window.scrollTo(0,document.body.scrollHeight)')
+    page.wait_for_timeout(200)
+    bar=page.locator('#blogProgressBar').get_attribute('style')
+    assert 'width:' in bar
+    go('form')
+    assert page.locator('#formUrl').is_visible()
+    print('PASS: deep-link article navigation, reading progress and working return to form');passed+=1
+    go('blog')
+    card=page.locator('.blog-grid .blog-card').first
+    card.focus()
+    page.keyboard.press('Enter')
+    assert page.locator('#blogArticle').is_visible()
+    assert page.locator('#blogReaderTitle').evaluate('(e)=>e===document.activeElement')
+    assert page.locator('#blogArticleContent a[target="_blank"]').count()>=2
+    assert page.locator('#blogArticleContent a[target="_blank"]:not([rel*="noopener"])').count()==0
+    page.locator('#blogBack').click()
+    assert page.locator('#blog-page-title').evaluate('(e)=>e===document.activeElement')
+    print('PASS: keyboard reader navigation, accessible focus return and safe source links');passed+=1
+    go('form')
     # Google Forms URL validation
     page.locator('#formUrl').fill('https://script.google.com/macros/s/demo/exec')
     page.locator('#inspectUrl').click()
@@ -86,6 +146,12 @@ def run():
     go('results')
     assert page.locator('#metricReady').inner_text()=='2'
     print('PASS: switching tabs preserves imported data and mapping');passed+=1
+    go('blog')
+    page.locator('.blog-grid [data-blog-link="python-pandas-lam-sach-du-lieu-khao-sat"]').click()
+    assert page.locator('#blogArticleContent pre .code-copy').count()>=1
+    go('results')
+    assert page.locator('#metricReady').inner_text()=='2'
+    print('PASS: reading blog leaves Excel imports, mapping and valid links untouched');passed+=1
     assert 'Nguy%E1%BB%85n' in page.locator('.url-ellipsis').first.get_attribute('title')
     print('PASS: CSV UTF-8 import, auto-map, validate, create 2 links');passed+=1
     with page.expect_download() as down:page.locator('#downloadLinks').click()
@@ -229,11 +295,30 @@ def run():
     assert mobile.locator('#dropZone').is_visible()
     mobile.locator('[data-tab="results"]').click()
     assert mobile.locator('#quality').is_visible()
+    mobile.locator('[data-tab="blog"]').click()
+    assert mobile.locator('.blog-grid .blog-card').count()==5
+    assert mobile.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2')
+    mobile.locator('.blog-grid .blog-card').first.click()
+    assert mobile.locator('#blogArticle').is_visible()
+    assert mobile.locator('#blogArticleContent').is_visible()
+    assert mobile.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2')
+    mobile.locator('#blogBack').click()
+    print('PASS: responsive blog grid and article reader on mobile');passed+=1
     mobile.locator('[data-tab="guide"]').click()
     assert mobile.locator('.faq-list').is_visible()
     assert mobile.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2')
     print('PASS: no horizontal page overflow on mobile');passed+=1
     print('PASS: mobile responsive UI');passed+=1
+    # Reduced-motion preference and tablet layouts.
+    reduced=browser.new_page(viewport={'width':1024,'height':768},reduced_motion='reduce')
+    reduced.set_content(html)
+    assert reduced.evaluate("parseFloat(getComputedStyle(document.querySelector('.paper-front')).animationDuration) < 0.01")
+    reduced.locator('[data-tab="blog"]').click()
+    assert reduced.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2')
+    reduced.locator('.blog-grid .blog-card').nth(4).click()
+    assert reduced.evaluate('document.documentElement.scrollWidth<=window.innerWidth+2')
+    print('PASS: reduced-motion support and tablet layout without horizontal overflow');passed+=1
+    reduced.close()
     browser.close()
   if errors:raise AssertionError('Browser JavaScript errors: '+repr(errors))
   print(f'PASS ALL {passed} smoke cases')

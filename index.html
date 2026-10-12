@@ -3,12 +3,13 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#12283a">
-  <meta name="description" content="PandaStudy giúp chuẩn bị Google Forms từ Excel, CSV: nhập dữ liệu, xem lỗi từng dòng và xuất liên kết điền sẵn.">
+  <meta name="theme-color" content="#154632">
+  <meta name="description" content="PandaStudy: từ Excel đến Google Forms và những bài học thực hành SPSS, Stata, Python cho người làm nghiên cứu.">
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; object-src 'none'; form-action 'none'">
-  <title>PandaStudy — Nhập liệu Google Forms nhẹ nhàng hơn</title>
+  <title>PandaStudy — Dữ liệu, biểu mẫu và chuyện nghiên cứu</title>
   <link rel="icon" type="image/svg+xml" href="/panda.svg">
   <link rel="stylesheet" href="/style.css">
+  <script src="/blog-data.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 <body>
@@ -17,7 +18,7 @@
     <aside class="sidebar">
       <a class="brand" href="#home" aria-label="PandaStudy - Về trang chủ">
         <img src="/panda.svg" alt="" width="48" height="48">
-        <span><strong>Panda<span class="brand-accent">Study</span></strong><small>FORM WORKSPACE</small></span>
+        <span><strong>Panda<span class="brand-accent">Study</span></strong><small>DỮ LIỆU &amp; NGHIÊN CỨU</small></span>
       </a>
       <div class="sidebar-label">KHÁM PHÁ</div>
       <nav class="side-nav" aria-label="Các trang PandaStudy" role="tablist" aria-orientation="vertical">
@@ -26,12 +27,13 @@
         <button class="nav-tab" type="button" data-tab="import" role="tab" aria-selected="false" aria-controls="page-import"><span class="nav-icon">⇧</span><span>Nhập dữ liệu</span></button>
         <button class="nav-tab" type="button" data-tab="results" role="tab" aria-selected="false" aria-controls="page-results"><span class="nav-icon">✓</span><span>Kiểm tra &amp; xuất</span><span class="nav-counter" id="navIssues" hidden>0</span></button>
         <div class="nav-divider" aria-hidden="true"></div>
+        <button class="nav-tab" type="button" data-tab="blog" role="tab" aria-selected="false" aria-controls="page-blog"><span class="nav-icon">✎</span><span>Blog nghiên cứu</span><span class="nav-new">Mới</span></button>
         <button class="nav-tab" type="button" data-tab="guide" role="tab" aria-selected="false" aria-controls="page-guide"><span class="nav-icon">?</span><span>Hướng dẫn</span></button>
         <button class="nav-tab" type="button" data-tab="about" role="tab" aria-selected="false" aria-controls="page-about"><span class="nav-icon">◌</span><span>Về PandaStudy</span></button>
       </nav>
       <div class="sidebar-bottom">
-        <div class="sidebar-help"><span class="help-emoji">✳</span><strong>Mới dùng lần đầu?</strong><p>Chỉ mất vài phút để làm quen.</p><button type="button" class="text-link" data-go="guide">Xem hướng dẫn <span aria-hidden="true">↗</span></button></div>
-        <p class="privacy-sidebar">File Excel/CSV được đọc ngay trên máy. PandaStudy không nhận bản tải lên của bạn.</p>
+        <div class="sidebar-help"><span class="help-emoji">✳</span><strong>Mới dùng PandaStudy?</strong><p>Có hướng dẫn ngay trong web.</p><button type="button" class="text-link" data-go="guide">Xem hướng dẫn <span aria-hidden="true">↗</span></button></div>
+        <p class="privacy-sidebar">File được đọc trên trình duyệt, không chuyển lên máy chủ của PandaStudy.</p>
       </div>
     </aside>
 
@@ -39,20 +41,20 @@
       <header class="topbar">
         <div class="mobile-brand"><img src="/panda.svg" alt="" width="34" height="34"><strong>PandaStudy</strong></div>
         <div class="crumb"><span>PandaStudy</span><span class="crumb-sep">/</span><strong id="currentPageLabel">Trang chủ</strong></div>
-        <div class="top-actions"><span class="live-dot" aria-hidden="true"></span><span class="secure-label">Sẵn sàng trên trình duyệt</span><button class="plain-btn" id="resetBtn" type="button" title="Xóa thiết lập và dữ liệu đang nhập">Đặt lại</button></div>
+        <div class="top-actions"><span class="live-dot" aria-hidden="true"></span><span class="secure-label">Xử lý file ngay trên máy bạn</span><button class="plain-btn" id="resetBtn" type="button" title="Xóa thiết lập và dữ liệu đang nhập">Đặt lại</button></div>
       </header>
       <main class="content" id="mainContent">
 
         <!-- TRANG CHU -->
         <section id="page-home" class="page-view active" data-view="home" role="tabpanel" aria-labelledby="home-title">
-          <div class="welcome-line"><span>Chào mừng đến PandaStudy</span><span class="welcome-line-right">Tập trung vào dữ liệu, bớt việc lặp lại.</span></div>
+          <div class="welcome-line"><span>PandaStudy · Công cụ và bài viết</span><span class="welcome-line-right">Google Forms, SPSS, Stata, Python.</span></div>
           <div class="home-hero">
             <div class="hero-copy">
-              <span class="eyebrow"><span class="eyebrow-dot"></span> DÀNH CHO NGƯỜI LÀM VIỆC VỚI BIỂU MẪU</span>
-              <h1 id="home-title">Có sẵn danh sách trong Excel?<br><em>Để PandaStudy phụ một tay.</em></h1>
-              <p>Đưa dữ liệu vào Google Forms không nhất thiết phải nhập lại từng người. PandaStudy giúp bạn ghép cột, rà lỗi và chuẩn bị sẵn liên kết cho từng dòng.</p>
+              <span class="eyebrow"><span class="eyebrow-dot"></span> DÀNH CHO NGƯỜI HAY LÀM VIỆC VỚI EXCEL</span>
+              <h1 id="home-title">Đã có dữ liệu trong Excel?<br><em>Đừng nhập lại từng dòng.</em></h1>
+              <p>Dán link Google Forms, chọn file Excel rồi ghép các cột. Chỗ nào sai, PandaStudy chỉ đúng dòng cần sửa. Xong xuôi, bạn tải danh sách link điền sẵn.</p>
               <div class="hero-buttons"><button type="button" class="button hero-primary" data-go="form">Bắt đầu sử dụng <span aria-hidden="true">↗</span></button><button type="button" class="button hero-secondary" data-go="guide">Xem cách hoạt động <span aria-hidden="true">→</span></button></div>
-              <div class="hero-footnote">Không cần đăng nhập · Không cài phần mềm</div>
+              <div class="hero-footnote">Dùng ngay trên trình duyệt · Không cần đăng nhập</div>
             </div>
             <div class="hero-stage" aria-hidden="true">
               <div class="stage-glow"></div>
@@ -64,21 +66,27 @@
           </div>
 
           <div class="quick-benefits" aria-label="Điểm nổi bật">
-            <div><span class="benefit-symbol">▤</span><div><strong>Đọc cả Excel lẫn CSV</strong><small>Dữ liệu có dấu tiếng Việt vẫn giữ nguyên.</small></div></div>
+            <div><span class="benefit-symbol">▤</span><div><strong>Đọc cả Excel lẫn CSV</strong><small>Giữ nguyên tiếng Việt khi đọc đúng định dạng.</small></div></div>
             <div><span class="benefit-symbol">◎</span><div><strong>Biết lỗi nằm ở đâu</strong><small>Có dòng, có cột và gợi ý cách sửa.</small></div></div>
-            <div><span class="benefit-symbol">↗</span><div><strong>Xuất link, kiểm tra rồi gửi</strong><small>Bạn quyết định khi nào gửi biểu mẫu.</small></div></div>
+            <div><span class="benefit-symbol">↗</span><div><strong>Xuất link, kiểm tra rồi gửi</strong><small>Xem lại trước khi gửi cho người khác.</small></div></div>
           </div>
 
-          <div class="section-intro"><div><span class="overline">BẮT ĐẦU THẾ NÀO?</span><h2>Ba bước là đủ</h2><p>Chưa quen với Google Forms cũng có thể làm theo từng bước.</p></div><button type="button" class="button ghost" data-go="guide">Hướng dẫn chi tiết →</button></div>
+          <div class="section-intro"><div><span class="overline">BẮT ĐẦU THẾ NÀO?</span><h2>Ba bước là đủ</h2><p>Bạn có thể làm theo từ đầu, không cần biết lập trình.</p></div><button type="button" class="button ghost" data-go="guide">Hướng dẫn chi tiết →</button></div>
           <div class="how-grid">
             <button type="button" class="how-card" data-go="form"><span class="how-index">01</span><div class="how-illustration how-one">▦ <span class="how-bubble">🔗</span></div><h3>Lấy liên kết biểu mẫu</h3><p>Dán link Google Forms đã điền trước. PandaStudy sẽ đọc các mã câu hỏi từ liên kết.</p><span class="how-more">Thiết lập form <b>↗</b></span></button>
             <button type="button" class="how-card" data-go="import"><span class="how-index">02</span><div class="how-illustration how-two">▤ <span class="how-bubble">CSV</span></div><h3>Nhập bảng dữ liệu</h3><p>Chọn file Excel hoặc CSV, kiểm tra tên cột rồi ghép với câu hỏi tương ứng.</p><span class="how-more">Nhập file <b>↗</b></span></button>
             <button type="button" class="how-card" data-go="results"><span class="how-index">03</span><div class="how-illustration how-three">✓ <span class="how-bubble">↗</span></div><h3>Rà soát và lấy kết quả</h3><p>Thấy lỗi thì sửa ở đúng dòng. Khi mọi thứ ổn, tải danh sách link điền sẵn.</p><span class="how-more">Kiểm tra kết quả <b>↗</b></span></button>
           </div>
 
+
+          <section class="home-blog" aria-labelledby="home-blog-title">
+            <div class="section-intro"><div><span class="overline">GÓC NGHIÊN CỨU</span><h2 id="home-blog-title">Đọc thêm về SPSS, Stata và Python</h2><p>Ví dụ thực hành, lỗi thường gặp và cách xử lý khi làm đề tài.</p></div><button type="button" class="button ghost" data-go="blog">Xem 5 bài viết →</button></div>
+            <div class="home-blog-grid" id="homeBlogCards" aria-label="Bài viết mới"></div>
+          </section>
+
           <div class="home-lower">
-            <div class="use-panel"><span class="overline">PANDASTUDY CÓ THỂ GIÚP GÌ?</span><h2>Những việc thường gặp</h2><div class="use-list"><div><span>01</span><div><strong>Danh sách học viên</strong><p>Chuẩn bị thông tin đăng ký, cập nhật hồ sơ theo từng lớp.</p></div></div><div><span>02</span><div><strong>Khảo sát và đăng ký tham gia</strong><p>Ghép dữ liệu từ bảng tổng hợp trước khi chuyển sang biểu mẫu.</p></div></div><div><span>03</span><div><strong>Kiểm tra file nhận từ nhiều người</strong><p>Phát hiện email sai, cột thiếu, ngày không đúng định dạng.</p></div></div></div></div>
-            <div class="friendly-note"><div class="note-head"><img src="/panda.svg" alt="" width="56" height="56"><span>Một lưu ý nhỏ</span></div><h3>PandaStudy chuẩn bị link. Bạn vẫn là người kiểm tra và gửi form.</h3><p>Như vậy, dữ liệu có cơ hội được rà lại lần cuối trước khi đưa vào Google Forms.</p><button type="button" class="link-arrow" data-go="about">Hiểu rõ cách PandaStudy hoạt động →</button></div>
+            <div class="use-panel"><span class="overline">TÌNH HUỐNG THƯỜNG GẶP</span><h2>Những việc thường gặp</h2><div class="use-list"><div><span>01</span><div><strong>Danh sách học viên</strong><p>Chuẩn bị thông tin đăng ký, cập nhật hồ sơ theo từng lớp.</p></div></div><div><span>02</span><div><strong>Khảo sát và đăng ký tham gia</strong><p>Ghép dữ liệu từ bảng tổng hợp trước khi chuyển sang biểu mẫu.</p></div></div><div><span>03</span><div><strong>Kiểm tra file nhận từ nhiều người</strong><p>Phát hiện email sai, cột thiếu, ngày không đúng định dạng.</p></div></div></div></div>
+            <div class="friendly-note"><div class="note-head"><img src="/panda.svg" alt="" width="56" height="56"><span>Một lưu ý nhỏ</span></div><h3>Link được điền sẵn, nhưng bạn là người bấm Gửi.</h3><p>Hãy mở thử một vài link và kiểm tra thông tin trước khi chia sẻ.</p><button type="button" class="link-arrow" data-go="about">Hiểu rõ cách PandaStudy hoạt động →</button></div>
           </div>
         </section>
 
@@ -125,9 +133,9 @@
 
         <!-- KIEM TRA VA XUAT -->
         <section id="page-results" class="page-view" data-view="results" role="tabpanel" aria-labelledby="results-page-title" hidden>
-          <div class="page-heading"><div><span class="overline">BƯỚC 3 / 3</span><h1 id="results-page-title">Kiểm tra &amp; xuất kết quả</h1><p>Nếu dữ liệu chưa ổn, bạn sẽ biết cần sửa ở đâu. Khi mọi thứ đã đúng, liên kết sẽ sẵn sàng để tải.</p></div><span class="page-sticker">✓</span></div>
+          <div class="page-heading"><div><span class="overline">BƯỚC 3 / 3</span><h1 id="results-page-title">Kiểm tra &amp; xuất kết quả</h1><p>Bảng dữ liệu sai chỗ nào sẽ được báo ngay tại dòng đó. Sửa xong, bạn có thể tải danh sách link.</p></div><span class="page-sticker">✓</span></div>
           <div class="metrics" aria-live="polite"><div class="metric"><span>CÂU HỎI</span><strong id="metricFields">0</strong><small>Đã thiết lập</small></div><div class="metric"><span>DÒNG DỮ LIỆU</span><strong id="metricRows">0</strong><small>Đọc từ file</small></div><div class="metric"><span>VẤN ĐỀ</span><strong id="metricErrors">0</strong><small id="metricErrorDesc">Chưa kiểm tra</small></div><div class="metric"><span>LINK SẴN SÀNG</span><strong id="metricReady">0</strong><small>Có thể xuất CSV</small></div></div>
-          <section id="quality" class="panel"><div class="panel-heading"><span class="step-num">03</span><div><h2>Rà soát dữ liệu</h2><p>Chỗ nào sai sẽ có vị trí, lý do và cách chỉnh sửa.</p></div><button type="button" id="validateBtn" class="button secondary">↻ Kiểm tra lại</button></div>
+          <section id="quality" class="panel"><div class="panel-heading"><span class="step-num">03</span><div><h2>Rà soát dữ liệu</h2><p>Lỗi ở dòng nào, cột nào sẽ có hướng dẫn sửa ngay bên dưới.</p></div><button type="button" id="validateBtn" class="button secondary">↻ Kiểm tra lại</button></div>
             <div id="qualitySummary" class="quality-summary neutral"><span class="quality-icon">ℹ</span><div><strong>Chưa có dữ liệu để kiểm tra</strong><p>Nhập liên kết biểu mẫu và file dữ liệu trước nhé.</p></div></div>
             <div class="issue-toolbar"><strong id="issueTitle">Chi tiết kiểm tra</strong><div><button type="button" id="showAllIssues" class="filter active">Tất cả</button><button type="button" id="showErrors" class="filter">Lỗi</button><button type="button" id="showWarnings" class="filter">Lưu ý</button></div></div>
             <div id="issues" class="issues"><div class="placeholder small-placeholder">Những lỗi cần xử lý sẽ xuất hiện ở đây.</div></div>
@@ -143,28 +151,62 @@
 
         <!-- HUONG DAN -->
         <section id="page-guide" class="page-view" data-view="guide" role="tabpanel" aria-labelledby="guide-page-title" hidden>
-          <div class="page-heading"><div><span class="overline">BẮT ĐẦU THẬT DỄ</span><h1 id="guide-page-title">Hướng dẫn sử dụng</h1><p>Không cần biết lập trình. Cứ làm lần lượt theo các bước dưới đây.</p></div><span class="page-sticker">?</span></div>
+          <div class="page-heading"><div><span class="overline">LÀM THỬ MỘT LẦN</span><h1 id="guide-page-title">Hướng dẫn sử dụng</h1><p>Lần đầu dùng PandaStudy? Đi theo 3 bước dưới đây.</p></div><span class="page-sticker">?</span></div>
           <div class="guide-lead"><img src="/panda.svg" alt="" width="61" height="61"><div><strong>Nếu đây là lần đầu bạn dùng PandaStudy…</strong><p>Hãy mở sẵn Google Forms và bảng Excel cần nhập. Bạn có thể quay lại hướng dẫn bất cứ lúc nào mà không mất dữ liệu đang làm.</p></div><button class="button primary" type="button" data-go="form">Bắt đầu →</button></div>
           <div class="instruction-list">
             <article class="instruction"><div class="instruction-number">01</div><div><h2>Chuẩn bị link Google Forms</h2><p>Mở biểu mẫu với quyền chỉnh sửa. Trong menu ba chấm, chọn <strong>Nhận đường liên kết điền trước</strong>. Điền thử các câu hỏi cần dùng rồi lấy liên kết. Dán vào tab <strong>Thiết lập form</strong> và chọn <strong>Đọc liên kết</strong>.</p><p class="guide-caution">Chỉ có link xem form thông thường? PandaStudy không thể tự biết mã câu hỏi. Hãy lấy link điền trước hoặc nhập mã <code>entry</code> thủ công.</p><button class="link-arrow" type="button" data-go="form">Đi đến Thiết lập form →</button></div></article>
             <article class="instruction"><div class="instruction-number">02</div><div><h2>Chuẩn bị và nhập Excel/CSV</h2><p>Dòng đầu phải là tên cột; các dòng sau là dữ liệu. Nên viết tên cột rõ ràng như <strong>Họ và tên</strong>, <strong>Email</strong>, <strong>Ngày sinh</strong>. Sang tab <strong>Nhập dữ liệu</strong>, chọn file rồi xem phần ghép cột.</p><button id="guideTemplateButton2" class="button secondary" type="button">↓ Tải CSV mẫu</button><button class="link-arrow inline-guide" type="button" data-go="import">Nhập dữ liệu →</button></div></article>
             <article class="instruction"><div class="instruction-number">03</div><div><h2>Kiểm tra lỗi trước khi xuất</h2><p>Mở <strong>Kiểm tra &amp; xuất</strong>. Nếu có lỗi, PandaStudy sẽ báo dòng, cột, lý do và cách sửa. Sửa trong file Excel/CSV của bạn, lưu lại và nhập lần nữa. Khi số lỗi nghiêm trọng về 0, bạn có thể tải file chứa các liên kết.</p><button class="link-arrow" type="button" data-go="results">Xem kiểm tra &amp; xuất →</button></div></article>
           </div>
-          <div class="section-intro faq-head"><div><span class="overline">GẶP LỖI THÌ SAO?</span><h2>Một số tình huống thường gặp</h2><p>PandaStudy sẽ báo lỗi chi tiết ngay khi bạn import file.</p></div></div>
+          <div class="section-intro faq-head"><div><span class="overline">GẶP LỖI THÌ SAO?</span><h2>Một số tình huống thường gặp</h2><p>Thường sửa được ngay trong Excel. Đây là những lỗi mình hay gặp.</p></div></div>
           <div class="guide-error-table"><table><thead><tr><th>Tình huống</th><th>Vì sao?</th><th>Cách xử lý</th></tr></thead><tbody><tr><td>File <code>.xls</code> không mở được</td><td>Định dạng Excel đời cũ chưa được hỗ trợ.</td><td>Trong Excel chọn <strong>Save As → Excel Workbook (.xlsx)</strong>.</td></tr><tr><td>CSV bị lỗi tiếng Việt</td><td>File chưa dùng mã UTF-8.</td><td>Lưu lại dưới dạng <strong>CSV UTF-8</strong> và nhập lại.</td></tr><tr><td>Hai cột có cùng tên</td><td>Không biết phải ghép cột nào.</td><td>Đổi tên để mỗi cột là duy nhất.</td></tr><tr><td>Email hoặc ngày không hợp lệ</td><td>Giá trị chưa đúng kiểu dữ liệu đã chọn.</td><td>Sửa ô tại đúng dòng/cột được báo; ngày dùng <code>YYYY-MM-DD</code>.</td></tr><tr><td>Không xuất được liên kết</td><td>Còn lỗi hoặc chưa ghép đủ cột.</td><td>Đọc báo cáo kiểm tra, hoàn thiện ghép cột, nhập file lại.</td></tr></tbody></table></div>
           <div class="section-intro faq-head"><div><span class="overline">HỎI NHANH</span><h2>Bạn có thể đang thắc mắc</h2></div></div>
-          <div class="faq-list"><details><summary>PandaStudy có tự bấm Gửi Google Forms không?</summary><p>Chưa. Bản này tạo liên kết điền trước. Bạn mở link, kiểm tra câu trả lời và tự bấm Gửi. Phần Apps Script gốc sẽ được xử lý khi có code để đối chiếu đầy đủ.</p></details><details><summary>PandaStudy có lưu file Excel của tôi không?</summary><p>Không tải file lên server của PandaStudy. File được xử lý trên trình duyệt; chỉ phần thiết lập biểu mẫu được lưu cục bộ trong trình duyệt để bạn dễ dùng lại.</p></details><details><summary>Vì sao không dùng link forms.gle?</summary><p>Đó là link rút gọn, chưa lộ mã câu hỏi. Hãy mở link, lấy URL đầy đủ từ thanh địa chỉ và ưu tiên chức năng lấy liên kết điền trước trong Google Forms.</p></details><details><summary>File có nhiều sheet Excel thì sao?</summary><p>PandaStudy hiện đọc sheet dữ liệu đầu tiên; nếu phát hiện nhiều sheet, công cụ sẽ nhắc để bạn kiểm tra. Bạn cũng có thể tách sheet cần dùng thành một file riêng.</p></details></div>
+          <div class="faq-list"><details><summary>PandaStudy có tự bấm Gửi Google Forms không?</summary><p>Chưa. PandaStudy tạo link điền sẵn. Bạn mở link, kiểm tra câu trả lời rồi tự bấm Gửi trên Google Forms.</p></details><details><summary>PandaStudy có lưu file Excel của tôi không?</summary><p>Không tải file lên server của PandaStudy. File được xử lý trên trình duyệt; chỉ phần thiết lập biểu mẫu được lưu cục bộ trong trình duyệt để bạn dễ dùng lại.</p></details><details><summary>Vì sao không dùng link forms.gle?</summary><p>Đó là link rút gọn, chưa lộ mã câu hỏi. Hãy mở link, lấy URL đầy đủ từ thanh địa chỉ và ưu tiên chức năng lấy liên kết điền trước trong Google Forms.</p></details><details><summary>File có nhiều sheet Excel thì sao?</summary><p>PandaStudy hiện đọc sheet dữ liệu đầu tiên; nếu phát hiện nhiều sheet, công cụ sẽ nhắc để bạn kiểm tra. Bạn cũng có thể tách sheet cần dùng thành một file riêng.</p></details></div>
+        </section>
+
+
+        <!-- GOC NGHIEN CUU -->
+        <section id="page-blog" class="page-view" data-view="blog" role="tabpanel" aria-labelledby="blog-page-title" hidden>
+          <div id="blogIndex">
+            <div class="blog-heading"><div><span class="overline">GÓC NGHIÊN CỨU / PANDASTUDY</span><h1 id="blog-page-title" tabindex="-1">Đang vướng ở bước nào khi làm dữ liệu?</h1><p>Có 5 bài về SPSS, Stata, Python, dữ liệu thiếu và chọn phép kiểm định. Bạn đang cần gì thì đọc bài đó.</p></div><div class="blog-heading-mark" aria-hidden="true"><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span></div></div>
+            <div class="blog-feature" id="blogFeatured">
+              <div class="feature-body"><span class="feature-eyebrow"><span class="feature-dot"></span> BÀI ĐỌC NÊN BẮT ĐẦU</span><h2>Trước khi chạy hồi quy, hãy xem lại file khảo sát.</h2><p>Mã 99 có phải là “không trả lời”? Có giá trị nào ngoài thang 1–5? Kiểm tra sớm để khỏi phải chạy lại cả bộ số liệu.</p><button type="button" class="button hero-primary" data-blog-open="spss-kiem-tra-du-lieu-khao-sat">Đọc bài SPSS đầu tiên ↗</button></div>
+              <div class="feature-chart" aria-hidden="true"><div class="feature-sheet"><div><i></i><i></i><i></i></div><div><i></i><i></i><i></i></div><div><i></i><i></i><i></i></div><div><i></i><i></i><i></i></div><span class="feature-check">✓</span></div><span class="feature-float feature-float-one">SPSS</span><span class="feature-float feature-float-two">∑</span></div>
+            </div>
+            <div class="blog-tools"><div><span class="overline">THƯ VIỆN BÀI VIẾT</span><h2>Chọn một bài để đọc</h2></div><label class="blog-search"><span aria-hidden="true">⌕</span><span class="sr-only">Tìm bài viết</span><input id="blogSearch" type="search" placeholder="Ví dụ: hồi quy, dữ liệu thiếu…" autocomplete="off"></label></div>
+            <div class="blog-filters" id="blogFilters" role="group" aria-label="Lọc theo chủ đề">
+              <button type="button" class="blog-chip active" data-blog-filter="all" aria-pressed="true">Tất cả <span>5</span></button>
+              <button type="button" class="blog-chip" data-blog-filter="spss" aria-pressed="false">SPSS</button>
+              <button type="button" class="blog-chip" data-blog-filter="stata" aria-pressed="false">Stata</button>
+              <button type="button" class="blog-chip" data-blog-filter="python" aria-pressed="false">Python</button>
+              <button type="button" class="blog-chip" data-blog-filter="data" aria-pressed="false">Dữ liệu</button>
+              <button type="button" class="blog-chip" data-blog-filter="method" aria-pressed="false">Phương pháp</button>
+            </div>
+            <p id="blogCount" class="blog-count" role="status" aria-live="polite"></p>
+            <div id="blogCards" class="blog-grid"></div>
+            <div id="blogEmpty" class="blog-empty" hidden><strong>Chưa có bài phù hợp.</strong><p>Thử tìm từ khác, hoặc chọn “Tất cả” để xem lại 5 bài viết.</p><button type="button" class="button secondary" id="blogClear">Xem tất cả bài viết</button></div>
+            <div class="blog-bottom-note"><img src="/panda.svg" alt="" width="50" height="50"><div><strong>Đang có bộ dữ liệu cần xử lý?</strong><p>Hãy thử trên một bản sao trước. File gốc cứ giữ riêng để khi cần còn kiểm tra lại.</p></div><button type="button" class="button ghost" data-go="guide">Xem hướng dẫn công cụ →</button></div>
+          </div>
+          <div id="blogArticle" class="blog-reader" hidden>
+            <button type="button" class="reader-back" id="blogBack">← Trở lại danh sách bài viết</button>
+            <div class="reader-topline"><span id="blogReaderCategory">GÓC NGHIÊN CỨU</span><span id="blogReaderMeta"></span></div>
+            <header class="reader-hero"><h1 id="blogReaderTitle" tabindex="-1"></h1><p id="blogReaderExcerpt"></p><div class="reader-byline"><span class="reader-avatar"><img src="/panda.svg" alt="" width="35" height="35"></span><span>PandaStudy · Ghi chép thực hành</span><span class="reader-date" id="blogReaderDate"></span><button type="button" class="reader-share" id="blogShare">↗ Sao chép link bài viết</button></div></header>
+            <div class="blog-progress" aria-hidden="true"><span id="blogProgressBar"></span></div>
+            <div class="reader-columns"><article id="blogArticleContent" class="blog-prose" aria-label="Nội dung bài viết"></article><aside class="blog-toc-panel"><div class="blog-toc"><strong>Trong bài này</strong><nav id="blogToc" aria-label="Mục lục bài viết"></nav><div class="toc-hint">Có đoạn mã mẫu? Hãy chạy thử trên dữ liệu sao chép.</div></div></aside></div>
+            <div class="reader-end"><div><span class="overline">CÓ THỂ BẠN CŨNG MUỐN ĐỌC</span><h2>Đọc tiếp một chủ đề khác</h2></div><div id="blogRelated" class="blog-related"></div></div>
+            <button type="button" class="reader-back reader-back-bottom" id="blogBackBottom">← Quay lại Góc nghiên cứu</button>
+          </div>
         </section>
 
         <!-- GIOI THIEU -->
         <section id="page-about" class="page-view" data-view="about" role="tabpanel" aria-labelledby="about-page-title" hidden>
-          <div class="page-heading"><div><span class="overline">VỀ PANDASTUDY</span><h1 id="about-page-title">Ít thao tác lặp lại.<br>Thêm thời gian cho việc quan trọng.</h1><p>PandaStudy được làm cho những ai thường xuyên làm việc với danh sách, biểu mẫu và bảng tính.</p></div><span class="page-sticker"><img src="/panda.svg" alt="" width="54" height="54"></span></div>
-          <div class="about-hero"><div><span class="overline">CÂU CHUYỆN NHỎ</span><h2>Một công cụ đủ đơn giản để dùng mỗi ngày.</h2><p>Nhập lại hàng chục dòng từ Excel vào form là việc không khó, chỉ tốn thời gian và rất dễ sai. PandaStudy giúp bạn chuẩn bị sẵn dữ liệu, biết lỗi trước khi thao tác và giữ quyền kiểm tra kết quả.</p><p>Không cần một quy trình phức tạp. Mở form, chọn file, xem lại rồi tải liên kết — thế là đủ cho phiên bản hiện tại.</p></div><div class="about-panda"><img src="/panda.svg" alt="PandaStudy — hình gấu trúc" width="175" height="175"><span>Made to keep things simple.</span></div></div>
-          <div class="principles"><article><span class="principle-symbol">◇</span><h3>Dễ hiểu trước, nhiều tính năng sau</h3><p>Mỗi bước đều có lời hướng dẫn. Nếu file sai, thông báo phải nói rõ sai chỗ nào và sửa ra sao.</p></article><article><span class="principle-symbol">◎</span><h3>Bạn kiểm soát dữ liệu</h3><p>File nhập được xử lý trong trình duyệt. Không cần đưa danh sách lên máy chủ của PandaStudy.</p></article><article><span class="principle-symbol">↗</span><h3>Không nói quá chức năng</h3><p>Công cụ hiện tạo link điền trước; việc gửi Google Forms vẫn do bạn quyết định.</p></article></div>
-          <div class="legacy-panel"><div><span class="overline">ỨNG DỤNG BAN ĐẦU</span><h2>Đang dùng bản Google Apps Script?</h2><p>Bạn vẫn có thể mở ứng dụng cũ. Khi có đầy đủ mã nguồn, phần xử lý cần thiết sẽ được đối chiếu và tích hợp tiếp vào PandaStudy, không ảnh hưởng hệ thống khác.</p></div><a class="button ghost" href="https://script.google.com/macros/s/AKfycbzhDxCiSjqj0ZomIbpKdHBLUCuCdVz_mATzzvbQ3ncD3k-aBM5CsLh9lebgk__mplM/exec" target="_blank" rel="noopener noreferrer">Mở Apps Script cũ ↗</a></div>
+          <div class="page-heading"><div><span class="overline">VỀ PANDASTUDY</span><h1 id="about-page-title">Bắt đầu từ một bảng Excel.</h1><p>PandaStudy có công cụ chuẩn bị dữ liệu cho Google Forms và blog về SPSS, Stata, Python dành cho người làm nghiên cứu.</p></div><span class="page-sticker"><img src="/panda.svg" alt="" width="54" height="54"></span></div>
+          <div class="about-hero"><div><span class="overline">VÌ SAO CÓ PANDASTUDY?</span><h2>Những việc nhỏ trong nghiên cứu cũng đáng được làm cẩn thận.</h2><p>Nhập lại hàng chục dòng Excel vào biểu mẫu không khó, nhưng dễ gõ nhầm và rất tốn thời gian. PandaStudy giúp bạn chuẩn bị sẵn dữ liệu, biết lỗi trước khi thao tác và giữ quyền kiểm tra kết quả.</p><p>Phần Blog là nơi chia sẻ những việc hay gặp khi làm đề tài: dữ liệu thiếu, mã hóa biến, chạy SPSS, Stata hoặc Python. Bài nào cũng có ví dụ để thử.</p></div><div class="about-panda"><img src="/panda.svg" alt="PandaStudy — hình gấu trúc" width="175" height="175"><span>HỌC TỪ DỮ LIỆU THẬT</span></div></div>
+          <div class="principles"><article><span class="principle-symbol">◇</span><h3>Nói rõ lỗi, chỉ cách sửa</h3><p>Thông báo phải chỉ đúng dòng, cột và hướng dẫn sửa ngay tại chỗ.</p></article><article><span class="principle-symbol">◎</span><h3>Không đưa file của bạn lên mạng</h3><p>File nhập được xử lý trong trình duyệt. Không cần đưa danh sách lên máy chủ của PandaStudy.</p></article><article><span class="principle-symbol">↗</span><h3>Link điền sẵn chưa phải là phiếu đã gửi</h3><p>Công cụ hiện tạo link điền trước; việc gửi Google Forms vẫn do bạn quyết định.</p></article></div>
+          <div class="legacy-panel"><div><span class="overline">ỨNG DỤNG BAN ĐẦU</span><h2>Đang dùng bản Google Apps Script?</h2><p>Nếu đang dùng phiên bản chạy trên Apps Script, bạn vẫn có thể mở từ đây. Bản web mới hoạt động riêng; phần xử lý cũ chỉ được chuyển sang sau khi đã kiểm tra mã nguồn.</p></div><a class="button ghost" href="https://script.google.com/macros/s/AKfycbzhDxCiSjqj0ZomIbpKdHBLUCuCdVz_mATzzvbQ3ncD3k-aBM5CsLh9lebgk__mplM/exec" target="_blank" rel="noopener noreferrer">Mở Apps Script cũ ↗</a></div>
         </section>
 
-        <footer class="footer"><span><img src="/panda.svg" alt="" width="25" height="25"> PandaStudy <span class="footer-divider">·</span> Form workspace</span><span>Độc lập với FinQuery <span class="footer-divider">·</span> Không tải file của bạn lên server</span></footer>
+        <footer class="footer"><span><img src="/panda.svg" alt="" width="25" height="25"> PandaStudy <span class="footer-divider">·</span> Học và làm với dữ liệu</span><span>Ví dụ trong blog dùng để học tập <span class="footer-divider">·</span> File nhập được xử lý trên máy bạn</span></footer>
       </main>
     </div>
   </div>

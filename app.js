@@ -140,18 +140,104 @@ function renderAll(){$('formUrl').value=state.url||$('formUrl').value;renderFiel
 function downloadLinks(){if(!state.links.length){toast('Chưa có liên kết hợp lệ để xuất.');return;}const header=['Dong_trong_file','Link_Google_Forms'];const lines=[header.map(escapeCSV).join(',')];state.links.forEach(item=>lines.push([item.row,item.url].map(escapeCSV).join(',')));saveText('pandastudy-links-'+new Date().toISOString().slice(0,10)+'.csv',lines.join('\r\n')+'\r\n');toast('Đã xuất '+state.links.length+' liên kết.');}
 function downloadIssues(){const lines=[['Muc_do','Ma_loi','Vi_tri','Nguyen_nhan','Cach_sua'].map(escapeCSV).join(',')];state.issues.forEach(i=>lines.push([i.type==='error'?'Loi':'Luu y',i.code,i.where,i.description,i.fix].map(escapeCSV).join(',')));saveText('pandastudy-bao-cao-loi.csv',lines.join('\r\n')+'\r\n');toast('Đã tải danh sách lỗi kèm hướng dẫn sửa.');}
 function clearFile(){importSequence++;state.table=null;state.importIssues=[];state.mapping={};state.triedFile=false;state.fileName='';state.fileSize=0;$('fileInput').value='';clearImportUI();renderAll();}
-function resetAll(){if(!confirm('Xóa cấu hình biểu mẫu và dữ liệu đang nhập trên trình duyệt?'))return;state.url='';state.fields=[];state.triedForm=false;state.issues=[];state.importIssues=[];$('formUrl').value='';$('formStatus').textContent='Đã đặt lại cấu hình.';try{localStorage.removeItem(KEY);}catch{}clearFile();toast('Đã đặt lại PandaStudy; không ảnh hưởng Apps Script hay FinQuery.');}
-const PAGE_TITLES={home:'Trang chủ',form:'Thiết lập form',import:'Nhập dữ liệu',results:'Kiểm tra & xuất',guide:'Hướng dẫn',about:'Về PandaStudy'};
-let currentPage='home';
+function resetAll(){if(!confirm('Xóa cấu hình biểu mẫu và dữ liệu đang nhập trên trình duyệt?'))return;state.url='';state.fields=[];state.triedForm=false;state.issues=[];state.importIssues=[];$('formUrl').value='';$('formStatus').textContent='Đã đặt lại cấu hình.';try{localStorage.removeItem(KEY);}catch{}clearFile();toast('Đã xóa dữ liệu và thiết lập của phiên làm việc này.');}
+// Goc nghien cuu: bai viet la noi dung tinh trong blog-data.js, khong phai du lieu import.
+const BLOG_POSTS=Array.isArray(window.PandaStudyArticles)?window.PandaStudyArticles:[];
+const PAGE_TITLES={home:'Trang chủ',form:'Thiết lập form',import:'Nhập dữ liệu',results:'Kiểm tra & xuất',blog:'Blog nghiên cứu',guide:'Hướng dẫn',about:'Về PandaStudy'};
+let currentPage='home', blogCategory='all';
+function plainSearch(value){return String(value||'').toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').trim();}
+function blogReadMinutes(post){const count=(post.contents.replace(/<[^>]*>/g,' ').trim().split(/\s+/).filter(Boolean).length);return Math.max(3,Math.ceil(count/170));}
+function articleCard(post,isHome=false){
+  const a=document.createElement('a');a.className='blog-card theme-'+post.color+(isHome?' compact-blog-card':'');a.href='#blog/'+post.slug;a.dataset.blogLink=post.slug;
+  a.innerHTML='<div class="blog-cover" aria-hidden="true"><div class="cover-shape"></div><span class="cover-mark"></span><span class="cover-stamp">P / STUDY</span></div><div class="blog-card-body"><div class="blog-card-meta"><span class="blog-tag"></span><span class="blog-minutes"></span></div><h3></h3><p></p><div class="blog-card-foot"><span>Đọc bài viết</span><span class="blog-arrow" aria-hidden="true">↗</span></div></div>';
+  a.querySelector('.cover-mark').textContent=({spss:'01 / SPSS',stata:'02 / STATA',python:'03 / PY',data:'04 / DATA',method:'05 / LAB'})[post.categoryKey]||'P / S';
+  a.querySelector('.blog-tag').textContent=post.category;
+  a.querySelector('.blog-minutes').textContent=blogReadMinutes(post)+' phút đọc';
+  a.querySelector('h3').textContent=post.title;
+  a.querySelector('p').textContent=post.excerpt;
+  a.addEventListener('click',event=>{if(event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;event.preventDefault();goToPage('blog/'+post.slug);});
+  return a;
+}
+function renderBlogCards(){
+  const search=plainSearch($('blogSearch').value);
+  const cards=$('blogCards');cards.replaceChildren();
+  const shown=BLOG_POSTS.filter(post=>(blogCategory==='all'||post.categoryKey===blogCategory)&&(!search||plainSearch([post.title,post.excerpt,post.category,post.contents.replace(/<[^>]*>/g,' ')].join(' ')).includes(search)));
+  shown.forEach(post=>cards.append(articleCard(post)));
+  $('blogCount').textContent=shown.length+' bài viết'+(shown.length!==BLOG_POSTS.length?' phù hợp':'');
+  $('blogEmpty').hidden=!!shown.length;
+}
+function selectBlogCategory(category){blogCategory=category;
+  document.querySelectorAll('[data-blog-filter]').forEach(btn=>{const active=btn.dataset.blogFilter===category;btn.classList.toggle('active',active);btn.setAttribute('aria-pressed',String(active));});
+  renderBlogCards();
+}
+function showBlogIndex(){
+  $('blogIndex').hidden=false;$('blogArticle').hidden=true;document.body.classList.remove('reading-blog');
+  document.title='PandaStudy — Góc nghiên cứu';
+}
+function renderBlogArticle(slug){
+  const post=BLOG_POSTS.find(item=>item.slug===slug);
+  if(!post){showBlogIndex();toast('Không tìm thấy bài viết này. Bạn có thể chọn một bài khác.');return false;}
+  $('blogIndex').hidden=true;$('blogArticle').hidden=false;document.body.classList.add('reading-blog');
+  $('blogReaderCategory').textContent=post.category.toUpperCase()+' · GÓC NGHIÊN CỨU';
+  $('blogReaderMeta').textContent=post.level+' · '+blogReadMinutes(post)+' phút đọc';
+  $('blogReaderTitle').textContent=post.title;
+  $('blogReaderExcerpt').textContent=post.excerpt;
+  $('blogReaderDate').textContent=post.date;
+  $('blogArticleContent').innerHTML=post.contents;
+  const toc=$('blogToc');toc.replaceChildren();
+  $('blogArticleContent').querySelectorAll('h2[id]').forEach((h,i)=>{
+    const link=document.createElement('a');link.href='#'+h.id;link.textContent=h.textContent;
+    link.addEventListener('click',event=>{event.preventDefault();h.scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});});toc.append(link);
+  });
+  $('blogArticleContent').querySelectorAll('pre').forEach(pre=>{
+    const copy=document.createElement('button');copy.type='button';copy.className='code-copy';copy.textContent='Sao chép mã';copy.setAttribute('aria-label','Sao chép đoạn mã');
+    copy.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(pre.querySelector('code').textContent);toast('Đã sao chép đoạn mã.');}catch{toast('Chưa sao chép được. Bạn có thể bôi đen và sao chép mã.');}});
+    pre.append(copy);
+  });
+  const related=$('blogRelated');related.replaceChildren();
+  BLOG_POSTS.filter(item=>item.slug!==post.slug).slice(0,2).forEach(item=>related.append(articleCard(item,true)));
+  document.title=post.title+' — PandaStudy';
+  updateBlogReadingProgress();return true;
+}
+function updateBlogReadingProgress(){
+  if(!$('blogArticle')||$('blogArticle').hidden||currentPage!=='blog')return;
+  const article=$('blogArticleContent');const bounds=article.getBoundingClientRect();
+  const top=bounds.top+window.scrollY, height=Math.max(1,article.offsetHeight-window.innerHeight*.65);
+  const ratio=Math.min(1,Math.max(0,(window.scrollY-top+window.innerHeight*.25)/height));
+  $('blogProgressBar').style.width=(ratio*100).toFixed(1)+'%';
+  const tocLinks=Array.from($('blogToc').querySelectorAll('a'));
+  let current=null;
+  for(const link of tocLinks){const dest=document.getElementById(link.getAttribute('href').slice(1));if(dest&&dest.getBoundingClientRect().top<=185)current=link;}
+  if(!current)current=tocLinks[0]||null;
+  for(const link of tocLinks){const active=link===current;link.classList.toggle('current',active);if(active)link.setAttribute('aria-current','location');else link.removeAttribute('aria-current');}
+
+}
+function initBlog(){
+  BLOG_POSTS.slice(0,3).forEach(post=>$('homeBlogCards').append(articleCard(post,true)));
+  $('blogSearch').addEventListener('input',renderBlogCards);
+  document.querySelectorAll('[data-blog-filter]').forEach(button=>button.addEventListener('click',()=>selectBlogCategory(button.dataset.blogFilter)));
+  $('blogClear').addEventListener('click',()=>{$('blogSearch').value='';selectBlogCategory('all');$('blogSearch').focus();});
+  document.querySelectorAll('[data-blog-open]').forEach(button=>button.addEventListener('click',()=>goToPage('blog/'+button.dataset.blogOpen)));
+  for(const name of ['blogBack','blogBackBottom'])$(name).addEventListener('click',()=>{goToPage('blog');$('blog-page-title').focus({preventScroll:true});});
+  $('blogShare').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(location.href);toast('Đã sao chép link bài viết.');}catch{toast('Chưa sao chép được; bạn có thể lấy link từ thanh địa chỉ.');}});
+  window.addEventListener('scroll',()=>{if(currentPage==='blog')window.requestAnimationFrame(updateBlogReadingProgress);},{passive:true});
+  window.addEventListener('resize',updateBlogReadingProgress,{passive:true});
+  renderBlogCards();
+}
 function goToPage(name,updateHash=true){
-  const tab=Object.hasOwn(PAGE_TITLES,name)?name:'home';
+  const isArticle=typeof name==='string'&&name.startsWith('blog/');
+  const tab=isArticle?'blog':Object.hasOwn(PAGE_TITLES,name)?name:'home';
   currentPage=tab;
+  if(tab==='blog'){
+    if(isArticle)renderBlogArticle(name.slice(5));else showBlogIndex();
+  }else{document.body.classList.remove('reading-blog');}
   document.querySelectorAll('.page-view').forEach(view=>{const active=view.dataset.view===tab;view.hidden=!active;view.classList.toggle('active',active);});
   document.querySelectorAll('[data-tab]').forEach(button=>{const active=button.dataset.tab===tab;button.classList.toggle('active',active);button.setAttribute('aria-selected',String(active));button.tabIndex=active?0:-1;});
   $('currentPageLabel').textContent=PAGE_TITLES[tab];
-  document.title='PandaStudy — '+PAGE_TITLES[tab];
-  if(updateHash&&location.hash!=='#'+tab)location.hash=tab;
+  if(tab!=='blog')document.title='PandaStudy — '+PAGE_TITLES[tab];
+  if(updateHash&&location.hash!=='#'+(isArticle?name:tab))location.hash=isArticle?name:tab;
   window.scrollTo({top:0,behavior:'instant'});
+  if(isArticle){updateBlogReadingProgress();$('blogReaderTitle').focus({preventScroll:true});}
 }
 function initNavigation(){
   document.querySelectorAll('[data-tab]').forEach(button=>button.addEventListener('click',()=>goToPage(button.dataset.tab)));
@@ -189,6 +275,7 @@ function renderQuickIssues(){
 }
 function bind(){
   restore();
+  initBlog();
   initNavigation();
   $('formUrl').value=state.url;
   $('inspectUrl').addEventListener('click',inspectUrl);

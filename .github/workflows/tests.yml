@@ -20,5 +20,7 @@ jobs:
           .venv/bin/python -m playwright install --with-deps chromium
       - name: Static JavaScript syntax
         run: node --check app.js
+      - name: Blog JavaScript syntax
+        run: node --check blog-data.js
       - name: Browser QA
         run: .venv/bin/python tests/smoke.py
