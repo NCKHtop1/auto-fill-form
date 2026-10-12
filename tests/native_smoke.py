@@ -5,6 +5,7 @@ from pathlib import Path
 from threading import Thread
 import functools
 import socket
+import json
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent / "native"
@@ -30,7 +31,65 @@ try:
         page.route("**/api/auth/status", lambda route: route.fulfill(
             status=200, content_type="application/json",
             body='{"configured":false,"signedIn":false,"submissionEnabled":false}'))
+        form_url = "https://docs.google.com/forms/d/1RC3eFGv0NBSFxzD7PHkhaENbaXf64Lfw28K5TTjisRE/edit"
+        sample_questions = [
+            {"id": "100", "index": 0, "title": "Giới tính", "helpText": "",
+             "required": True, "supported": True, "type": "multiple_choice",
+             "options": ["Nam", "Nữ"], "entryIds": ["900"]},
+            {"id": "102", "index": 1, "title": "Thang đo", "helpText": "",
+             "required": True, "supported": True, "type": "grid",
+             "options": ["Không đồng ý", "Đồng ý"], "rows": ["Câu 1", "Câu 2"],
+             "columns": ["Không đồng ý", "Đồng ý"], "entryIds": ["901", "902"]}
+        ]
+        sample_form = {
+            "id": "1RC3eFGv0NBSFxzD7PHkhaENbaXf64Lfw28K5TTjisRE",
+            "title": "Google Form thử nghiệm",
+            "description": "Đọc biểu mẫu công khai",
+            "accessMode": "public", "acceptingResponses": True,
+            "responseCount": None, "collectsEmail": None,
+            "limitOneResponsePerUser": None,
+            "supportedCount": 2, "unsupportedCount": 0,
+            "questions": sample_questions
+        }
+        def mock_bridge(route):
+            request = route.request.post_data_json
+            name = request.get("name")
+            if name == "importOwnedForm":
+                result = sample_form
+            elif name == "validatePlan":
+                rows = request.get("args", [None, []])[1]
+                result = {"valid": True, "invalid": 0, "total": len(rows),
+                          "results": [{"index": i + 1, "valid": True, "issues": []}
+                                      for i in range(len(rows))]}
+            elif name == "getBillingProfile":
+                result = {"configured": True, "billingEnabled": False,
+                          "availableCredits": 1000000, "unitPriceVnd": 0}
+            elif name == "getScheduledQaRuns":
+                result = []
+            else:
+                route.fulfill(status=400, content_type="application/json",
+                              body=json.dumps({"error": "Unsupported mock operation"}))
+                return
+            route.fulfill(status=200, content_type="application/json",
+                          body=json.dumps(result, ensure_ascii=False))
+        page.route("**/api/bridge", mock_bridge)
         page.goto(base + "/#home", wait_until="domcontentloaded")
+        page.locator("#formUrl").fill(form_url)
+        page.locator("#importFormBtn").click()
+        page.locator("#questionList .question-card").first.wait_for(timeout=10000)
+        assert page.locator("#questionList .question-card").count() == 2
+        assert "Google Form thử nghiệm" in page.locator("#formSummary").inner_text()
+        assert page.locator("#refreshCountBtn").is_disabled()
+        assert "Chưa cấu hình Google" not in page.locator("#googleStatus").inner_text()
+        for count in (50, 100):
+            page.locator("#responseCount").fill(str(count))
+            page.locator("#buildPlanBtn").click()
+            assert page.locator("#planTableBody tr").count() == count
+            page.locator("#validatePlanBtn").click()
+            page.locator("#planTableBody tr .status-chip.success").first.wait_for(timeout=10000)
+            assert page.locator("#planTableBody tr .status-chip.success").count() == count
+        assert page.locator("#submitPlanBtn").is_disabled()
+
         page.locator("#blogGrid article").first.wait_for(timeout=15000)
         assert page.title() == "PandaStudy", page.title()
         assert page.locator("#blogGrid article").count() == 5
