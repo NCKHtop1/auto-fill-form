@@ -60,7 +60,7 @@ function recoverAttempts(){
   const record=JSON.parse(sessionStorage.getItem(state.runKey)||'{}');
   const old=Array.isArray(record.attempted)?record.attempted:[];
   old.forEach(n=>state.attempted.add(Number(n)));
-  if(old.length)status('Trang này đã thử gửi '+old.length+' dòng trong phiên hiện tại. Không tự gửi lại để tránh trùng. Hãy kiểm tra tổng phản hồi trước.',true);
+  if(old.length)status('Đã thực hiện '+old.length+' lượt gửi trong phiên này. Kiểm tra kết quả trước khi gửi tiếp.',true);
  }catch{}
 }
 function rememberAttempt(index){
@@ -85,7 +85,7 @@ async function permission(){
   /không có quyền đọc biểu mẫu|quyền chỉnh sửa/i.test(warning)
    ?'Không đọc được Form. Kiểm tra liên kết hoặc quyền truy cập.':warning;
  $('qaConfigStatus').textContent=data.canSend?'':note;
- $('qaConfigStatus').hidden=!!data.canSend;
+ $('qaConfigStatus').hidden=!!data.canSend||!bridge?.getUrl();
  $('qaRunStartOne').dataset.allowed=String(!!data.canSend);
  $('qaRunStartAll').dataset.allowed=String(!!data.canSend);
  // Buttons show state but sending also checks permission at click time.
@@ -114,8 +114,8 @@ function updateReport(){
   if(delta===confirmed && confirmed>0)status(
    'Đối chiếu tổng khớp: '+confirmed+' lượt có trang Google xác nhận, '+providerLabel()+' tăng '+delta+
    '. Nếu biểu mẫu đang có người trả lời khác, số tăng có thể bao gồm phản hồi của họ.');
-  else status('Cần kiểm tra lại: trang Google báo nhận '+confirmed+
-   ', nhưng tổng phản hồi tăng '+delta+'; không tự gửi thêm hoặc thử lại.',true);
+  else status('Cần đối chiếu lại: Google xác nhận '+confirmed+
+   ', nhưng tổng phản hồi tăng '+delta+'.',true);
  }
 }
 async function run(maxRows){
@@ -134,7 +134,7 @@ async function run(maxRows){
  const unsent=rows.filter(r=>r.status==='valid'&&!state.attempted.has(r.index));
  if(!unsent.length)return status('Không có dòng hợp lệ chưa gửi; tránh gửi trùng.',true);
  if(state.attempted.size && unsent.length<rows.filter(r=>r.status==='valid').length)
-  return status('Một số dòng đã được thử trong phiên này. Hãy kiểm tra lại trước khi gửi tiếp.',true);
+  return status('Một số dòng đã gửi trong phiên này. Kiểm tra kết quả trước khi gửi tiếp.',true);
  state.working=true;
  $('qaRunStartOne').disabled=true;$('qaRunStartAll').disabled=true;
  try{
@@ -146,7 +146,7 @@ async function run(maxRows){
     // Form API response-count permission is optional; do not mislabel this
     // as a Google login or submission permission error.
     state.before=null;
-    status('Chưa đọc được tổng trước khi gửi: '+e.message+'. Vẫn có thể gửi thử và xem xác nhận Google; cần Sheet để đối chiếu.',true);
+    status('Không đọc được tổng ban đầu: '+e.message+'. Kiểm tra phản hồi Google và đối chiếu trên Sheet.',true);
    }
   }
   const batch=unsent.slice(0,maxRows);
@@ -170,7 +170,7 @@ async function run(maxRows){
    if(answer.status!=='page-confirmed'){
     state.stopped=true;
     status('Dừng tại dòng '+r.index+': '+result.note+
-      ' Hãy kiểm tra phản hồi đã ghi trước khi thử lại.',true);
+      ' Hãy kiểm tra phản hồi trước khi gửi tiếp.',true);
     break;
    }
    status('Trang Google báo nhận '+state.history.length+' dòng. Đang kiểm tra số thực tế...');
@@ -181,7 +181,7 @@ async function run(maxRows){
    await verify(false);
    updateReport();
   }catch(e){
-   status('Đã thử gửi nhưng chưa đối chiếu được tổng phản hồi: '+e.message,true);
+   status('Chưa đối chiếu được tổng phản hồi: '+e.message,true);
   }
  }catch(e){status('Chưa bắt đầu gửi: '+e.message,true);}
  finally{
