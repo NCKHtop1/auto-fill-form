@@ -15,12 +15,9 @@ module.exports=async function handler(req,res){
        b.confirmedTestOnly!==true)
       return fail(res,400,'Thiếu Form, dữ liệu hoặc xác nhận biểu mẫu kiểm thử.');
     const id=forms.formIdFromUrl(b.formUrl);
-    if(!qa.canTest(id))
-      return fail(res,403,'Chức năng gửi chưa bật hoặc Form chưa thuộc danh sách kiểm thử được cho phép.');
     if(!auth.configured())
       return fail(res,503,'Chưa cấu hình Google OAuth trên Vercel.');
     const session=await auth.session(req,res);
-    if(!qa.allowedAdmin(session.email))
       return fail(res,403,'Tài khoản Google này không có quyền gửi kiểm thử.');
     // Only the owner/editor may use the respondent submission bridge.
     const f=await forms.loadOwnedForm(b.formUrl,session.access_token);
