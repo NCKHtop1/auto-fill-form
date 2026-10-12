@@ -1,0 +1,8 @@
+{
+  "name": "pandastudy-form-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PandaStudy - Google Forms QA tools on Vercel, no Apps Script runtime",
+  "scripts": {"test": "node --test tests/*.test.js", "check": "node --check api/bridge.js && node --check api/auth/start.js && node --check api/auth/callback.js && node --check lib/forms.js && node --check lib/auth.js"},
+  "engines": {"node": ">=20"}
+}

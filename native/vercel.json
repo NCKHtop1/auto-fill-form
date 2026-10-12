@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "functions": {
+    "api/bridge.js": {"maxDuration": 30},
+    "api/auth/*.js": {"maxDuration": 15}
+  },
+  "headers": [
+    {"source": "/api/(.*)", "headers": [
+      {"key": "Cache-Control", "value": "no-store"},
+      {"key": "X-Content-Type-Options", "value": "nosniff"}
+    ]}
+  ]
+}

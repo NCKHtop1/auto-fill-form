@@ -1,0 +1,2 @@
+'use strict';const auth=require('../../lib/auth');
+module.exports=async(req,res)=>{res.setHeader('Cache-Control','no-store');let signedIn=false,email='';if(auth.configured()){try{const s=await auth.session(req,res);signedIn=true;email=s.email||''}catch{}}res.status(200).json({configured:auth.configured(),signedIn,email,submissionEnabled:process.env.ENABLE_QA_SUBMISSIONS==='true',schedulingEnabled:false,billingEnabled:false})};

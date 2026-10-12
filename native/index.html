@@ -1,0 +1,2513 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>PandaStudy — Nhập dữ liệu cho Google Form</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
+  <style>
+    :root {
+      --bg: #f7f8fc;
+      --surface: #ffffff;
+      --surface-soft: #f6f2ff;
+      --ink: #17223b;
+      --muted: #667085;
+      --line: #e5e7ef;
+      --primary: #315eea;
+      --primary-dark: #2448bd;
+      --secondary: #12345b;
+      --success: #16875b;
+      --warning: #9a6700;
+      --danger: #c0362c;
+      --info: #1769aa;
+      --shadow: 0 18px 55px rgba(31, 42, 68, 0.10);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button { cursor: pointer; }
+    a { color: inherit; }
+    .hidden { display: none !important; }
+    .muted { color: var(--muted); }
+    .small { font-size: 0.86rem; }
+    .nowrap { white-space: nowrap; }
+
+
+
+    .wallet-panel {
+      background: linear-gradient(180deg, #f4f7ff 0%, #ffffff 48%);
+      border-bottom: 1px solid var(--line);
+      padding: 30px 26px;
+    }
+    .wallet-heading { text-align: center; margin-bottom: 22px; }
+    .wallet-heading h2 { margin: 0; font-size: 1.55rem; letter-spacing: -0.03em; }
+    .wallet-heading p { margin: 5px 0 0; color: var(--muted); font-size: .9rem; }
+    .wallet-grid { display: grid; grid-template-columns: 1.05fr .95fr; gap: 18px; }
+    .wallet-card {
+      background: #fff; border: 1px solid var(--line); border-radius: 16px;
+      padding: 20px; box-shadow: 0 10px 30px rgba(31,42,68,.06);
+    }
+    .wallet-card h3 { margin: 0 0 16px; font-size: 1rem; }
+    .payment-row {
+      display: grid; grid-template-columns: 155px 1fr; gap: 12px; align-items: center;
+      padding: 10px 0; border-bottom: 1px solid #eef0f5; font-size: .9rem;
+    }
+    .payment-row:last-child { border-bottom: 0; }
+    .payment-row span:first-child { color: var(--muted); }
+    .payment-row strong { word-break: break-word; }
+    .qr-area { min-height: 220px; display: grid; place-items: center; text-align: center; }
+    #qrBox { padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: #fff; }
+    #qrBox img, #qrBox canvas { display: block; max-width: 190px; height: auto; }
+    .balance-line { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; }
+    .balance-value { font-size: 1.55rem; font-weight: 900; color: #173253; }
+    .money-total { margin-top: 14px; border: 1px solid #c9d8ff; background: #f2f6ff; border-radius: 13px; padding: 16px; }
+    .money-total .main { display:flex; justify-content:space-between; gap:12px; font-weight:900; color:#2047a5; font-size:1.05rem; }
+    .billing-note { margin-top: 12px; font-size: .82rem; color: var(--muted); }
+    .payment-status { margin-top: 12px; min-height: 22px; font-size: .88rem; font-weight: 700; }
+    .payment-status.success { color: var(--success); }
+    .payment-status.warning { color: var(--warning); }
+    .payment-status.danger { color: var(--danger); }
+    .cost-box { border: 1px solid #d9e2ff; background:#f7f9ff; border-radius:11px; padding:11px 12px; font-weight:800; color:#2547a5; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(16px);
+      background: rgba(255,255,255,0.90);
+      border-bottom: 1px solid rgba(229,231,239,0.9);
+    }
+
+    .nav-wrap {
+      max-width: 1240px;
+      margin: auto;
+      height: 72px;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      text-decoration: none;
+      margin-right: auto;
+    }
+
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--primary), #6546e8);
+      color: white;
+      box-shadow: 0 9px 24px rgba(109, 74, 255, 0.35);
+      font-weight: 900;
+    }
+
+    .nav-links { display: flex; gap: 26px; }
+    .nav-links a {
+      text-decoration: none;
+      color: #566176;
+      font-weight: 600;
+      font-size: 0.94rem;
+    }
+    .nav-links a:hover { color: var(--primary); }
+
+    .lang-switch {
+      display: flex;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+      background: white;
+    }
+    .lang-switch button {
+      border: 0;
+      background: transparent;
+      padding: 8px 11px;
+      color: var(--muted);
+      font-weight: 700;
+    }
+    .lang-switch button.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      padding: 86px 24px 62px;
+      background:
+        radial-gradient(circle at 78% 18%, rgba(125, 90, 255, 0.18), transparent 32%),
+        radial-gradient(circle at 12% 85%, rgba(49, 164, 255, 0.13), transparent 30%),
+        linear-gradient(135deg, #ffffff, #f7f2ff 65%, #eff8ff);
+      border-bottom: 1px solid var(--line);
+    }
+
+    .hero-inner {
+      max-width: 1050px;
+      margin: auto;
+      text-align: center;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 13px;
+      border-radius: 999px;
+      border: 1px solid #d9d1ff;
+      background: rgba(255,255,255,0.78);
+      color: var(--primary-dark);
+      font-size: 0.84rem;
+      font-weight: 800;
+    }
+
+    .hero h1 {
+      margin: 22px auto 16px;
+      max-width: 930px;
+      font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+      font-weight: 900;
+      text-transform: uppercase;
+      font-size: clamp(2.35rem, 5.5vw, 4.55rem);
+      line-height: 1.03;
+      letter-spacing: -0.045em;
+      color: #173253;
+    }
+
+    .hero p {
+      margin: auto;
+      max-width: 820px;
+      color: var(--muted);
+      font-size: 1.05rem;
+    }
+
+    .notice {
+      max-width: 930px;
+      margin: 24px auto 0;
+      padding: 13px 16px;
+      border: 1px solid #efdba8;
+      border-radius: 12px;
+      background: #fff9e9;
+      color: #72550a;
+      font-size: 0.9rem;
+    }
+
+    main { max-width: 1240px; margin: auto; padding: 42px 24px 80px; }
+
+    .workspace {
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .workspace-head {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 22px 26px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(90deg, #ffffff, #faf8ff);
+    }
+
+    .workspace-head h2 { margin: 0; font-size: 1.25rem; }
+    .workspace-head p { margin: 3px 0 0; color: var(--muted); font-size: 0.9rem; }
+    .workspace-head .status-chip { margin-left: auto; }
+
+    .status-chip {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.78rem;
+      background: #eef4ff;
+      color: var(--info);
+    }
+    .status-chip.success { background: #e8f8f1; color: var(--success); }
+    .status-chip.warning { background: #fff5dd; color: var(--warning); }
+    .status-chip.danger { background: #fff0ef; color: var(--danger); }
+
+    .step {
+      padding: 26px;
+      border-bottom: 1px solid var(--line);
+    }
+    .step:last-child { border-bottom: 0; }
+
+    .step-title {
+      display: flex;
+      align-items: flex-start;
+      gap: 13px;
+      margin-bottom: 18px;
+    }
+    .step-number {
+      flex: 0 0 auto;
+      width: 31px;
+      height: 31px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      background: var(--surface-soft);
+      color: var(--primary);
+      font-weight: 900;
+    }
+    .step-title h3 { margin: 0; font-size: 1.08rem; }
+    .step-title p { margin: 4px 0 0; color: var(--muted); font-size: 0.9rem; }
+
+    .field-grid { display: grid; gap: 14px; }
+    .field-grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .field-grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .field-grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .field label, .field > span.label {
+      display: block;
+      margin-bottom: 7px;
+      color: #344054;
+      font-size: 0.86rem;
+      font-weight: 750;
+    }
+
+    input[type="text"], input[type="number"], input[type="url"], input[type="date"],
+    input[type="time"], input[type="datetime-local"], select, textarea {
+      width: 100%;
+      border: 1px solid #d8dce8;
+      border-radius: 11px;
+      padding: 11px 12px;
+      background: white;
+      color: var(--ink);
+      outline: none;
+      transition: 0.15s ease;
+    }
+    textarea { min-height: 92px; resize: vertical; }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(109, 74, 255, 0.12);
+    }
+
+    .input-action { display: flex; gap: 10px; }
+    .input-action input { flex: 1; }
+
+    .btn {
+      border: 0;
+      border-radius: 11px;
+      padding: 11px 16px;
+      font-weight: 800;
+      transition: 0.15s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-dark); }
+    .btn-secondary { background: #12345b; color: white; }
+    .btn-soft { background: #eef2ff; color: #3f51a4; }
+    .btn-success { background: #259f73; color: white; }
+    .btn-danger { background: #fff0ef; color: var(--danger); border: 1px solid #ffd4cf; }
+    .btn-outline { background: white; color: var(--ink); border: 1px solid var(--line); }
+    .btn-sm { padding: 8px 11px; border-radius: 9px; font-size: 0.84rem; }
+
+    .form-summary, .data-summary {
+      margin-top: 16px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 15px;
+      background: #fbfcff;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+    .summary-stat {
+      padding: 11px;
+      border-radius: 11px;
+      background: white;
+      border: 1px solid var(--line);
+    }
+    .summary-stat b { display: block; font-size: 1.05rem; }
+    .summary-stat span { font-size: 0.78rem; color: var(--muted); }
+
+    .drop-zone {
+      display: grid;
+      place-items: center;
+      min-height: 128px;
+      border: 1.5px dashed #c9cde0;
+      border-radius: 14px;
+      background: #fbfcff;
+      text-align: center;
+      padding: 20px;
+      transition: 0.15s ease;
+    }
+    .drop-zone.dragover { border-color: var(--primary); background: #f8f5ff; }
+    .drop-zone input { display: none; }
+    .drop-zone strong { color: var(--primary-dark); }
+
+    .question-list { display: grid; gap: 14px; }
+    .question-card {
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      overflow: hidden;
+      background: white;
+    }
+    .question-head {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 15px 16px;
+      background: #fbfcff;
+      border-bottom: 1px solid var(--line);
+    }
+    .question-head .q-index {
+      flex: 0 0 auto;
+      width: 27px;
+      height: 27px;
+      display: grid;
+      place-items: center;
+      border-radius: 8px;
+      background: #eef0fb;
+      font-weight: 800;
+      color: var(--secondary);
+      font-size: 0.8rem;
+    }
+    .question-head h4 { margin: 0; font-size: 0.98rem; }
+    .question-meta { margin-top: 4px; color: var(--muted); font-size: 0.79rem; }
+    .question-body { padding: 16px; }
+
+    .mapping-box {
+      padding: 13px;
+      border: 1px solid #dbe4f0;
+      background: #f4f9fd;
+      border-radius: 12px;
+      margin-bottom: 13px;
+    }
+    .mapping-box .mapping-help { margin: 7px 0 0; color: #5f7085; font-size: 0.8rem; }
+
+    .rule-box {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 13px;
+    }
+    .rule-box h5 { margin: 0 0 10px; font-size: 0.9rem; }
+    .rule-inline { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+    .radio-tabs {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+      border-radius: 11px;
+      background: #f1f2f7;
+    }
+    .radio-tabs label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+    .radio-tabs input { accent-color: var(--primary); }
+    .radio-tabs label:has(input:checked) { background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+    .weight-list { display: grid; gap: 8px; margin-top: 12px; }
+    .weight-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px; gap: 10px; align-items: center; }
+    .weight-row input { padding: 8px 10px; }
+    .weight-total { margin-top: 9px; text-align: right; font-weight: 800; font-size: 0.84rem; }
+    .weight-total.ok { color: var(--success); }
+    .weight-total.bad { color: var(--danger); }
+
+    .option-checks { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+    .option-checks label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fafbfe;
+      font-size: 0.82rem;
+    }
+    .option-checks input { accent-color: var(--primary); }
+
+    .grid-row-map {
+      display: grid;
+      grid-template-columns: minmax(180px, 1fr) minmax(220px, 1.4fr);
+      gap: 10px;
+      align-items: center;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--line);
+    }
+    .grid-row-map:last-child { border-bottom: 0; }
+    .grid-row-map .row-label { font-size: 0.84rem; font-weight: 650; }
+
+    .info-box, .warning-box, .error-box, .success-box {
+      border-radius: 11px;
+      padding: 12px 13px;
+      font-size: 0.86rem;
+      margin: 12px 0;
+    }
+    .info-box { background: #eef7ff; border: 1px solid #cde7ff; color: #245a83; }
+    .warning-box { background: #fff8e6; border: 1px solid #f3dfaa; color: #72550a; }
+    .error-box { background: #fff1f0; border: 1px solid #ffd3ce; color: #922b24; }
+    .success-box { background: #eaf8f1; border: 1px solid #c6ecd9; color: #156c4b; }
+
+    .schedule-panel {
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 14px;
+      background: #fbfcff;
+    }
+
+    .check-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 9px;
+      margin-top: 15px;
+      padding: 12px;
+      border: 1px solid #e5ddff;
+      border-radius: 11px;
+      background: #faf8ff;
+      font-size: 0.87rem;
+    }
+    .check-line input { margin-top: 4px; accent-color: var(--primary); }
+
+    .action-row {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 16px;
+    }
+
+    .table-wrap {
+      overflow: auto;
+      max-height: 490px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+    }
+    table { width: 100%; border-collapse: collapse; min-width: 880px; font-size: 0.82rem; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+    th { position: sticky; top: 0; z-index: 2; background: #edf5ff; color: #29425e; font-weight: 850; }
+    tr:last-child td { border-bottom: 0; }
+    .preview-cell { max-width: 510px; white-space: normal; }
+
+    .progress {
+      height: 9px;
+      overflow: hidden;
+      border-radius: 99px;
+      background: #eaf0f7;
+      margin: 10px 0 15px;
+    }
+    .progress > div { width: 0%; height: 100%; background: linear-gradient(90deg, #278ac4, #6d4aff); transition: width .25s ease; }
+
+    .section-block { padding: 86px 0 0; }
+    .section-heading { text-align: center; max-width: 740px; margin: 0 auto 34px; }
+    .section-heading h2 { margin: 0 0 10px; font-size: clamp(1.8rem, 4vw, 2.7rem); letter-spacing: -0.035em; }
+    .section-heading p { color: var(--muted); margin: 0; }
+
+    .cards-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+    .feature-card, .price-card, .how-card {
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: white;
+      padding: 22px;
+      box-shadow: 0 10px 30px rgba(31,42,68,0.05);
+    }
+    .feature-card .icon, .how-card .icon {
+      width: 43px;
+      height: 43px;
+      display: grid;
+      place-items: center;
+      border-radius: 13px;
+      background: var(--surface-soft);
+      color: var(--primary);
+      font-weight: 900;
+      margin-bottom: 14px;
+    }
+    .feature-card h3, .how-card h3, .price-card h3 { margin: 0 0 8px; }
+    .feature-card p, .how-card p, .price-card p { margin: 0; color: var(--muted); }
+
+    .price-card.highlight { border-color: #b9aaff; box-shadow: 0 18px 45px rgba(109,74,255,0.13); }
+    .price { font-size: 2rem; font-weight: 900; margin: 16px 0 4px; }
+    .price-list { margin: 16px 0 0; padding-left: 18px; color: #4f5d72; }
+    .price-list li { margin: 8px 0; }
+
+    .faq-list { display: grid; gap: 10px; max-width: 900px; margin: auto; }
+    details {
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: white;
+      padding: 0 16px;
+    }
+    summary { cursor: pointer; list-style: none; padding: 16px 0; font-weight: 800; }
+    summary::-webkit-details-marker { display: none; }
+    details p { color: var(--muted); margin: 0 0 16px; }
+
+    .contact-box {
+      display: grid;
+      grid-template-columns: 1.3fr .7fr;
+      gap: 24px;
+      align-items: center;
+      padding: 34px;
+      border-radius: 22px;
+      background: linear-gradient(135deg, #173253, #6d4aff);
+      color: white;
+    }
+    .contact-box h2 { margin: 0 0 10px; font-size: 2rem; }
+    .contact-box p { margin: 0; color: rgba(255,255,255,0.78); }
+    .contact-actions { display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
+    .contact-actions .btn { background: white; color: #263d5b; }
+
+    footer {
+      margin-top: 80px;
+      border-top: 1px solid var(--line);
+      padding: 28px 0;
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+    .footer-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+    .footer-row .links { margin-left: auto; display: flex; gap: 15px; }
+    .footer-row button { border: 0; background: none; color: var(--muted); padding: 0; }
+
+    dialog {
+      width: min(720px, calc(100% - 32px));
+      max-height: 82vh;
+      border: 0;
+      border-radius: 18px;
+      padding: 0;
+      box-shadow: 0 30px 90px rgba(0,0,0,.26);
+    }
+    dialog::backdrop { background: rgba(16,24,40,.55); backdrop-filter: blur(4px); }
+    .dialog-head { display: flex; align-items: center; padding: 18px 20px; border-bottom: 1px solid var(--line); }
+    .dialog-head h3 { margin: 0; }
+    .dialog-head button { margin-left: auto; border: 0; background: #f1f2f6; width: 32px; height: 32px; border-radius: 9px; }
+    .dialog-body { padding: 20px; color: #475467; }
+    .dialog-body h4 { color: var(--ink); margin-bottom: 7px; }
+
+    .toast-wrap {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 100;
+      display: grid;
+      gap: 10px;
+      width: min(380px, calc(100% - 40px));
+    }
+    .toast {
+      padding: 13px 15px;
+      border-radius: 12px;
+      background: #17223b;
+      color: white;
+      box-shadow: 0 16px 50px rgba(0,0,0,.18);
+      animation: toastIn .2s ease;
+      font-size: .9rem;
+    }
+    .toast.error { background: #9e2f28; }
+    .toast.success { background: #16714f; }
+    @keyframes toastIn { from { transform: translateY(8px); opacity: 0; } }
+
+    .spinner {
+      width: 17px;
+      height: 17px;
+      border: 2px solid rgba(255,255,255,.45);
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 920px) {
+      .nav-links { display: none; }
+      .cards-3, .field-grid.three, .field-grid.four { grid-template-columns: 1fr 1fr; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .contact-box { grid-template-columns: 1fr; }
+      .wallet-grid { grid-template-columns: 1fr; }
+      .payment-row { grid-template-columns: 120px 1fr; }
+      .contact-actions { justify-content: flex-start; }
+    }
+
+    @media (max-width: 650px) {
+      .nav-wrap { padding: 0 14px; }
+      .hero { padding: 62px 16px 44px; }
+      main { padding: 24px 12px 60px; }
+      .workspace-head, .step { padding: 18px; }
+      .workspace-head { align-items: flex-start; }
+      .workspace-head .status-chip { display: none; }
+      .field-grid.two, .field-grid.three, .field-grid.four, .cards-3 { grid-template-columns: 1fr; }
+      .input-action { flex-direction: column; }
+      .summary-grid { grid-template-columns: 1fr 1fr; }
+      .grid-row-map { grid-template-columns: 1fr; }
+      .footer-row .links { margin-left: 0; width: 100%; }
+    }
+  </style>
+<style id="pandastudy-design">
+ :root{--bg:#eff6e9;--surface:#fff;--surface-soft:#e9f6e5;--ink:#152e20;--muted:#5c7062;--line:#dbe7d5;--primary:#2d713c;--primary-dark:#205a2d;--secondary:#1b4a2a;--success:#267444;--info:#276a58;--shadow:0 20px 55px rgba(25,80,36,.09)}
+ body{background:linear-gradient(180deg,#f1f8e9,#eef6e9 42%,#f9fbf4);color:var(--ink)}
+ .topbar{background:rgba(255,255,250,.95);border-color:#dfe9d8}
+ .nav-wrap{max-width:1440px;height:68px;gap:20px}
+ .brand{font-size:1.35rem;color:#0b2b1b;gap:8px;white-space:nowrap}
+ .brand-green{color:#3b874c}
+ .brand-mark{width:38px;height:38px;font-size:25px;background:#e7f3df;box-shadow:none;border:1px solid #cde3c7}
+ .nav-links{gap:17px;align-items:center}.nav-links a{font-size:.79rem;color:#3b5546}.nav-links a:hover{color:var(--primary)}
+ .nav-actions{display:flex;align-items:center;gap:13px;white-space:nowrap;margin-left:auto}.google-status{font-size:.76rem;color:#587360;max-width:170px;overflow:hidden;text-overflow:ellipsis}
+ .nav-actions .btn{padding:9px 12px;font-size:.8rem;border-radius:26px}.lang-switch{border-color:#deebd7}.lang-switch button{padding:6px 8px}.lang-switch button.active{background:#2b793e}
+ .btn{border-radius:11px}.btn-primary{background:linear-gradient(160deg,#397e43,#1f5a2b);box-shadow:0 7px 16px rgba(34,90,47,.14)}.btn-primary:hover{background:#1e592c}.btn-secondary{background:#235e32}.btn-soft{background:#e9f4e4;color:#2c703d}
+ .hero{max-width:100%;padding:0;background:linear-gradient(105deg,#f4faed,#ecf6e4 62%,#dbeecb);border:0}
+ .hero-inner{max-width:1380px;margin:auto;display:grid;grid-template-columns: 47% 53%;align-items:center;min-height:380px;text-align:left}
+ .hero-copy{padding:45px 15px 42px 50px;position:relative;z-index:1}
+ .hero .pill{background:#e3f3db;border:0;color:#286a38;font-size:.78rem;font-weight:750}
+ .hero h1{margin:15px 0 14px;max-width:760px;font-size:clamp(2rem,3.4vw,3.55rem);line-height:1.12;text-transform:none;letter-spacing:-.045em;color:#122a1e}
+ .hero h1 strong{color:#277443}
+ .hero p{margin:0;max-width:530px;font-size:1rem;line-height:1.65;color:#4c6253}
+ .hero-buttons{display:flex;gap:10px;margin-top:22px}.hero-buttons .btn{min-width:145px;border-radius:24px}
+ .hero-points{display:flex;gap:15px;flex-wrap:wrap;margin-top:23px;font-size:.75rem;color:#295735;font-weight:750}
+ .hero-art{height:375px;overflow:hidden;position:relative}.hero-art:before{content:"";position:absolute;inset:0;z-index:1;background:linear-gradient(90deg,#edf6e6 0%,transparent 12%)}
+ .hero-art img{height:100%;width:100%;object-fit:cover;object-position:center}
+ .steps-strip{max-width:1240px;margin:-7px auto 0;position:relative;z-index:2;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:rgba(255,255,255,.95);padding:12px;border:1px solid #e5ebdc;border-radius:20px;box-shadow:0 12px 32px rgba(30,80,30,.06)}
+ .steps-strip a{display:flex;align-items:center;gap:12px;text-decoration:none;padding:13px 15px;border-radius:12px;color:#25492f}.steps-strip a:first-child{background:linear-gradient(130deg,#1d6631,#398346);color:white}
+ .steps-strip a>b{display:grid;place-items:center;flex-shrink:0;width:32px;height:32px;border-radius:50%;background:#d6ebcf;color:#1a5d2f}.steps-strip a:first-child>b{background:#e7f5df;color:#266536}
+ .steps-strip strong,.steps-strip small{display:block;line-height:1.4}.steps-strip strong{font-size:.87rem}.steps-strip small{font-size:.72rem;opacity:.75;margin-top:2px}
+ main{max-width:1240px;padding:23px 14px 80px}.workspace{border:1px solid #d8e8d6;border-radius:20px}.workspace-head{padding:19px 24px;background:#f8fcf4}.workspace-head h2{font-size:1.25rem}
+ .step{padding:21px 24px}.step-number{border-radius:50%;background:#e1f0dc;color:#246739}.step-title p{margin-top:2px}.drop-zone{background:#fbfdf9;border:1.5px dashed #a9ccb0}.drop-zone strong{color:#1d7336}.info-box{background:#f0f7ed;border-color:#d5e8d1;color:#315e3b}.mapping-box{background:#f3f9f2;border-color:#d8e9d5}
+ .status-chip{background:#e9f7e8;color:#27723f}.progress>div{background:linear-gradient(90deg,#31834b,#79bb60)}.cost-box{background:#f0f7e9;border-color:#d6e7c9;color:#28753b}
+ .blog-section{padding:38px 0 0}.blog-head{display:flex;justify-content:space-between;gap:16px;align-items:center;margin-bottom:14px}.blog-head h2{margin:0;font-size:1.3rem}.blog-head p{color:#677a67;margin:4px 0 0;font-size:.8rem}.blog-head span{color:#396c43;font-size:.8rem}
+ .blog-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:13px}.blog-grid article{border:1px solid #e1ebdd;border-radius:15px;background:#fff;overflow:hidden;box-shadow:0 10px 20px rgba(30,80,40,.04)}.blog-thumb{height:101px;display:grid;place-items:center;font-size:2rem;color:white;font-weight:900;letter-spacing:-.05em;background-color:#438aca;background-image:linear-gradient(135deg,transparent 0 12%,#ffffff22 12% 25%,transparent 25% 37%,#ffffff1a 37% 55%,transparent 55%)}.thumb-red{background-color:#b74f62}.thumb-python{background-color:#4b71af}.thumb-green{background-color:#367950}.thumb-brown{background-color:#a88963}.blog-grid h3{font-size:.85rem;line-height:1.35;margin:11px 12px 7px}.blog-grid p{color:#687969;line-height:1.45;font-size:.74rem;margin:0 12px 13px}
+ .section-block{padding-top:48px}.section-heading h2{font-size:1.65rem}.cards-3{gap:12px}.how-card{padding:17px}.how-card .icon{background:#e6f4df;color:#25713b}
+ footer{margin-top:45px;padding:30px 0;background:#183a23;color:#ecf6e6;box-shadow:0 0 0 100vmax #183a23;clip-path:inset(0 -100vmax)}.footer-row .links button{color:#eaf8e6}
+ @media(max-width:1100px){.nav-links{gap:9px}.nav-links a{font-size:.72rem}.hero-copy{padding-left:26px}.hero h1{font-size:2.4rem}.blog-grid{grid-template-columns:repeat(3,1fr)}}
+ @media(max-width:920px){.nav-links{display:none}.hero-inner{grid-template-columns:1fr 1fr}.hero h1{font-size:2rem}.steps-strip{grid-template-columns:repeat(2,1fr);margin:0 12px}.hero-art{height:300px}.google-status{display:none}}
+ @media(max-width:650px){.nav-wrap{height:63px}.hero-inner{grid-template-columns:1fr}.hero-copy{padding:35px 23px 12px}.hero h1{font-size:2.3rem}.hero-art{height:210px}.hero-points{gap:9px}.steps-strip{grid-template-columns:repeat(2,1fr);padding:5px}.steps-strip a{padding:9px;gap:7px}.steps-strip strong{font-size:.73rem}.steps-strip small{font-size:.64rem}.steps-strip a>b{width:25px;height:25px}.blog-grid{grid-template-columns:repeat(2,1fr)}.blog-grid article:last-child{display:none}.blog-thumb{height:85px}.hero-buttons .btn{min-width:0}.nav-actions .btn{font-size:.75rem}.brand{font-size:1.13rem}}
+</style>
+</head>
+<body>
+  <header class="topbar" id="top"><div class="nav-wrap">
+   <a class="brand" href="#top"><span class="brand-mark">🐼</span><span>Panda<span class="brand-green">Study</span></span></a>
+   <nav class="nav-links"><a href="#top">Trang chủ</a><a href="#app">Thiết lập form</a><a href="#dropZone">Nhập dữ liệu</a><a href="#previewSection">Kiểm tra &amp; xuất</a><a href="#blog">Blog</a><a href="#how">Hướng dẫn</a></nav>
+   <div class="nav-actions"><span class="lang-switch"><button type="button" id="langVi" class="active">VI</button><button type="button" id="langEn">EN</button></span><span id="googleStatus" class="google-status">Chưa kết nối Google</span><a class="btn btn-primary" id="googleConnectBtn" href="/api/auth/start">Kết nối Google →</a></div>
+ </div></header>
+
+  <section class="hero"><div class="hero-inner"><div class="hero-copy">
+ <span class="pill">🌿 Dữ liệu nghiên cứu · Google Form</span>
+ <h1>Tạo dữ liệu cho<br><strong>Google Form</strong><br>từ Excel hoặc CSV</h1>
+ <p>Tải file lên, ghép cột với câu hỏi, kiểm tra dữ liệu rồi xuất kết quả. Bạn cũng có thể tạo dữ liệu mẫu để kiểm thử form.</p>
+ <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay ↗</a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
+ <div class="hero-points"><span>✓ Nhập Excel / CSV</span><span>✓ Kiểm tra dữ liệu</span><span>✓ Chọn số dòng tùy ý</span></div></div>
+ <div class="hero-art" role="img" aria-label="Gấu trúc PandaStudy, bảng Excel và Google Form"><img src="/assets/hero.png" alt="PandaStudy" loading="eager"></div></div></section>
+ <div class="steps-strip"><a href="#dropZone"><b>1</b><span><strong>Nhập dữ liệu</strong><small>Excel, CSV hoặc JSON</small></span></a><a href="#app"><b>2</b><span><strong>Thiết lập form</strong><small>Ghép cột với câu hỏi</small></span></a><a href="#previewSection"><b>3</b><span><strong>Kiểm tra &amp; xuất</strong><small>Xem trước từng dòng</small></span></a><a href="#how"><b>4</b><span><strong>Hoàn thành</strong><small>Tải kết quả</small></span></a></div>
+
+  <main>
+    <section class="workspace" id="app">
+      <div class="workspace-head">
+        <div>
+          <h2 data-i18n="workspace_title">Công cụ nhập dữ liệu</h2>
+          <p data-i18n="workspace_subtitle">Chọn file và Google Form để bắt đầu.</p>
+        </div>
+        <span class="status-chip success">Không dùng Apps Script</span>
+      </div>
+
+
+
+      <section class="wallet-panel hidden" id="wallet">
+        <div class="wallet-heading">
+          <h2 data-i18n="wallet_title">Nạp tiền vào tài khoản</h2>
+          <p><span data-i18n="wallet_balance_label">Số dư hiện tại:</span> <strong id="walletBalanceCredits">0 phiếu</strong> · <span id="walletBalanceVnd">0 VND</span></p>
+          <p class="small"><span data-i18n="wallet_account">Tài khoản:</span> <span id="walletEmail">Đang tải...</span></p>
+        </div>
+        <div class="wallet-grid">
+          <div class="wallet-card">
+            <h3 data-i18n="payment_info_title">Thông tin chuyển khoản</h3>
+            <div class="payment-row"><span data-i18n="bank_name">Ngân hàng</span><strong id="bankName">—</strong></div>
+            <div class="payment-row"><span data-i18n="account_number">Số tài khoản</span><strong id="bankAccount">—</strong></div>
+            <div class="payment-row"><span data-i18n="account_name">Tên tài khoản</span><strong id="bankAccountName">—</strong></div>
+            <div class="payment-row"><span data-i18n="payment_amount">Số tiền cần chuyển</span><strong id="paymentAmount">—</strong></div>
+            <div class="payment-row"><span data-i18n="transfer_content">Nội dung chuyển tiền</span><strong id="transferContent">—</strong></div>
+            <div class="payment-row"><span data-i18n="payment_request_code">Mã yêu cầu</span><strong id="paymentOrderCode">—</strong></div>
+            <div class="qr-area">
+              <div>
+                <div id="qrBox" class="hidden"></div>
+                <p id="qrPlaceholder" class="muted small" data-i18n="qr_placeholder">Mã QR sẽ xuất hiện sau khi bạn tạo yêu cầu nạp tiền.</p>
+                <p id="qrFallbackNote" class="muted small hidden" data-i18n="qr_fallback_note">Đang dùng QR dự phòng. Hãy nhập đúng số tiền và nội dung chuyển khoản hiển thị phía trên.</p>
+              </div>
+            </div>
+          </div>
+          <div class="wallet-card">
+            <div class="balance-line">
+              <div><span class="small muted" data-i18n="available_balance">Số dư có thể dùng</span><div class="balance-value" id="walletAvailable">0 phiếu</div></div>
+            </div>
+            <div class="field">
+              <label for="topupQuantity" data-i18n="topup_quantity">Số phiếu cần nạp</label>
+              <input id="topupQuantity" type="number" min="1" max="100000" step="1" value="20">
+            </div>
+            <div class="payment-row"><span data-i18n="unit_price">Đơn giá mỗi phiếu</span><strong>500 VND</strong></div>
+            <div class="money-total">
+              <div class="main"><span data-i18n="total_payment">TỔNG CỘNG</span><span id="topupTotal">10.000 VND</span></div>
+              <div class="small muted" style="margin-top:6px" data-i18n="payment_auto_note">Sau khi bạn chuyển khoản, quản trị viên sẽ kiểm tra ngân hàng và xác nhận. Trang này tự cập nhật số dư.</div>
+            </div>
+            <div class="action-row">
+              <button id="createPaymentBtn" class="btn btn-primary" type="button" data-i18n="create_payment">Tạo yêu cầu nạp tiền</button>
+              <button id="checkPaymentBtn" class="btn btn-outline" type="button" disabled data-i18n="check_payment">Kiểm tra trạng thái</button>
+              <button id="copyPaymentBtn" class="btn btn-soft hidden" type="button" data-i18n="copy_payment">Sao chép thông tin</button>
+              <button id="openCheckoutBtn" class="btn btn-soft hidden" type="button" data-i18n="open_payment">Mở mã QR lớn</button>
+            </div>
+            <div id="paymentStatus" class="payment-status"></div>
+            <p class="billing-note" data-i18n="payment_note">Không chuyển tiền khi chưa tạo yêu cầu. Hãy chuyển đúng số tiền và đúng nội dung. Giữ trang này mở để hệ thống tự tiếp tục sau khi được xác nhận.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="step">
+        <div class="step-title">
+          <span class="step-number">1</span>
+          <div>
+            <h3 data-i18n="step2_title">Tải dữ liệu có sẵn — không bắt buộc</h3>
+            <p data-i18n="step2_desc">Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.</p>
+          </div>
+        </div>
+
+        <label id="dropZone" class="drop-zone">
+          <input id="dataFile" type="file" accept=".xlsx,.xls,.csv,.json">
+          <div>
+            <strong data-i18n="drop_title">Chọn hoặc kéo tệp vào đây</strong>
+            <div class="muted small" data-i18n="drop_desc">Excel / CSV / JSON — đọc ngay trên trình duyệt</div>
+          </div>
+        </label>
+        <div id="dataSummary" class="data-summary hidden"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-title">
+          <span class="step-number">2</span>
+          <div>
+            <h3 data-i18n="step1_title">Nhập Google Form</h3>
+            <p data-i18n="step1_desc">Dán đường dẫn chỉnh sửa kết thúc bằng /edit. Tài khoản đang đăng nhập phải có quyền chỉnh sửa.</p>
+          </div>
+        </div>
+
+        <div class="input-action">
+          <input id="formUrl" type="url" placeholder="https://docs.google.com/forms/d/.../edit" autocomplete="off">
+          <button id="importFormBtn" class="btn btn-primary" type="button" data-i18n="import_btn">Nhập biểu mẫu</button>
+        </div>
+        <div id="formSummary" class="form-summary hidden"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-title">
+          <span class="step-number">3</span>
+          <div>
+            <h3 data-i18n="step3_title">Ánh xạ dữ liệu và quy tắc tạo câu trả lời</h3>
+            <p data-i18n="step3_desc">Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.</p>
+          </div>
+        </div>
+
+        <div class="info-box" data-i18n="mapping_explain">“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.</div>
+        <div id="questionEmpty" class="warning-box" data-i18n="question_empty">Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.</div>
+        <div id="questionList" class="question-list"></div>
+      </div>
+
+      <div class="step">
+        <div class="step-title">
+          <span class="step-number">4</span>
+          <div>
+            <h3 data-i18n="step4_title">Số lượng và thời gian gửi</h3>
+            <p data-i18n="step4_desc">Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.</p>
+          </div>
+        </div>
+
+        <div class="field-grid four">
+          <div class="field">
+            <label for="responseCount" data-i18n="response_count">Số phản hồi</label>
+            <input id="responseCount" type="number" min="1" value="10" step="1">
+          </div>
+          <div class="field">
+            <label for="rowStrategy" data-i18n="row_strategy">Cách lấy dòng dữ liệu</label>
+            <select id="rowStrategy">
+              <option value="sequential" data-i18n="row_sequential">Tuần tự, lặp lại khi hết dòng</option>
+              <option value="random" data-i18n="row_random">Ngẫu nhiên</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="scheduleMode" data-i18n="schedule_mode">Chế độ gửi</label>
+            <select id="scheduleMode">
+              <option value="now" data-i18n="mode_now">Gửi ngay trên trang</option>
+              <option value="interval" disabled data-i18n="mode_interval">Gửi theo khoảng thời gian</option>
+              <option value="daily_random" disabled data-i18n="mode_daily_random">Phân bổ ngẫu nhiên theo ngày</option>
+            </select>
+          </div>
+          <div class="field">
+            <span class="label" data-i18n="estimated_cost">Chi phí dự kiến</span>
+            <div class="cost-box" id="runCost">10 dòng · không thu phí</div>
+          </div>
+        </div>
+
+        <div id="scheduleNow" class="schedule-panel">
+          <div class="field-grid two">
+            <div class="field">
+              <label for="minDelay" data-i18n="min_delay">Khoảng nghỉ tối thiểu (giây)</label>
+              <input id="minDelay" type="number" min="1" max="3600" value="2">
+            </div>
+            <div class="field">
+              <label for="maxDelay" data-i18n="max_delay">Khoảng nghỉ tối đa (giây)</label>
+              <input id="maxDelay" type="number" min="1" max="3600" value="4">
+            </div>
+          </div>
+          <div class="info-box" data-i18n="delay_explain">Hai ô này chỉ tạo khoảng nghỉ giữa các phản hồi khi “Gửi ngay”. Trang web phải được mở trong suốt quá trình. Với lịch 1 giờ/lần hoặc nhiều giờ, hãy chọn chế độ chạy nền.</div>
+        </div>
+
+        <div id="scheduleInterval" class="schedule-panel hidden">
+          <div class="field-grid three">
+            <div class="field">
+              <label for="intervalStart" data-i18n="start_time">Bắt đầu lúc</label>
+              <input id="intervalStart" type="datetime-local">
+            </div>
+            <div class="field">
+              <label for="intervalValue" data-i18n="repeat_every">Lặp lại mỗi</label>
+              <input id="intervalValue" type="number" min="1" value="60">
+            </div>
+            <div class="field">
+              <label for="intervalUnit" data-i18n="unit">Đơn vị</label>
+              <select id="intervalUnit">
+                <option value="minutes" data-i18n="minutes">Phút</option>
+                <option value="hours" data-i18n="hours">Giờ</option>
+                <option value="days" data-i18n="days">Ngày</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div id="scheduleDaily" class="schedule-panel hidden">
+          <div class="field-grid four">
+            <div class="field">
+              <label for="dailyStartDate" data-i18n="from_date">Từ ngày</label>
+              <input id="dailyStartDate" type="date">
+            </div>
+            <div class="field">
+              <label for="dailyEndDate" data-i18n="to_date">Đến ngày</label>
+              <input id="dailyEndDate" type="date">
+            </div>
+            <div class="field">
+              <label for="dailyWindowStart" data-i18n="window_start">Khung giờ từ</label>
+              <input id="dailyWindowStart" type="time" value="08:00">
+            </div>
+            <div class="field">
+              <label for="dailyWindowEnd" data-i18n="window_end">Khung giờ đến</label>
+              <input id="dailyWindowEnd" type="time" value="20:00">
+            </div>
+          </div>
+          <div class="field-grid two" style="margin-top:12px">
+            <div class="field">
+              <label for="dailyPerDay" data-i18n="per_day">Số phản hồi tối đa mỗi ngày</label>
+              <input id="dailyPerDay" type="number" min="1" value="10">
+            </div>
+            <div class="field">
+              <span class="label" data-i18n="daily_note_title">Mục đích</span>
+              <div class="info-box" style="margin:0" data-i18n="daily_note">Chức năng này phân bổ lịch QA trong một khung giờ để kiểm thử tải và quy trình. Không dùng để che giấu tự động hóa hoặc giả danh người trả lời thật.</div>
+            </div>
+          </div>
+        </div>
+
+        <label class="check-line">
+          <input id="authorizationAck" type="checkbox">
+          <span data-i18n="authorization_ack">Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.</span>
+        </label>
+
+        <div class="action-row">
+          <button id="buildPlanBtn" class="btn btn-primary" type="button" data-i18n="build_plan">Tạo kế hoạch xem trước</button>
+          <button id="validatePlanBtn" class="btn btn-outline" type="button" disabled data-i18n="validate_plan">Kiểm tra kế hoạch</button>
+        </div>
+      </div>
+
+      <div class="step" id="previewSection">
+        <div class="step-title">
+          <span class="step-number">5</span>
+          <div>
+            <h3 data-i18n="step5_title">Xem trước, gửi và tải báo cáo</h3>
+            <p data-i18n="step5_desc">Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.</p>
+          </div>
+        </div>
+
+        <div id="planMessage" class="warning-box" data-i18n="plan_empty">Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.</div>
+        <div id="progressWrap" class="hidden">
+          <div id="progressText" class="small muted"></div>
+          <div class="progress"><div id="progressBar"></div></div>
+        </div>
+        <div id="planTableWrap" class="table-wrap hidden">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th data-i18n="th_scheduled">Thời điểm</th>
+                <th data-i18n="th_data_row">Dòng dữ liệu</th>
+                <th data-i18n="th_preview">Xem trước câu trả lời</th>
+                <th data-i18n="th_status">Trạng thái</th>
+                <th data-i18n="th_google_time">Google timestamp</th>
+              </tr>
+            </thead>
+            <tbody id="planTableBody"></tbody>
+          </table>
+        </div>
+
+        <div id="billingHint" class="info-box" data-i18n="billing_hint">Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.</div>
+        <div class="action-row">
+          <button id="downloadPlanBtn" class="btn btn-soft" type="button" disabled data-i18n="download_plan">Tải kế hoạch CSV</button>
+          <button id="submitPlanBtn" class="btn btn-secondary" type="button" disabled data-i18n="submit_plan">Gửi vào Google Form</button>
+          <button id="downloadReportBtn" class="btn btn-success" type="button" disabled data-i18n="download_report">Tải báo cáo CSV</button>
+          <button id="refreshCountBtn" class="btn btn-outline" type="button" disabled data-i18n="refresh_count">Cập nhật tổng phản hồi</button>
+        </div>
+      </div>
+
+    </section>
+
+
+
+<section class="blog-section" id="blog"><div class="blog-head"><div><h2>Bài viết nổi bật</h2><p>Hướng dẫn và kinh nghiệm xử lý dữ liệu nghiên cứu.</p></div><span>Bài viết đang cập nhật</span></div><div class="blog-grid">
+ <article><div class="blog-thumb thumb-blue">SPSS</div><h3>Hướng dẫn phân tích dữ liệu với SPSS</h3><p>Bắt đầu từ nhập dữ liệu, làm sạch đến thống kê cơ bản.</p></article>
+ <article><div class="blog-thumb thumb-red">Stata</div><h3>Làm quen với Stata</h3><p>Một số lệnh hay dùng khi phân tích dữ liệu nghiên cứu.</p></article>
+ <article><div class="blog-thumb thumb-python">🐍</div><h3>Phân tích dữ liệu bằng Python</h3><p>Đọc dữ liệu, xử lý và trực quan hóa với Python.</p></article>
+ <article><div class="blog-thumb thumb-green">✓</div><h3>Cách làm sạch dữ liệu</h3><p>Kiểm tra dữ liệu trống, dữ liệu trùng và giá trị bất thường.</p></article>
+ <article><div class="blog-thumb thumb-brown">▥</div><h3>Chọn phương pháp nghiên cứu</h3><p>Phân biệt định lượng và định tính để chọn cách phù hợp.</p></article>
+ </div></section>
+    <section class="section-block" id="how">
+      <div class="section-heading">
+        <h2 data-i18n="how_title">Cách hoạt động</h2>
+        <p data-i18n="how_desc">Quy trình rõ ràng để tránh gửi nhầm dữ liệu.</p>
+      </div>
+      <div class="cards-3">
+        <article class="how-card"><div class="icon">1</div><h3 data-i18n="how1_title">Nhập biểu mẫu</h3><p data-i18n="how1_desc">Dán URL /edit và để Google kiểm tra quyền chỉnh sửa của tài khoản.</p></article>
+        <article class="how-card"><div class="icon">2</div><h3 data-i18n="how2_title">Ánh xạ hoặc tạo dữ liệu</h3><p data-i18n="how2_desc">Chọn cột Excel/CSV/JSON hoặc thiết lập quy tắc random, tỷ lệ và giá trị mẫu.</p></article>
+        <article class="how-card"><div class="icon">3</div><h3 data-i18n="how3_title">Xem trước và xác thực</h3><p data-i18n="how3_desc">Tạo tối đa 50 dòng, kiểm tra câu bắt buộc và giá trị có khớp lựa chọn Google Form hay không.</p></article>
+        <article class="how-card"><div class="icon">4</div><h3 data-i18n="how4_title">Gửi ngay hoặc lên lịch</h3><p data-i18n="how4_desc">Theo dõi trạng thái, timestamp và tải báo cáo sau khi hoàn tất.</p></article>
+      </div>
+    </section>
+
+
+
+    <section class="section-block" id="faq">
+      <div class="section-heading">
+        <h2>FAQ</h2>
+        <p data-i18n="faq_desc">Giải thích các phần dễ gây nhầm lẫn trong giao diện.</p>
+      </div>
+      <div class="faq-list">
+        <details>
+          <summary data-i18n="faq_mapping_q">“Excel / data column” dùng để làm gì?</summary>
+          <p data-i18n="faq_mapping_a">Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.</p>
+        </details>
+        <details>
+          <summary data-i18n="faq_100_q">Tại sao có tổng 100%?</summary>
+          <p data-i18n="faq_100_a">Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.</p>
+        </details>
+        <details>
+          <summary data-i18n="faq_delay_q">Khoảng nghỉ tối thiểu/tối đa để làm gì?</summary>
+          <p data-i18n="faq_delay_a">Nó tạo thời gian chờ giữa các phản hồi trong chế độ gửi ngay. Nếu cần 1 giờ/lần hoặc 10 phản hồi ở các thời điểm khác nhau trong ngày, dùng chế độ lịch chạy nền.</p>
+        </details>
+        <details>
+          <summary data-i18n="faq_likert_q">Dữ liệu Likert có bắt buộc mã hóa 1–5 không?</summary>
+          <p data-i18n="faq_likert_a">Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.</p>
+        </details>
+        <details>
+          <summary data-i18n="faq_url_q">Có dùng đường dẫn /viewform được không?</summary>
+          <p data-i18n="faq_url_a">Không. Ứng dụng chỉ nhận URL /edit để Google xác minh tài khoản hiện tại có quyền chỉnh sửa biểu mẫu.</p>
+        </details>
+        <details>
+          <summary data-i18n="faq_upload_q">Câu hỏi tải tệp có được hỗ trợ không?</summary>
+          <p data-i18n="faq_upload_a">Không. Apps Script không cung cấp cách an toàn để gắn tệp vào phản hồi mới theo luồng này. Nếu câu tải tệp là bắt buộc, kế hoạch sẽ bị chặn.</p>
+        </details>
+      </div>
+    </section>
+
+
+
+    <footer>
+      <div class="footer-row">
+        <span>© <span id="year"></span> PandaStudy</span>
+        <span>Chỉ dùng với dữ liệu và biểu mẫu bạn được phép quản lý.</span>
+        <div class="links">
+          <button type="button" data-dialog="termsDialog" data-i18n="terms">Điều khoản sử dụng</button>
+          <button type="button" data-dialog="privacyDialog" data-i18n="privacy">Chính sách bảo mật</button>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="termsDialog">
+    <div class="dialog-head"><h3 data-i18n="terms">Điều khoản sử dụng</h3><button type="button" data-close-dialog>×</button></div>
+    <div class="dialog-body">
+      <h4 data-i18n="terms_h1">1. Phạm vi được phép</h4>
+      <p data-i18n="terms_p1">Chỉ gửi phản hồi vào biểu mẫu do bạn sở hữu hoặc được chủ sở hữu cho phép kiểm thử. Không sử dụng để giả mạo người tham gia, can thiệp khảo sát, tạo đánh giá giả, né giới hạn hoặc gây quá tải dịch vụ.</p>
+      <h4 data-i18n="terms_h2">2. Trách nhiệm dữ liệu</h4>
+      <p data-i18n="terms_p2">Bạn chịu trách nhiệm về tính hợp pháp, độ chính xác, quyền sử dụng và thời hạn lưu trữ của dữ liệu được nhập hoặc tạo.</p>
+      <h4 data-i18n="terms_h3">3. Giới hạn kỹ thuật</h4>
+      <p>Chức năng gửi phản hồi trực tiếp phải được chủ hệ thống bật riêng; Google Forms có thể thay đổi cách tiếp nhận. Với số lượng lớn, ứng dụng xử lý theo từng lô và cần giữ trang mở.</p>
+      <h4 data-i18n="terms_h4">4. Thanh toán</h4>
+      <p>Phiên bản Vercel hiện chưa tích hợp thanh toán.</p>
+    </div>
+  </dialog>
+
+  <dialog id="privacyDialog">
+    <div class="dialog-head"><h3 data-i18n="privacy">Chính sách bảo mật</h3><button type="button" data-close-dialog>×</button></div>
+    <div class="dialog-body">
+      <h4 data-i18n="privacy_h1">Dữ liệu tệp</h4>
+      <p>File Excel, CSV và JSON được đọc trực tiếp trong trình duyệt. Chỉ các câu trả lời được yêu cầu kiểm tra hoặc gửi mới truyền đến máy chủ.</p>
+      <h4 data-i18n="privacy_h2">Quyền Google</h4>
+      <p>Ứng dụng dùng Google OAuth để đọc biểu mẫu và kiểm tra quyền truy cập. Mã truy cập được lưu trong cookie mã hóa, không gửi cho bên thứ ba.</p>
+      <h4 data-i18n="privacy_h3">Dữ liệu cá nhân</h4>
+      <p data-i18n="privacy_p3">Không nhập dữ liệu nhạy cảm hoặc dữ liệu cá nhân khi chưa có căn cứ xử lý phù hợp. Không bán hoặc chia sẻ dữ liệu cá nhân nếu chưa có quyền và sự đồng ý cần thiết.</p>
+    </div>
+  </dialog>
+
+  <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
+
+  <script>
+    const I18N = {
+      vi: {
+        nav_wallet:'Nạp tiền', nav_features:'Tính năng', nav_how:'Cách hoạt động', wallet_title:'Nạp tiền vào tài khoản', wallet_balance_label:'Số dư hiện tại:', wallet_account:'Tài khoản:', payment_info_title:'Thông tin chuyển khoản', bank_name:'Ngân hàng', account_number:'Số tài khoản', account_name:'Tên tài khoản', payment_amount:'Số tiền cần chuyển', transfer_content:'Nội dung chuyển tiền', payment_request_code:'Mã yêu cầu', qr_placeholder:'Mã QR sẽ xuất hiện sau khi bạn tạo yêu cầu nạp tiền.', qr_fallback_note:'Đang dùng QR dự phòng. Hãy nhập đúng số tiền và nội dung chuyển khoản hiển thị phía trên.', available_balance:'Số dư có thể dùng', refresh_wallet:'Làm mới', topup_quantity:'Số phiếu cần nạp', unit_price:'Đơn giá mỗi phiếu', total_payment:'TỔNG CỘNG', payment_auto_note:'Sau khi bạn chuyển khoản, quản trị viên sẽ kiểm tra ngân hàng và xác nhận. Trang này tự cập nhật số dư.', create_payment:'Tạo yêu cầu nạp tiền', check_payment:'Kiểm tra trạng thái', copy_payment:'Sao chép thông tin', open_payment:'Mở mã QR lớn', payment_note:'Không chuyển tiền khi chưa tạo yêu cầu. Hãy chuyển đúng số tiền và đúng nội dung. Giữ trang này mở để hệ thống tự tiếp tục sau khi được xác nhận.', payment_waiting:'Đã gửi yêu cầu. Đang chờ quản trị viên kiểm tra ngân hàng và xác nhận.', payment_paid:'Quản trị viên đã xác nhận. Số dư đã được cập nhật.', payment_cancelled:'Yêu cầu đã bị từ chối hoặc hết hạn.', payment_not_configured:'Hệ thống nạp tiền chưa được cấu hình. Vui lòng liên hệ quản trị viên.', insufficient_balance:'Số dư chưa đủ. Bạn cần {need} phiếu nhưng hiện có {have} phiếu.', auto_topup_started:'Đã tạo yêu cầu nạp phần còn thiếu. Sau khi quản trị viên xác nhận, hệ thống sẽ tự tiếp tục thao tác đang chờ.', auto_resume_started:'Số dư đã được cộng. Hệ thống đang tự tiếp tục thao tác của bạn...', auto_resume_cancelled:'Kế hoạch đã thay đổi nên hệ thống không tự chạy. Hãy kiểm tra và bấm gửi lại.', nav_pricing:'Bảng giá', nav_faq:'FAQ', nav_contact:'Liên hệ',
+        hero_pill:'Auto Google Forms • Form Autofill',
+        hero_title:'CÔNG CỤ ĐIỀN KHẢO SÁT TỰ ĐỘNG',
+        hero_subtitle:'AutoFillForm Live giúp bạn tự động hoàn thành Google Forms thông minh chỉ trong vài bước.',
+        hero_notice:'Chỉ sử dụng với biểu mẫu bạn sở hữu hoặc được cho phép kiểm thử. Không dùng để giả mạo người tham gia, né kiểm soát hoặc làm sai lệch kết quả khảo sát.',
+        workspace_title:'Bảng điều khiển', workspace_subtitle:'Thực hiện theo các bước bên dưới.', workspace_chip:'Không dùng Apps Script',
+        step1_title:'Nhập Google Form', step1_desc:'Dán đường dẫn chỉnh sửa kết thúc bằng /edit. Tài khoản đang đăng nhập phải có quyền chỉnh sửa.', import_btn:'Nhập biểu mẫu', importing:'Đang nhập...',
+        step2_title:'Tải dữ liệu có sẵn — không bắt buộc', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel / CSV / JSON — đọc ngay trên trình duyệt',
+        step3_title:'Ánh xạ dữ liệu và quy tắc tạo câu trả lời', step3_desc:'Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.', mapping_explain:'“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.', question_empty:'Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.',
+        step4_title:'Số lượng và thời gian gửi', step4_desc:'Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.', response_count:'Số phản hồi', estimated_cost:'Chi phí dự kiến', row_strategy:'Cách lấy dòng dữ liệu', row_sequential:'Tuần tự, lặp lại khi hết dòng', row_random:'Ngẫu nhiên', schedule_mode:'Chế độ gửi', mode_now:'Gửi ngay trên trang', mode_interval:'Gửi theo khoảng thời gian', mode_daily_random:'Phân bổ ngẫu nhiên theo ngày', min_delay:'Khoảng nghỉ tối thiểu (giây)', max_delay:'Khoảng nghỉ tối đa (giây)', delay_explain:'Hai ô này chỉ tạo khoảng nghỉ giữa các phản hồi khi “Gửi ngay”. Trang web phải được mở trong suốt quá trình. Với lịch 1 giờ/lần hoặc nhiều giờ, hãy chọn chế độ chạy nền.', start_time:'Bắt đầu lúc', repeat_every:'Lặp lại mỗi', unit:'Đơn vị', minutes:'Phút', hours:'Giờ', days:'Ngày', from_date:'Từ ngày', to_date:'Đến ngày', window_start:'Khung giờ từ', window_end:'Khung giờ đến', per_day:'Số phản hồi tối đa mỗi ngày', daily_note_title:'Mục đích', daily_note:'Chức năng này phân bổ lịch QA trong một khung giờ để kiểm thử tải và quy trình. Không dùng để che giấu tự động hóa hoặc giả danh người trả lời thật.', authorization_ack:'Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.', build_plan:'Tạo kế hoạch xem trước', validate_plan:'Kiểm tra kế hoạch',
+        billing_hint:'Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.', step5_title:'Xem trước, gửi và tải báo cáo', step5_desc:'Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.', plan_empty:'Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.', th_scheduled:'Thời điểm', th_data_row:'Dòng dữ liệu', th_preview:'Xem trước câu trả lời', th_status:'Trạng thái', th_google_time:'Google timestamp', download_plan:'Tải kế hoạch CSV', submit_plan:'Gửi vào Google Form', schedule_plan:'Tạo lịch chạy nền', download_report:'Tải báo cáo CSV', refresh_count:'Cập nhật tổng phản hồi',
+        scheduled_runs_title:'Lịch chạy nền', scheduled_runs_desc:'Theo dõi, hủy hoặc xóa các lịch đã tạo bằng tài khoản Google hiện tại.', refresh_jobs:'Làm mới lịch', jobs_empty:'Chưa có lịch chạy nền.', job_form:'Biểu mẫu', job_created:'Ngày tạo', job_progress:'Tiến độ', job_next:'Lần tiếp theo', job_actions:'Thao tác', cancel:'Hủy', delete:'Xóa',
+        features_title:'Tính năng phục vụ kiểm thử và thu thập dữ liệu có kiểm soát', features_desc:'Từ tạo dữ liệu mẫu đến nhập dữ liệu sẵn có, lên lịch và xuất báo cáo.', feature_random_title:'Tạo câu trả lời ngẫu nhiên', feature_random_desc:'Random đều, chọn giá trị cố định hoặc cấu hình tỷ lệ phần trăm tùy chỉnh cho câu hỏi lựa chọn và Likert.', feature_import_title:'Nhập Excel, CSV, JSON', feature_import_desc:'Ánh xạ cột vào từng câu hỏi. Thang Likert chấp nhận cả nhãn chữ và mã 1–5 theo thứ tự lựa chọn.', feature_schedule_title:'Lên lịch chạy nền', feature_schedule_desc:'Gửi theo khoảng cách thời gian hoặc phân bổ trong khung giờ của nhiều ngày mà không cần giữ trang mở.', feature_grid_title:'Hỗ trợ Likert dạng lưới', feature_grid_desc:'Hỗ trợ Multiple-choice grid và Checkbox grid, ánh xạ từng hàng của lưới với cột dữ liệu tương ứng.', feature_report_title:'Kế hoạch và báo cáo CSV', feature_report_desc:'Tải danh sách dự kiến, trạng thái gửi, response ID, timestamp và liên kết chỉnh sửa khi Google cung cấp.', feature_service_title:'Dịch vụ dữ liệu theo yêu cầu', feature_service_desc:'Khu vực giới thiệu dịch vụ thu thập dữ liệu công khai hoặc dữ liệu được cấp phép. Giao dịch thực tế thực hiện qua liên hệ và thỏa thuận riêng.',
+        how_title:'Cách hoạt động', how_desc:'Quy trình rõ ràng để tránh gửi nhầm dữ liệu.', how1_title:'Nhập biểu mẫu', how1_desc:'Dán URL /edit và để Google kiểm tra quyền chỉnh sửa của tài khoản.', how2_title:'Ánh xạ hoặc tạo dữ liệu', how2_desc:'Chọn cột Excel/CSV/JSON hoặc thiết lập quy tắc random, tỷ lệ và giá trị mẫu.', how3_title:'Xem trước và xác thực', how3_desc:'Tạo tối đa 50 dòng, kiểm tra câu bắt buộc và giá trị có khớp lựa chọn Google Form hay không.', how4_title:'Gửi ngay hoặc lên lịch', how4_desc:'Theo dõi trạng thái, timestamp và tải báo cáo sau khi hoàn tất.',
+        pricing_title:'Bảng giá', pricing_desc:'Giá rõ ràng, nạp bao nhiêu dùng bấy nhiêu.', price_main_title:'Điền biểu mẫu', per_response:'/ phiếu', price_main_desc:'Số dư chỉ trừ khi phản hồi được gửi thành công.', price_item_topup:'Nạp tiền bằng mã QR ngân hàng', price_item_auto:'Quản trị viên xác nhận sau khi kiểm tra ngân hàng', price_item_balance:'Số dư được lưu theo tài khoản Google', price_tools_title:'Công cụ đầy đủ', included:'Đã gồm', price_tools_desc:'Không thu thêm phí dùng Excel, tạo dữ liệu, lên lịch hay xuất báo cáo.', price_item_50:'Tối đa 50 phiếu mỗi lượt', price_item_import:'Nhập Excel/CSV/JSON', price_item_report:'Xuất kế hoạch và báo cáo', price_support_title:'Hỗ trợ riêng', price_contact:'Liên hệ', price_support_desc:'Hỗ trợ cài đặt, tùy chỉnh biểu mẫu và xử lý dữ liệu theo yêu cầu.', price_item_setup:'Cài đặt và hướng dẫn', price_item_custom:'Tùy chỉnh theo nhu cầu', price_item_support:'Hỗ trợ kỹ thuật',
+        faq_desc:'Giải thích các phần dễ gây nhầm lẫn trong giao diện.', faq_mapping_q:'“Excel / data column” dùng để làm gì?', faq_mapping_a:'Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.', faq_100_q:'Tại sao có tổng 100%?', faq_100_a:'Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.', faq_delay_q:'Khoảng nghỉ tối thiểu/tối đa để làm gì?', faq_delay_a:'Nó tạo thời gian chờ giữa các phản hồi trong chế độ gửi ngay. Nếu cần 1 giờ/lần hoặc 10 phản hồi ở các thời điểm khác nhau trong ngày, dùng chế độ lịch chạy nền.', faq_likert_q:'Dữ liệu Likert có bắt buộc mã hóa 1–5 không?', faq_likert_a:'Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.', faq_url_q:'Có dùng đường dẫn /viewform được không?', faq_url_a:'Không. Ứng dụng chỉ nhận URL /edit để Google xác minh tài khoản hiện tại có quyền chỉnh sửa biểu mẫu.', faq_upload_q:'Câu hỏi tải tệp có được hỗ trợ không?', faq_upload_a:'Không. Apps Script không cung cấp cách an toàn để gắn tệp vào phản hồi mới theo luồng này. Nếu câu tải tệp là bắt buộc, kế hoạch sẽ bị chặn.',
+        contact_title:'Cần tùy biến biểu mẫu hoặc dịch vụ dữ liệu?', contact_desc:'Gửi cấu trúc biểu mẫu, tệp mẫu và yêu cầu đầu ra để được tư vấn phạm vi triển khai.', footer_note:'Chỉ dùng cho QA có ủy quyền.', terms:'Điều khoản sử dụng', privacy:'Chính sách bảo mật', terms_h1:'1. Phạm vi được phép', terms_p1:'Chỉ gửi phản hồi vào biểu mẫu do bạn sở hữu hoặc được chủ sở hữu cho phép kiểm thử. Không sử dụng để giả mạo người tham gia, can thiệp khảo sát, tạo đánh giá giả, né giới hạn hoặc gây quá tải dịch vụ.', terms_h2:'2. Trách nhiệm dữ liệu', terms_p2:'Bạn chịu trách nhiệm về tính hợp pháp, độ chính xác, quyền sử dụng và thời hạn lưu trữ của dữ liệu được nhập hoặc tạo.', terms_h3:'3. Giới hạn kỹ thuật', terms_p3:'Các lượt gửi ngay lớn được tự động chia thành lô kỹ thuật 50 phản hồi. Lịch chạy nền vẫn giới hạn 50 phản hồi cho mỗi lịch để phù hợp hạn mức Apps Script. Câu hỏi tải tệp và một số quy tắc đặc biệt của Google Forms có thể không được hỗ trợ.', terms_h4:'4. Thanh toán', terms_p4:'Đơn giá là 500 đồng cho một phản hồi gửi thành công. Phản hồi lỗi được hoàn lại số dư tự động. Quản trị viên chỉ cộng số dư sau khi đối chiếu giao dịch ngân hàng. Khoản nạp đã được cộng vào số dư không quy đổi thành tiền mặt, trừ trường hợp pháp luật yêu cầu.', privacy_h1:'Dữ liệu tệp', privacy_p1:'Tệp Excel, CSV và JSON được đọc trong trình duyệt. Khi bạn tạo lịch chạy nền, các câu trả lời trong kế hoạch được lưu nén vào User Properties của chính tài khoản Apps Script đang sử dụng.', privacy_h2:'Quyền Google', privacy_p2:'Ứng dụng yêu cầu quyền truy cập Google Forms và quyền tạo trigger để thực hiện chức năng bạn chọn. Google quyết định tài khoản có được mở và gửi vào biểu mẫu hay không.', privacy_h3:'Dữ liệu cá nhân', privacy_p3:'Không nhập dữ liệu nhạy cảm hoặc dữ liệu cá nhân khi chưa có căn cứ xử lý phù hợp. Không bán hoặc chia sẻ dữ liệu cá nhân nếu chưa có quyền và sự đồng ý cần thiết.',
+        form_title:'Tên biểu mẫu', responses:'Phản hồi hiện có', questions:'Câu hỏi hỗ trợ', unsupported:'Không hỗ trợ', accepting:'Đang nhận phản hồi', not_accepting:'Đã đóng phản hồi', collects_email:'Thu email', limit_one:'Giới hạn 1 phản hồi', yes:'Có', no:'Không',
+        file_rows:'Dòng dữ liệu', file_columns:'Cột dữ liệu', file_name:'Tệp', clear_data:'Xóa dữ liệu', no_column:'Không chọn cột — dùng quy tắc bên dưới', data_column:'Cột Excel / dữ liệu', mapping_help:'Nếu ô dữ liệu trống, hệ thống sẽ dùng quy tắc tạo dự phòng.', question_type:'Loại', required:'Bắt buộc', optional:'Không bắt buộc', unsupported_question:'Loại câu hỏi này chưa được hỗ trợ.',
+        generator_rule:'Quy tắc tạo dự phòng', uniform:'Random đều', weighted:'Tỷ lệ tùy chỉnh', fixed:'Giá trị cố định', total:'Tổng', equalize:'Chia đều', text_samples:'Các giá trị mẫu — mỗi dòng một giá trị', text_samples_help:'Có thể dùng {{n}} cho số thứ tự và {{timestamp}} cho thời gian.', min_choices:'Số lựa chọn tối thiểu', max_choices:'Số lựa chọn tối đa', active_options:'Các lựa chọn được phép', grid_mapping:'Ánh xạ từng hàng Likert', grid_random_help:'Hàng không được ánh xạ sẽ chọn ngẫu nhiên trong các cột của lưới.',
+        status_ready:'Sẵn sàng', status_valid:'Hợp lệ', status_invalid:'Không hợp lệ', status_sending:'Đang gửi', status_sent:'Đã gửi', status_error:'Lỗi', status_queued:'Đã lên lịch', status_canceled:'Đã hủy', status_completed:'Hoàn tất', status_completed_with_errors:'Hoàn tất có lỗi', status_scheduled:'Đã lên lịch', status_running:'Đang chạy',
+        toast_form_imported:'Đã nhập biểu mẫu.', toast_file_loaded:'Đã đọc tệp dữ liệu.', toast_plan_built:'Đã tạo kế hoạch xem trước.', toast_plan_valid:'Kế hoạch hợp lệ.', toast_job_created:'Đã tạo lịch chạy nền.', toast_done:'Đã hoàn tất gửi phản hồi.', toast_count:'Tổng phản hồi hiện tại: {count}',
+        err_import_form:'Không thể nhập biểu mẫu.', err_file:'Không thể đọc tệp.', err_no_form:'Hãy nhập Google Form trước.', err_no_questions:'Biểu mẫu không có câu hỏi được hỗ trợ.', err_count:'Số phản hồi phải từ 1 đến 5.000.', err_required_text:'Câu bắt buộc “{title}” chưa có cột dữ liệu hoặc giá trị mẫu.', err_weights:'Tỷ lệ của “{title}” phải có tổng đúng 100%.', err_ack:'Bạn cần xác nhận quyền sử dụng trước khi gửi.', err_schedule:'Cấu hình thời gian không hợp lệ.', err_plan:'Không thể tạo kế hoạch.', err_validate:'Kế hoạch chưa hợp lệ.', err_page_open:'Chế độ gửi ngay yêu cầu giữ trang mở.',
+        data_row_none:'Tạo tự động', validating:'Đang kiểm tra...', sending_progress:'Đã xử lý {done}/{total}', scheduled_background:'Lịch chạy nền đã được tạo. Bạn có thể đóng trang.', confirm_cancel:'Hủy lịch chạy nền này?', confirm_delete:'Xóa lịch sử này?',
+        type_multiple_choice:'Trắc nghiệm', type_dropdown:'Danh sách thả xuống', type_checkbox:'Hộp kiểm', type_linear_scale:'Thang tuyến tính', type_rating:'Xếp hạng', type_grid:'Lưới trắc nghiệm / Likert', type_checkbox_grid:'Lưới hộp kiểm', type_short_text:'Câu trả lời ngắn', type_paragraph:'Đoạn văn', type_date:'Ngày', type_datetime:'Ngày giờ', type_time:'Thời gian', type_duration:'Khoảng thời gian', type_file_upload:'Tải tệp', type_unsupported:'Không hỗ trợ'
+      },
+      en: {
+        nav_wallet:'Top up', nav_features:'Features', nav_how:'How it works', wallet_title:'Top up your account', wallet_balance_label:'Current balance:', wallet_account:'Account:', payment_info_title:'Bank transfer details', bank_name:'Bank', account_number:'Account number', account_name:'Account name', payment_amount:'Amount to transfer', transfer_content:'Transfer description', payment_request_code:'Request code', qr_placeholder:'The QR code appears after you create a payment request.', qr_fallback_note:'A fallback QR is being shown. Enter the exact amount and transfer description displayed above.', available_balance:'Available balance', refresh_wallet:'Refresh', topup_quantity:'Responses to top up', unit_price:'Price per response', total_payment:'TOTAL', payment_auto_note:'After you transfer, the administrator checks the bank and confirms the request. This page refreshes the balance automatically.', create_payment:'Create top-up request', check_payment:'Check status', copy_payment:'Copy payment details', open_payment:'Open large QR', payment_note:'Do not transfer before creating a request. Use the exact amount and description. Keep this page open so the pending action can continue after approval.', payment_waiting:'Request sent. Waiting for the administrator to verify the bank transaction.', payment_paid:'The administrator confirmed the payment. Your balance has been updated.', payment_cancelled:'The request was rejected or expired.', payment_not_configured:'Manual billing is not configured. Please contact the administrator.', insufficient_balance:'Insufficient balance. You need {need} responses but only have {have}.', auto_topup_started:'A top-up request for the missing balance was created. After admin approval, the pending action will continue automatically.', auto_resume_started:'Your balance was credited. The pending action is continuing automatically...', auto_resume_cancelled:'The plan changed, so it was not resumed automatically. Review it and submit again.', nav_pricing:'Pricing', nav_faq:'FAQ', nav_contact:'Contact',
+        hero_pill:'Auto Google Forms • Form Autofill',
+        hero_title:'AUTOMATIC SURVEY FILLING TOOL',
+        hero_subtitle:'AutoFillForm Live helps you complete authorized Google Forms intelligently in just a few steps.',
+        hero_notice:'Use only with a form you own or are explicitly authorized to test. Do not impersonate participants, evade controls or distort survey results.',
+        workspace_title:'Dashboard', workspace_subtitle:'Follow the steps below.', workspace_chip:'500 VND / response',
+        step1_title:'Import a Google Form', step1_desc:'Paste the edit URL ending in /edit. The signed-in account must have edit access.', import_btn:'Import form', importing:'Importing...',
+        step2_title:'Upload existing data — optional', step2_desc:'Supports XLSX, XLS, CSV and JSON. Each data row becomes one response set.', drop_title:'Choose or drop a file here', drop_desc:'Excel / CSV / JSON — read in your browser',
+        step3_title:'Map data and configure answer rules', step3_desc:'Select a data column for each question. If no column is selected, the generator rule below is used.', mapping_explain:'“Excel / data column” connects a column in the uploaded file to a Google Form question. For example, map the “Gender” column to the “What is your gender?” question.', question_empty:'Import a Google Form in Step 1 to display its questions.',
+        step4_title:'Response count and timing', step4_desc:'Send now with a short delay or create a persistent background schedule for future times.', response_count:'Number of responses', estimated_cost:'Estimated cost', row_strategy:'Data-row strategy', row_sequential:'Sequential, cycle after the last row', row_random:'Random rows', schedule_mode:'Submission mode', mode_now:'Send now in this page', mode_interval:'Send at a fixed interval', mode_daily_random:'Randomly distribute by day', min_delay:'Minimum delay (seconds)', max_delay:'Maximum delay (seconds)', delay_explain:'These values only add a pause between responses in “Send now” mode. Keep the page open. For hourly or longer schedules, use a background mode.', start_time:'Start at', repeat_every:'Repeat every', unit:'Unit', minutes:'Minutes', hours:'Hours', days:'Days', from_date:'From date', to_date:'To date', window_start:'Window starts', window_end:'Window ends', per_day:'Maximum responses per day', daily_note_title:'Purpose', daily_note:'This distributes QA runs inside a time window for load and workflow testing. Do not use it to hide automation or impersonate real respondents.', authorization_ack:'I confirm that I own this form or have explicit authorization to submit QA data; the data will not impersonate participants or distort research.', build_plan:'Build preview plan', validate_plan:'Validate plan',
+        billing_hint:'You need enough balance before submitting. Only successful responses are charged.', step5_title:'Preview, submit and download reports', step5_desc:'Review every row before submission. Status and timestamps update in the table.', plan_empty:'No plan yet. Click “Build preview plan”.', th_scheduled:'Scheduled time', th_data_row:'Data row', th_preview:'Answer preview', th_status:'Status', th_google_time:'Google timestamp', download_plan:'Download plan CSV', submit_plan:'Submit to Google Form', schedule_plan:'Create background schedule', download_report:'Download report CSV', refresh_count:'Refresh response count',
+        scheduled_runs_title:'Background schedules', scheduled_runs_desc:'Review, cancel or delete schedules created by the current Google account.', refresh_jobs:'Refresh schedules', jobs_empty:'No background schedules yet.', job_form:'Form', job_created:'Created', job_progress:'Progress', job_next:'Next run', job_actions:'Actions', cancel:'Cancel', delete:'Delete',
+        features_title:'Features for controlled testing and data workflows', features_desc:'From sample generation and data import to scheduling and reporting.', feature_random_title:'Random answer generation', feature_random_desc:'Uniform random, fixed values or custom percentage weights for choice and Likert questions.', feature_import_title:'Excel, CSV and JSON import', feature_import_desc:'Map columns to questions. Likert accepts both text labels and numeric 1–5 codes in option order.', feature_schedule_title:'Persistent background scheduling', feature_schedule_desc:'Submit at intervals or distribute runs within daily windows without keeping the page open.', feature_grid_title:'Likert grid support', feature_grid_desc:'Supports multiple-choice grids and checkbox grids with per-row column mapping.', feature_report_title:'Plan and report CSV files', feature_report_desc:'Download planned answers, status, response ID, timestamp and edit links when available.', feature_service_title:'Data services by request', feature_service_desc:'A landing section for public or licensed data collection services. Actual transactions are handled through direct contact and a separate agreement.',
+        how_title:'How it works', how_desc:'A clear workflow designed to prevent accidental submissions.', how1_title:'Import the form', how1_desc:'Paste the /edit URL and let Google verify the account’s edit permission.', how2_title:'Map or generate data', how2_desc:'Choose Excel/CSV/JSON columns or configure random, weighted and sample-value rules.', how3_title:'Preview and validate', how3_desc:'Build up to 50 rows and check required fields and option compatibility before submission.', how4_title:'Send now or schedule', how4_desc:'Track status and timestamps, then download a report.',
+        pricing_title:'Pricing', pricing_desc:'Simple pay-as-you-go pricing.', price_main_title:'Form responses', per_response:'/ response', price_main_desc:'Your balance is charged only after a successful submission.', price_item_topup:'Top up with a bank QR code', price_item_auto:'Admin confirmation after bank verification', price_item_balance:'Balance saved to your Google account', price_tools_title:'All tools included', included:'Included', price_tools_desc:'No extra fee for Excel import, generation, scheduling or reports.', price_item_50:'Large runs are automatically split into batches of 50', price_item_import:'Excel/CSV/JSON import', price_item_report:'Plan and report exports', price_support_title:'Custom support', price_contact:'Contact us', price_support_desc:'Setup, form customization and data support by request.', price_item_setup:'Setup and guidance', price_item_custom:'Custom configuration', price_item_support:'Technical support',
+        faq_desc:'Explanations for the most confusing parts of the interface.', faq_mapping_q:'What does “Excel / data column” do?', faq_mapping_a:'It connects a column in the uploaded file to a Google Form question. Each row in that column becomes the answer for the mapped question. When no column is selected, the generator rule is used.', faq_100_q:'Why must the total be 100%?', faq_100_a:'The 100% total appears only in “Custom weights” mode and defines the expected distribution of choices. “Uniform random” requires no sliders or 100% total.', faq_delay_q:'What are minimum and maximum delay for?', faq_delay_a:'They add a wait between responses in Send now mode. For hourly runs or several random times per day, use a persistent background schedule.', faq_likert_q:'Must Likert data be encoded as 1–5?', faq_likert_a:'No. You may use exact Google Form labels such as “Agree” or “Strongly agree”. Numeric codes 1, 2, 3… are also accepted in top-to-bottom or left-to-right option order. For a Likert grid, map each grid row to its data column.', faq_url_q:'Can I use a /viewform URL?', faq_url_a:'No. The app only accepts an /edit URL so Google can verify that the current account has edit access.', faq_upload_q:'Are file-upload questions supported?', faq_upload_a:'No. Apps Script does not provide a safe way to attach files to new responses in this workflow. A required file-upload question blocks the plan.',
+        contact_title:'Need form customization or a data service?', contact_desc:'Send the form structure, sample file and expected output for a deployment-scope review.', footer_note:'Authorized QA use only.', terms:'Terms of use', privacy:'Privacy policy', terms_h1:'1. Permitted scope', terms_p1:'Submit only to forms you own or are authorized to test. Do not impersonate participants, manipulate surveys, generate fake reviews, evade limits or overload services.', terms_h2:'2. Data responsibility', terms_p2:'You are responsible for the legality, accuracy, usage rights and retention period of imported or generated data.', terms_h3:'3. Technical limits', terms_p3:'Large immediate runs are automatically split into technical batches of 50. Background schedules remain limited to 50 responses per schedule to stay within Apps Script limits. File-upload questions and some special Google Forms rules may not be supported.', terms_h4:'4. Payments', terms_p4:'The price is 500 VND per successful response. Failed submissions are automatically refunded to the balance. The administrator credits the balance only after checking the bank transaction. Credited top-ups are not cash-redeemable unless required by law.', privacy_h1:'Uploaded files', privacy_p1:'Excel, CSV and JSON files are read in the browser. When a persistent schedule is created, planned answers are compressed and stored in the current account’s Apps Script User Properties.', privacy_h2:'Google permissions', privacy_p2:'The app requests Google Forms access and trigger creation permission for selected functions. Google decides whether the account can open and submit to a form.', privacy_h3:'Personal data', privacy_p3:'Do not import sensitive or personal data without a lawful basis. Do not sell or share personal data without the required rights and consent.',
+        form_title:'Form title', responses:'Existing responses', questions:'Supported questions', unsupported:'Unsupported', accepting:'Accepting responses', not_accepting:'Not accepting responses', collects_email:'Collects email', limit_one:'One response per user', yes:'Yes', no:'No',
+        file_rows:'Data rows', file_columns:'Columns', file_name:'File', clear_data:'Clear data', no_column:'No column — use the generator rule below', data_column:'Excel / data column', mapping_help:'If a mapped cell is empty, the fallback generator rule is used.', question_type:'Type', required:'Required', optional:'Optional', unsupported_question:'This question type is not supported.',
+        generator_rule:'Fallback generator rule', uniform:'Uniform random', weighted:'Custom weights', fixed:'Fixed value', total:'Total', equalize:'Equalize', text_samples:'Sample values — one value per line', text_samples_help:'Use {{n}} for the sequence number and {{timestamp}} for the current time.', min_choices:'Minimum choices', max_choices:'Maximum choices', active_options:'Allowed choices', grid_mapping:'Map each Likert row', grid_random_help:'Unmapped rows are randomly selected from the grid columns.',
+        status_ready:'Ready', status_valid:'Valid', status_invalid:'Invalid', status_sending:'Sending', status_sent:'Sent', status_error:'Error', status_queued:'Scheduled', status_canceled:'Canceled', status_completed:'Completed', status_completed_with_errors:'Completed with errors', status_scheduled:'Scheduled', status_running:'Running',
+        toast_form_imported:'Form imported.', toast_file_loaded:'Data file loaded.', toast_plan_built:'Preview plan created.', toast_plan_valid:'Plan is valid.', toast_job_created:'Background schedule created.', toast_done:'Response submission finished.', toast_count:'Current response count: {count}',
+        err_import_form:'Could not import the form.', err_file:'Could not read the file.', err_no_form:'Import a Google Form first.', err_no_questions:'The form has no supported questions.', err_count:'Response count must be between 1 and 5,000.', err_required_text:'Required question “{title}” has no mapped column or sample value.', err_weights:'Weights for “{title}” must total exactly 100%.', err_ack:'Confirm authorization before submitting.', err_schedule:'Invalid schedule configuration.', err_plan:'Could not build the plan.', err_validate:'The plan is not valid.', err_page_open:'Send now mode requires the page to stay open.',
+        data_row_none:'Generated', validating:'Validating...', sending_progress:'Processed {done}/{total}', scheduled_background:'The background schedule was created. You may close this page.', confirm_cancel:'Cancel this background schedule?', confirm_delete:'Delete this history item?',
+        type_multiple_choice:'Multiple choice', type_dropdown:'Dropdown', type_checkbox:'Checkboxes', type_linear_scale:'Linear scale', type_rating:'Rating', type_grid:'Multiple-choice grid / Likert', type_checkbox_grid:'Checkbox grid', type_short_text:'Short answer', type_paragraph:'Paragraph', type_date:'Date', type_datetime:'Date and time', type_time:'Time', type_duration:'Duration', type_file_upload:'File upload', type_unsupported:'Unsupported'
+      }
+    };
+
+
+    Object.assign(I18N.vi,{
+      workspace_title:'Công cụ nhập dữ liệu',workspace_subtitle:'Nhập file và Google Form để bắt đầu.',
+      step1_title:'Nhập Google Form',step1_desc:'Dán link /edit. Tài khoản Google cần có quyền chỉnh sửa.',
+      step2_title:'Nhập file dữ liệu (không bắt buộc)',step2_desc:'Hỗ trợ Excel, CSV và JSON. Mỗi dòng là một bộ câu trả lời.',
+      step3_title:'Ghép cột với câu hỏi',step3_desc:'Chọn cột dữ liệu cho từng câu hỏi, hoặc chọn cách tạo dữ liệu mẫu.',
+      step4_title:'Chọn số dòng',step4_desc:'Nhập số dòng cần xử lý. Ứng dụng tự chia lô khi kiểm tra và gửi.',
+      step5_title:'Kiểm tra và xuất kết quả',step5_desc:'Xem trước, kiểm tra lỗi và tải file CSV.',
+      billing_hint:'Chỉ dùng với biểu mẫu bạn quản lý hoặc được phép kiểm thử.',
+      estimated_cost:'Số dòng sẽ xử lý',
+      submit_plan:'Gửi vào Google Form',
+      price_item_50:'Không giới hạn 50 dòng trong một kế hoạch',
+      how3_desc:'Kiểm tra dữ liệu theo từng lô; chọn 50, 100 hoặc số dòng phù hợp.',
+      err_count:'Nhập số nguyên từ 1 đến 100.000.'
+    });
+
+    const STATIC_QR_FALLBACK_DATA_URI = '';
+
+    const state = {
+      lang: localStorage.getItem('aff_lang') || 'vi',
+      form: null,
+      dataFileName: '',
+      dataRows: [],
+      dataColumns: [],
+      questionConfig: {},
+      plan: [],
+      sending: false,
+      scheduledRuns: [],
+      billing: {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:''},
+      activeOrder: null,
+      paymentPollTimer: null,
+      paymentPollStartedAt: 0,
+      pendingResume: null,
+      billingRefreshTimer: null
+    };
+
+    const MAX_UI_RESPONSES = 100000;
+    const SERVER_BATCH_SIZE = 25;
+    const PLAN_RENDER_LIMIT = 200;
+
+    const $ = (id) => document.getElementById(id);
+    const t = (key, vars = {}) => {
+      let value = (I18N[state.lang] && I18N[state.lang][key]) || (I18N.vi[key]) || key;
+      Object.keys(vars).forEach(name => value = value.replaceAll(`{${name}}`, vars[name]));
+      return value;
+    };
+
+    document.addEventListener('DOMContentLoaded', init);
+
+    function init() {
+      $('year').textContent = new Date().getFullYear();
+      setLanguage(state.lang);
+      setDefaultDates();
+      bindEvents();
+      updateSchedulePanels();
+      updateTopupTotal();
+      updateRunCost();
+      checkGoogleConnection();
+      renderPlan();
+    }
+
+    function bindEvents() {
+      $('langVi').addEventListener('click', () => setLanguage('vi'));
+      $('langEn').addEventListener('click', () => setLanguage('en'));
+      $('importFormBtn').addEventListener('click', importForm);
+      $('dataFile').addEventListener('change', event => event.target.files[0] && loadDataFile(event.target.files[0]));
+      $('dropZone').addEventListener('dragover', event => { event.preventDefault(); $('dropZone').classList.add('dragover'); });
+      $('dropZone').addEventListener('dragleave', () => $('dropZone').classList.remove('dragover'));
+      $('dropZone').addEventListener('drop', event => {
+        event.preventDefault(); $('dropZone').classList.remove('dragover');
+        const file = event.dataTransfer.files[0]; if (file) loadDataFile(file);
+      });
+      $('scheduleMode').addEventListener('change', () => { updateSchedulePanels(); state.plan = []; renderPlan(); });
+      $('buildPlanBtn').addEventListener('click', buildPlanSafe);
+      $('validatePlanBtn').addEventListener('click', validateCurrentPlan);
+      $('submitPlanBtn').addEventListener('click', submitCurrentPlan);
+      $('downloadPlanBtn').addEventListener('click', () => downloadPlan(false));
+      $('downloadReportBtn').addEventListener('click', () => downloadPlan(true));
+      $('refreshCountBtn').addEventListener('click', refreshResponseCount);
+      $('refreshJobsBtn').addEventListener('click', loadScheduledRuns);
+      $('topupQuantity').addEventListener('input', updateTopupTotal);
+      $('topupQuantity').addEventListener('keydown', event => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          createPaymentOrder(false);
+        }
+      });
+      $('responseCount').addEventListener('input', () => { updateRunCost(); invalidatePlan(); });
+      $('createPaymentBtn').addEventListener('click', () => createPaymentOrder(false));
+      $('checkPaymentBtn').addEventListener('click', checkPaymentOrder);
+      $('copyPaymentBtn').addEventListener('click', copyPaymentDetails);
+      $('openCheckoutBtn').addEventListener('click', () => { const url = state.activeOrder?.qrImageUrl || state.activeOrder?.checkoutUrl; if (url) window.open(url, '_blank', 'noopener'); }); 
+      document.querySelectorAll('[data-dialog]').forEach(button => button.addEventListener('click', () => $(button.dataset.dialog).showModal()));
+      document.querySelectorAll('[data-close-dialog]').forEach(button => button.addEventListener('click', () => button.closest('dialog').close()));
+    }
+
+    function setLanguage(lang) {
+      state.lang = lang;
+      localStorage.setItem('aff_lang', lang);
+      document.documentElement.lang = lang;
+      $('langVi').classList.toggle('active', lang === 'vi');
+      $('langEn').classList.toggle('active', lang === 'en');
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (I18N[lang][key]) el.textContent = I18N[lang][key];
+      });
+      updateSubmitButtonLabel();
+      if (state.form) { renderFormSummary(); renderQuestions(); }
+      if (state.dataRows.length) renderDataSummary();
+      renderPlan();
+      renderScheduledRuns();
+      renderBilling();
+      updateTopupTotal();
+      updateRunCost();
+    }
+
+    function setDefaultDates() {
+      const now = new Date(Date.now() + 5 * 60 * 1000);
+      $('intervalStart').value = toLocalDateTimeInput(now);
+      const today = toDateInput(new Date());
+      const week = new Date(); week.setDate(week.getDate() + 6);
+      $('dailyStartDate').value = today;
+      $('dailyEndDate').value = toDateInput(week);
+    }
+
+    function updateSchedulePanels() {
+      const mode = $('scheduleMode').value;
+      $('scheduleNow').classList.toggle('hidden', mode !== 'now');
+      $('scheduleInterval').classList.toggle('hidden', mode !== 'interval');
+      $('scheduleDaily').classList.toggle('hidden', mode !== 'daily_random');
+      updateSubmitButtonLabel();
+    }
+
+    function updateSubmitButtonLabel() {
+      $('submitPlanBtn').textContent = $('submitPlanBtn').dataset.submissionEnabled === 'true' ? ($('scheduleMode').value === 'now' ? t('submit_plan') : t('schedule_plan')) : 'Gửi trực tiếp chưa được bật';
+    }
+
+
+
+    async function loadBillingProfile(showToast = false, retries = 0) {
+      try {
+        state.billing = await serverCall('getBillingProfile');
+        renderBilling();
+        renderPlan();
+        if (showToast) toast(state.lang === 'vi' ? 'Số dư đã được cập nhật.' : 'Balance updated.', 'success');
+      } catch (error) {
+        if (retries > 0) {
+          await wait(800);
+          return loadBillingProfile(showToast, retries - 1);
+        }
+        state.billing = {
+          configured:false,
+          billingEnabled:true,
+          availableCredits:0,
+          reservedCredits:0,
+          unitPriceVnd:500,
+          email:'—',
+          lastError: messageOf(error)
+        };
+        renderBilling();
+        renderPlan();
+        if (showToast) toast(messageOf(error), 'error');
+      }
+    }
+
+    function renderBilling() {
+      if (!$('walletEmail')) return;
+      const billing = state.billing || { availableCredits:0, reservedCredits:0, unitPriceVnd:500, email:'Đang tải...', configured:false };
+      const unit = Number(billing.unitPriceVnd || 500);
+      const available = Number(billing.availableCredits || 0);
+      $('walletEmail').textContent = billing.email || '—';
+      $('walletBalanceCredits').textContent = `${formatNumber(available)} ${state.lang === 'vi' ? 'phiếu' : 'responses'}`;
+      $('walletAvailable').textContent = `${formatNumber(available)} ${state.lang === 'vi' ? 'phiếu' : 'responses'}`;
+      $('walletBalanceVnd').textContent = formatVnd(available * unit);
+      $('createPaymentBtn').disabled = !billing.configured || billing.billingEnabled === false;
+      if (!billing.configured) {
+        $('paymentStatus').className = 'payment-status danger';
+        $('paymentStatus').textContent = billing.lastError
+          ? `${t('payment_not_configured')} — ${billing.lastError}`
+          : t('payment_not_configured');
+      } else if (!state.activeOrder) {
+        $('paymentStatus').className = 'payment-status';
+        $('paymentStatus').textContent = '';
+      }
+      updateRunCost();
+      updateBillingHint();
+    }
+
+    function updateTopupTotal() {
+      if (!$('topupQuantity')) return;
+      const qty = Math.max(0, Math.floor(Number($('topupQuantity').value || 0)));
+      const unit = Number(state.billing?.unitPriceVnd || 500);
+      $('topupTotal').textContent = formatVnd(qty * unit);
+    }
+
+    function updateRunCost() {
+      if (!$('runCost')) return;
+      const count = Math.max(0, Math.floor(Number($('responseCount').value || 0)));
+      $('runCost').textContent = `${count.toLocaleString('vi-VN')} dòng · không thu phí`;
+      updateBillingHint();
+    }
+
+    function updateBillingHint() {
+      if (!$('billingHint')) return;
+      const need = state.plan.length || Math.max(0, Math.floor(Number($('responseCount')?.value || 0)));
+      const have = Number(state.billing?.availableCredits || 0);
+      if (!state.billing?.configured) {
+        $('billingHint').className = 'warning-box';
+        $('billingHint').textContent = state.billing?.lastError
+          ? `${t('payment_not_configured')} — ${state.billing.lastError}`
+          : t('payment_not_configured');
+      } else if (state.billing.billingEnabled !== false && need > have) {
+        $('billingHint').className = 'warning-box';
+        $('billingHint').textContent = t('insufficient_balance', { need, have });
+      } else {
+        $('billingHint').className = 'info-box';
+        $('billingHint').textContent = 'Chỉ dùng cho biểu mẫu bạn quản lý hoặc được phép kiểm thử. Kiểm tra dữ liệu trước khi gửi.';
+      }
+    }
+
+    async function createPaymentOrder(autoResume = false) {
+      const qty = Math.floor(Number($('topupQuantity').value || 0));
+      const min = Number(state.billing?.minTopupCredits || 1);
+      if (qty < min) return toast(`${t('topup_quantity')}: ≥ ${min}`, 'error');
+      setButtonLoading($('createPaymentBtn'), true, t('create_payment'));
+      try {
+        state.activeOrder = await serverCall('createTopupOrder', qty);
+        if (autoResume) {
+          state.pendingResume = {
+            need: state.plan.length,
+            planFingerprint: currentPlanFingerprint(),
+            createdAt: Date.now()
+          };
+        }
+        savePendingPayment();
+        renderPaymentOrder();
+        startPaymentPolling();
+        toast(autoResume ? t('auto_topup_started') : t('payment_waiting'), 'success');
+      } catch (error) {
+        if (autoResume) state.pendingResume = null;
+        toast(messageOf(error), 'error');
+      } finally {
+        setButtonLoading($('createPaymentBtn'), false);
+      }
+    }
+
+    async function startAutomaticTopup(deficit) {
+      const quantity = Math.max(1, Math.floor(Number(deficit || 0)));
+      $('topupQuantity').value = quantity;
+      updateTopupTotal();
+      $('wallet').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      await createPaymentOrder(true);
+    }
+
+    function currentPlanFingerprint() {
+      try {
+        return JSON.stringify({
+          formUrl: $('formUrl').value.trim(),
+          mode: $('scheduleMode').value,
+          rows: state.plan.map(row => ({ scheduledAt: row.scheduledAt, answers: row.answers }))
+        });
+      } catch (_) {
+        return '';
+      }
+    }
+
+    async function tryAutoResumeAfterApproval() {
+      const pending = state.pendingResume;
+      if (!pending) return;
+      if (pending.planFingerprint !== currentPlanFingerprint()) {
+        state.pendingResume = null;
+        toast(t('auto_resume_cancelled'), 'error');
+        return;
+      }
+      const have = Number(state.billing?.availableCredits || 0);
+      if (have < Number(pending.need || 0)) return;
+      state.pendingResume = null;
+      toast(t('auto_resume_started'), 'success');
+      await wait(700);
+      submitCurrentPlan();
+    }
+
+    function renderPaymentOrder() {
+      const order = state.activeOrder;
+      if (!order) return;
+      $('bankName').textContent = order.bankName || order.bankId || '—';
+      $('bankAccount').textContent = order.accountNumber || '—';
+      $('bankAccountName').textContent = order.accountName || '—';
+      $('paymentAmount').textContent = formatVnd(order.amount || 0);
+      $('transferContent').textContent = order.description || '—';
+      $('paymentOrderCode').textContent = order.orderCode || '—';
+      $('checkPaymentBtn').disabled = false;
+      const qrUrl = order.qrImageUrl || order.checkoutUrl || '';
+      const qrFallback = order.qrFallbackDataUri || STATIC_QR_FALLBACK_DATA_URI;
+      $('copyPaymentBtn').classList.remove('hidden');
+      $('openCheckoutBtn').classList.toggle('hidden', !qrUrl);
+      $('qrPlaceholder').classList.toggle('hidden', !!(qrUrl || qrFallback));
+      $('qrBox').classList.toggle('hidden', !(qrUrl || qrFallback));
+      $('qrFallbackNote').classList.add('hidden');
+      $('qrBox').innerHTML = '';
+      if (qrUrl || qrFallback) {
+        const img = document.createElement('img');
+        img.src = qrUrl || qrFallback;
+        img.alt = 'VietQR';
+        img.loading = 'lazy';
+        img.referrerPolicy = 'no-referrer';
+        img.onerror = () => {
+          if (qrFallback && img.src !== qrFallback) {
+            img.src = qrFallback;
+            $('qrFallbackNote').classList.remove('hidden');
+            $('openCheckoutBtn').classList.add('hidden');
+          } else {
+            $('qrPlaceholder').classList.remove('hidden');
+            $('qrPlaceholder').textContent = t('qr_placeholder');
+            $('qrBox').classList.add('hidden');
+          }
+        };
+        if (!qrUrl && qrFallback) $('qrFallbackNote').classList.remove('hidden');
+        img.style.width = '100%';
+        img.style.maxWidth = '250px';
+        img.style.height = 'auto';
+        img.style.display = 'block';
+        img.style.margin = '0 auto';
+        img.style.borderRadius = '10px';
+        $('qrBox').appendChild(img);
+      }
+      updatePaymentStatus(order);
+    }
+
+    async function copyPaymentDetails() {
+      const order = state.activeOrder;
+      if (!order) return;
+      const text = [
+        `${t('bank_name')}: ${order.bankName || order.bankId || ''}`,
+        `${t('account_number')}: ${order.accountNumber || ''}`,
+        `${t('account_name')}: ${order.accountName || ''}`,
+        `${t('payment_amount')}: ${formatVnd(order.amount || 0)}`,
+        `${t('transfer_content')}: ${order.description || ''}`,
+        `${t('payment_request_code')}: ${order.orderCode || ''}`
+      ].join('\n');
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const area = document.createElement('textarea');
+          area.value = text;
+          area.style.position = 'fixed';
+          area.style.opacity = '0';
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand('copy');
+          area.remove();
+        }
+        toast(state.lang === 'vi' ? 'Đã sao chép thông tin chuyển khoản.' : 'Payment details copied.', 'success');
+      } catch (error) {
+        toast(messageOf(error), 'error');
+      }
+    }
+
+    async function checkPaymentOrder() {
+      stopPaymentPolling(false);
+      if (!state.activeOrder?.orderCode) return;
+      try {
+        state.activeOrder = await serverCall('getTopupOrderStatus', state.activeOrder.orderCode);
+        renderPaymentOrder();
+        const status = String(state.activeOrder.status || '').toUpperCase();
+        if (status === 'PAID') {
+          stopPaymentPolling();
+          clearPendingPayment();
+          if (state.activeOrder.wallet) {
+            state.billing = Object.assign({}, state.billing || {}, state.activeOrder.wallet, {
+              configured: true,
+              billingEnabled: true,
+              email: state.billing?.email || ''
+            });
+            renderBilling();
+            renderPlan();
+          } else {
+            await checkGoogleConnection();
+          }
+          toast(t('payment_paid'), 'success');
+          await tryAutoResumeAfterApproval();
+        } else if (['REJECTED','CANCELLED','EXPIRED','ERROR'].includes(status)) {
+          stopPaymentPolling();
+          clearPendingPayment();
+          state.pendingResume = null;
+        } else {
+          scheduleNextPaymentPoll();
+        }
+      } catch (error) {
+        toast(messageOf(error), 'error');
+        scheduleNextPaymentPoll();
+      }
+    }
+
+    function updatePaymentStatus(order) {
+      const status = String(order.status || '').toUpperCase();
+      if (status === 'PAID') {
+        $('paymentStatus').className = 'payment-status success';
+        $('paymentStatus').textContent = t('payment_paid');
+      } else if (['REJECTED','CANCELLED','EXPIRED','ERROR'].includes(status)) {
+        stopPaymentPolling();
+        clearPendingPayment();
+        state.pendingResume = null;
+        $('paymentStatus').className = 'payment-status danger';
+        $('paymentStatus').textContent = order.adminNote || order.error || t('payment_cancelled');
+      } else {
+        $('paymentStatus').className = 'payment-status warning';
+        $('paymentStatus').textContent = `${t('payment_waiting')} ${formatVnd(order.amount || 0)} · ${order.description || ''}`;
+      }
+    }
+
+    function startPaymentPolling() {
+      stopPaymentPolling();
+      state.paymentPollStartedAt = Date.now();
+      scheduleNextPaymentPoll();
+    }
+
+    function scheduleNextPaymentPoll() {
+      stopPaymentPolling(false);
+      if (!state.activeOrder?.orderCode) return;
+      const elapsed = Date.now() - Number(state.paymentPollStartedAt || Date.now());
+      if (elapsed > 60 * 60 * 1000) return;
+      const delay = elapsed < 10 * 60 * 1000 ? 5000 : 15000;
+      state.paymentPollTimer = setTimeout(checkPaymentOrder, delay);
+    }
+
+    function stopPaymentPolling(resetStarted = true) {
+      if (state.paymentPollTimer) clearTimeout(state.paymentPollTimer);
+      state.paymentPollTimer = null;
+      if (resetStarted) state.paymentPollStartedAt = 0;
+    }
+
+    function savePendingPayment() {
+      try {
+        if (!state.activeOrder?.orderCode) return;
+        localStorage.setItem('aff_pending_payment', JSON.stringify({
+          orderCode: state.activeOrder.orderCode,
+          qrImageUrl: state.activeOrder.qrImageUrl || '',
+          checkoutUrl: state.activeOrder.checkoutUrl || '',
+          savedAt: Date.now()
+        }));
+      } catch (_) {}
+    }
+
+    function clearPendingPayment() {
+      try { localStorage.removeItem('aff_pending_payment'); } catch (_) {}
+    }
+
+    function restorePendingPayment() {
+      try {
+        const raw = localStorage.getItem('aff_pending_payment');
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (!saved?.orderCode || Date.now() - Number(saved.savedAt || 0) > 24 * 60 * 60 * 1000) {
+          clearPendingPayment();
+          return;
+        }
+        state.activeOrder = {
+          orderCode: saved.orderCode,
+          qrImageUrl: saved.qrImageUrl || '',
+          checkoutUrl: saved.checkoutUrl || '',
+          status: 'PENDING'
+        };
+        state.paymentPollStartedAt = Date.now();
+        checkPaymentOrder();
+      } catch (_) {
+        clearPendingPayment();
+      }
+    }
+
+
+    async function importForm() {
+      const url = $('formUrl').value.trim();
+      if (!url) return toast(t('err_import_form'), 'error');
+      setButtonLoading($('importFormBtn'), true, t('importing'));
+      try {
+        state.form = await serverCall('importOwnedForm', url);
+        state.questionConfig = {};
+        state.form.questions.forEach(q => state.questionConfig[q.id] = defaultQuestionConfig(q));
+        state.plan = [];
+        renderFormSummary();
+        renderQuestions();
+        autoMapAll();
+        renderQuestions();
+        $('questionEmpty').classList.add('hidden');
+        $('refreshCountBtn').disabled = false;
+        toast(t('toast_form_imported'), 'success');
+      } catch (error) {
+        state.form = null;
+        toast(`${t('err_import_form')} ${messageOf(error)}`, 'error');
+      } finally {
+        setButtonLoading($('importFormBtn'), false);
+      }
+    }
+
+    function renderFormSummary() {
+      if (!state.form) return $('formSummary').classList.add('hidden');
+      const f = state.form;
+      $('formSummary').innerHTML = `
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+          <div style="flex:1;min-width:240px"><b>${escapeHtml(f.title)}</b><div class="small muted">${escapeHtml(f.description || '')}</div></div>
+          <span class="status-chip ${f.acceptingResponses ? 'success' : 'danger'}">${f.acceptingResponses ? t('accepting') : t('not_accepting')}</span>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-stat"><b>${f.responseCount}</b><span>${t('responses')}</span></div>
+          <div class="summary-stat"><b>${f.supportedCount}</b><span>${t('questions')}</span></div>
+          <div class="summary-stat"><b>${f.unsupportedCount}</b><span>${t('unsupported')}</span></div>
+          <div class="summary-stat"><b>${f.collectsEmail ? t('yes') : t('no')}</b><span>${t('collects_email')}</span></div>
+        </div>
+        ${f.limitOneResponsePerUser ? `<div class="warning-box">${escapeHtml(t('limit_one'))}: ${escapeHtml(t('yes'))}. Programmatic QA submissions may be restricted by the form settings.</div>` : ''}
+      `;
+      $('formSummary').classList.remove('hidden');
+    }
+
+    async function loadDataFile(file) {
+      try {
+        const ext = file.name.split('.').pop().toLowerCase();
+        let rows;
+        if (ext === 'json') {
+          const parsed = JSON.parse(await file.text());
+          rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : []);
+        } else {
+          const buffer = await file.arrayBuffer();
+          const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
+          const sheet = workbook.Sheets[workbook.SheetNames[0]];
+          rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+        }
+        if (!Array.isArray(rows) || !rows.length) throw new Error('No data rows found.');
+        state.dataFileName = file.name;
+        state.dataRows = rows.map(normalizeRowObject);
+        state.dataColumns = Array.from(new Set(state.dataRows.flatMap(row => Object.keys(row))));
+        renderDataSummary();
+        autoMapAll();
+        renderQuestions();
+        state.plan = [];
+        renderPlan();
+        toast(t('toast_file_loaded'), 'success');
+      } catch (error) {
+        toast(`${t('err_file')} ${messageOf(error)}`, 'error');
+      }
+    }
+
+    function normalizeRowObject(row) {
+      const out = {};
+      Object.keys(row || {}).forEach(key => {
+        const value = row[key];
+        out[String(key).trim()] = value instanceof Date ? value.toISOString() : (value ?? '');
+      });
+      return out;
+    }
+
+    function renderDataSummary() {
+      if (!state.dataRows.length) return $('dataSummary').classList.add('hidden');
+      $('dataSummary').innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <div style="flex:1"><b>${escapeHtml(state.dataFileName)}</b><div class="small muted">${state.dataColumns.map(escapeHtml).join(' · ')}</div></div>
+          <button type="button" class="btn btn-danger btn-sm" id="clearDataBtn">${escapeHtml(t('clear_data'))}</button>
+        </div>
+        <div class="summary-grid">
+          <div class="summary-stat"><b>${state.dataRows.length}</b><span>${t('file_rows')}</span></div>
+          <div class="summary-stat"><b>${state.dataColumns.length}</b><span>${t('file_columns')}</span></div>
+          <div class="summary-stat" style="grid-column:span 2"><b style="font-size:.9rem">${escapeHtml(state.dataFileName)}</b><span>${t('file_name')}</span></div>
+        </div>`;
+      $('dataSummary').classList.remove('hidden');
+      $('clearDataBtn').addEventListener('click', clearData);
+    }
+
+    function clearData() {
+      state.dataFileName = '';
+      state.dataRows = [];
+      state.dataColumns = [];
+      Object.values(state.questionConfig).forEach(config => { config.mapping = ''; config.gridMappings = {}; });
+      $('dataFile').value = '';
+      $('dataSummary').classList.add('hidden');
+      state.plan = [];
+      renderQuestions();
+      renderPlan();
+    }
+
+    function defaultQuestionConfig(q) {
+      const equal = q.options && q.options.length ? 100 / q.options.length : 0;
+      return {
+        mapping: '',
+        gridMappings: {},
+        generatorMode: 'uniform',
+        fixedValue: q.options?.[0] || '',
+        weights: Object.fromEntries((q.options || []).map(option => [option, equal])),
+        textSamples: '',
+        selectedOptions: [...(q.options || [])],
+        minSelect: 1,
+        maxSelect: q.type.includes('checkbox') ? Math.min(2, (q.options || []).length || 1) : 1
+      };
+    }
+
+    function renderQuestions() {
+      const list = $('questionList');
+      list.innerHTML = '';
+      if (!state.form) return;
+      state.form.questions.forEach((q, index) => {
+        const config = state.questionConfig[q.id] || defaultQuestionConfig(q);
+        state.questionConfig[q.id] = config;
+        const card = document.createElement('article');
+        card.className = 'question-card';
+        card.innerHTML = `
+          <div class="question-head">
+            <span class="q-index">${index + 1}</span>
+            <div style="flex:1">
+              <h4>${escapeHtml(q.title || '(Untitled question)')} ${q.required ? '<span style="color:#c0362c">*</span>' : ''}</h4>
+              <div class="question-meta">${escapeHtml(t(`type_${q.type}`))} · ${q.required ? t('required') : t('optional')}</div>
+            </div>
+            ${q.supported ? '' : `<span class="status-chip danger">${t('unsupported')}</span>`}
+          </div>
+          <div class="question-body">${renderQuestionBody(q, config)}</div>`;
+        list.appendChild(card);
+      });
+      bindQuestionEvents();
+    }
+
+    function renderQuestionBody(q, config) {
+      if (!q.supported) return `<div class="error-box">${escapeHtml(q.reason || t('unsupported_question'))}</div>`;
+      let mappingHtml = '';
+      if (q.type === 'grid' || q.type === 'checkbox_grid') {
+        mappingHtml = `
+          <div class="mapping-box">
+            <b class="small">${t('grid_mapping')}</b>
+            ${(q.rows || []).map((row, i) => `
+              <div class="grid-row-map">
+                <div class="row-label">${escapeHtml(row)}</div>
+                <select class="grid-mapping-select" data-qid="${q.id}" data-row-index="${i}">${columnOptions(config.gridMappings[i] || '')}</select>
+              </div>`).join('')}
+            <p class="mapping-help">${t('grid_random_help')}</p>
+          </div>`;
+      } else {
+        mappingHtml = `
+          <div class="mapping-box">
+            <label class="small"><b>${t('data_column')}</b></label>
+            <select class="mapping-select" data-qid="${q.id}">${columnOptions(config.mapping)}</select>
+            <p class="mapping-help">${t('mapping_help')}</p>
+          </div>`;
+      }
+      return mappingHtml + renderGeneratorRule(q, config);
+    }
+
+    function columnOptions(selected) {
+      return `<option value="">${escapeHtml(t('no_column'))}</option>` + state.dataColumns.map(column => `<option value="${escapeAttr(column)}" ${column === selected ? 'selected' : ''}>${escapeHtml(column)}</option>`).join('');
+    }
+
+    function renderGeneratorRule(q, config) {
+      const choiceTypes = ['multiple_choice','dropdown','linear_scale','rating'];
+      if (choiceTypes.includes(q.type)) {
+        const custom = config.generatorMode === 'weighted';
+        const fixed = config.generatorMode === 'fixed';
+        return `
+          <div class="rule-box">
+            <h5>${t('generator_rule')}</h5>
+            <div class="radio-tabs">
+              ${generatorModeRadio(q.id, 'uniform', t('uniform'), config.generatorMode)}
+              ${generatorModeRadio(q.id, 'weighted', t('weighted'), config.generatorMode)}
+              ${generatorModeRadio(q.id, 'fixed', t('fixed'), config.generatorMode)}
+            </div>
+            <div class="fixed-wrap ${fixed ? '' : 'hidden'}" data-fixed-wrap="${q.id}" style="margin-top:12px">
+              <select class="fixed-select" data-qid="${q.id}">${(q.options || []).map(option => `<option value="${escapeAttr(option)}" ${option === config.fixedValue ? 'selected' : ''}>${escapeHtml(option)}</option>`).join('')}</select>
+            </div>
+            <div class="weight-wrap ${custom ? '' : 'hidden'}" data-weight-wrap="${q.id}">
+              <div class="weight-list">${(q.options || []).map(option => `
+                <div class="weight-row"><span>${escapeHtml(option)}</span><input class="weight-input" data-qid="${q.id}" data-option="${escapeAttr(option)}" type="number" min="0" max="100" step="0.1" value="${roundNumber(config.weights[option] || 0)}"></div>`).join('')}</div>
+              <div style="display:flex;justify-content:flex-end;gap:8px;align-items:center"><button class="btn btn-outline btn-sm equalize-btn" data-qid="${q.id}" type="button">${t('equalize')}</button><div class="weight-total" data-weight-total="${q.id}"></div></div>
+            </div>
+          </div>`;
+      }
+
+      if (q.type === 'checkbox' || q.type === 'checkbox_grid') {
+        return `
+          <div class="rule-box">
+            <h5>${t('generator_rule')}</h5>
+            <div class="field-grid two">
+              <div class="field"><label>${t('min_choices')}</label><input class="min-select" data-qid="${q.id}" type="number" min="0" max="${q.options.length}" value="${config.minSelect}"></div>
+              <div class="field"><label>${t('max_choices')}</label><input class="max-select" data-qid="${q.id}" type="number" min="1" max="${q.options.length}" value="${config.maxSelect}"></div>
+            </div>
+            <div class="small" style="font-weight:750;margin-top:10px">${t('active_options')}</div>
+            <div class="option-checks">${q.options.map(option => `<label><input class="option-active" data-qid="${q.id}" data-option="${escapeAttr(option)}" type="checkbox" ${config.selectedOptions.includes(option) ? 'checked' : ''}>${escapeHtml(option)}</label>`).join('')}</div>
+          </div>`;
+      }
+
+      if (q.type === 'short_text' || q.type === 'paragraph') {
+        return `
+          <div class="rule-box">
+            <h5>${t('generator_rule')}</h5>
+            <label class="small"><b>${t('text_samples')}</b></label>
+            <textarea class="text-samples" data-qid="${q.id}" placeholder="QA {{n}}">${escapeHtml(config.textSamples)}</textarea>
+            <div class="small muted">${escapeHtml(t('text_samples_help'))}</div>
+          </div>`;
+      }
+
+      if (q.type === 'grid') {
+        return `<div class="rule-box"><h5>${t('generator_rule')}</h5><div class="info-box" style="margin:0">${t('grid_random_help')}</div></div>`;
+      }
+
+      const inputType = q.type === 'date' ? 'date' : q.type === 'datetime' ? 'datetime-local' : q.type === 'time' ? 'time' : 'text';
+      const placeholder = q.type === 'duration' ? '01:30:00' : '';
+      return `
+        <div class="rule-box">
+          <h5>${t('generator_rule')}</h5>
+          <div class="field"><label>${t('fixed')}</label><input class="fixed-input" data-qid="${q.id}" type="${inputType}" placeholder="${placeholder}" value="${escapeAttr(config.fixedValue || '')}"></div>
+        </div>`;
+    }
+
+    function generatorModeRadio(qid, value, label, selected) {
+      return `<label><input class="generator-mode" data-qid="${qid}" type="radio" name="generator-${qid}" value="${value}" ${selected === value ? 'checked' : ''}>${escapeHtml(label)}</label>`;
+    }
+
+    function bindQuestionEvents() {
+      document.querySelectorAll('.mapping-select').forEach(el => el.addEventListener('change', () => { state.questionConfig[el.dataset.qid].mapping = el.value; invalidatePlan(); }));
+      document.querySelectorAll('.grid-mapping-select').forEach(el => el.addEventListener('change', () => { state.questionConfig[el.dataset.qid].gridMappings[el.dataset.rowIndex] = el.value; invalidatePlan(); }));
+      document.querySelectorAll('.generator-mode').forEach(el => el.addEventListener('change', () => {
+        const cfg = state.questionConfig[el.dataset.qid]; cfg.generatorMode = el.value;
+        document.querySelector(`[data-weight-wrap="${el.dataset.qid}"]`)?.classList.toggle('hidden', el.value !== 'weighted');
+        document.querySelector(`[data-fixed-wrap="${el.dataset.qid}"]`)?.classList.toggle('hidden', el.value !== 'fixed');
+        updateWeightTotal(el.dataset.qid); invalidatePlan();
+      }));
+      document.querySelectorAll('.fixed-select').forEach(el => el.addEventListener('change', () => { state.questionConfig[el.dataset.qid].fixedValue = el.value; invalidatePlan(); }));
+      document.querySelectorAll('.fixed-input').forEach(el => el.addEventListener('input', () => { state.questionConfig[el.dataset.qid].fixedValue = el.value; invalidatePlan(); }));
+      document.querySelectorAll('.weight-input').forEach(el => el.addEventListener('input', () => { state.questionConfig[el.dataset.qid].weights[el.dataset.option] = Number(el.value || 0); updateWeightTotal(el.dataset.qid); invalidatePlan(); }));
+      document.querySelectorAll('.equalize-btn').forEach(el => el.addEventListener('click', () => equalizeWeights(el.dataset.qid)));
+      document.querySelectorAll('.text-samples').forEach(el => el.addEventListener('input', () => { state.questionConfig[el.dataset.qid].textSamples = el.value; invalidatePlan(); }));
+      document.querySelectorAll('.min-select').forEach(el => el.addEventListener('input', () => { state.questionConfig[el.dataset.qid].minSelect = Number(el.value); invalidatePlan(); }));
+      document.querySelectorAll('.max-select').forEach(el => el.addEventListener('input', () => { state.questionConfig[el.dataset.qid].maxSelect = Number(el.value); invalidatePlan(); }));
+      document.querySelectorAll('.option-active').forEach(el => el.addEventListener('change', () => {
+        const cfg = state.questionConfig[el.dataset.qid];
+        cfg.selectedOptions = Array.from(document.querySelectorAll(`.option-active[data-qid="${el.dataset.qid}"]:checked`)).map(input => input.dataset.option);
+        invalidatePlan();
+      }));
+      Object.keys(state.questionConfig).forEach(updateWeightTotal);
+    }
+
+    function equalizeWeights(qid) {
+      const q = state.form.questions.find(item => item.id === qid);
+      if (!q?.options?.length) return;
+      const equal = 100 / q.options.length;
+      q.options.forEach(option => state.questionConfig[qid].weights[option] = equal);
+      document.querySelectorAll(`.weight-input[data-qid="${qid}"]`).forEach(input => input.value = roundNumber(equal));
+      updateWeightTotal(qid); invalidatePlan();
+    }
+
+    function updateWeightTotal(qid) {
+      const el = document.querySelector(`[data-weight-total="${qid}"]`);
+      if (!el) return;
+      const total = Object.values(state.questionConfig[qid].weights || {}).reduce((sum, value) => sum + Number(value || 0), 0);
+      el.textContent = `${t('total')}: ${roundNumber(total)}%`;
+      el.className = `weight-total ${Math.abs(total - 100) < .01 ? 'ok' : 'bad'}`;
+    }
+
+    function autoMapAll() {
+      if (!state.form || !state.dataColumns.length) return;
+      state.form.questions.forEach(q => {
+        const cfg = state.questionConfig[q.id];
+        if (!cfg || !q.supported) return;
+        if (q.type === 'grid' || q.type === 'checkbox_grid') {
+          (q.rows || []).forEach((row, index) => {
+            if (!cfg.gridMappings[index]) cfg.gridMappings[index] = findBestColumn(q.title, row);
+          });
+        } else if (!cfg.mapping) {
+          cfg.mapping = findBestColumn(q.title, '');
+        }
+      });
+    }
+
+    function findBestColumn(questionTitle, rowTitle) {
+      const candidates = state.dataColumns;
+      const q = normalizeKey(questionTitle);
+      const r = normalizeKey(rowTitle);
+      const combined = normalizeKey(`${questionTitle} ${rowTitle}`);
+      let match = candidates.find(col => normalizeKey(col) === combined);
+      if (!match && r) match = candidates.find(col => normalizeKey(col) === r);
+      if (!match) match = candidates.find(col => normalizeKey(col) === q);
+      if (!match && r) match = candidates.find(col => normalizeKey(col).includes(r) && normalizeKey(col).includes(q.slice(0, Math.min(q.length, 20))));
+      if (!match) match = candidates.find(col => q.includes(normalizeKey(col)) || normalizeKey(col).includes(q));
+      return match || '';
+    }
+
+    function buildPlanSafe() {
+      try {
+        buildPlan();
+        toast(t('toast_plan_built'), 'success');
+      } catch (error) {
+        toast(`${t('err_plan')} ${messageOf(error)}`, 'error');
+      }
+    }
+
+    function buildPlan() {
+      if (!state.form) throw new Error(t('err_no_form'));
+      const supported = state.form.questions.filter(q => q.supported);
+      if (!supported.length) throw new Error(t('err_no_questions'));
+      const count = Number($('responseCount').value);
+      if (!Number.isInteger(count) || count < 1 || count > MAX_UI_RESPONSES) throw new Error(t('err_count'));
+      if ($('scheduleMode').value !== 'now') throw new Error('Lịch chạy nền chưa được bật trên bản Vercel.');
+      validateGeneratorConfig();
+      const scheduleTimes = buildScheduleTimes(count);
+      const plan = [];
+      for (let i = 0; i < count; i++) {
+        const dataIndex = chooseDataRowIndex(i);
+        const row = dataIndex >= 0 ? state.dataRows[dataIndex] : {};
+        const answers = {};
+        const previews = [];
+        state.form.questions.forEach(q => {
+          if (!q.supported) {
+            if (q.required) throw new Error(`${q.title}: ${t('unsupported_question')}`);
+            return;
+          }
+          const answer = generateAnswer(q, row, i + 1);
+          if (isEmpty(answer)) {
+            if (q.required) throw new Error(t('err_required_text', { title: q.title }));
+            return;
+          }
+          answers[q.id] = answer;
+          previews.push(`${q.title}: ${formatAnswer(answer, q)}`);
+        });
+        plan.push({
+          index: i + 1,
+          dataRow: dataIndex >= 0 ? dataIndex + 1 : '',
+          scheduledAt: scheduleTimes[i].toISOString(),
+          answers,
+          preview: previews.join(' · '),
+          status: 'ready',
+          googleTimestamp: '',
+          responseId: '',
+          editResponseUrl: '',
+          error: ''
+        });
+      }
+      state.plan = plan;
+      renderPlan();
+    }
+
+    function validateGeneratorConfig() {
+      state.form.questions.forEach(q => {
+        if (!q.supported) return;
+        const cfg = state.questionConfig[q.id];
+        if (cfg.generatorMode === 'weighted') {
+          const total = Object.values(cfg.weights).reduce((sum, value) => sum + Number(value || 0), 0);
+          if (Math.abs(total - 100) >= .01) throw new Error(t('err_weights', { title: q.title }));
+        }
+        if ((q.type === 'checkbox' || q.type === 'checkbox_grid') && (!cfg.selectedOptions.length || cfg.minSelect > cfg.maxSelect || cfg.maxSelect > cfg.selectedOptions.length)) {
+          throw new Error(`${q.title}: invalid checkbox selection range.`);
+        }
+      });
+    }
+
+    function chooseDataRowIndex(i) {
+      if (!state.dataRows.length) return -1;
+      if ($('rowStrategy').value === 'random') return randomInt(0, state.dataRows.length - 1);
+      return i % state.dataRows.length;
+    }
+
+    function generateAnswer(q, row, sequence) {
+      const cfg = state.questionConfig[q.id];
+      if (q.type === 'grid') return q.rows.map((gridRow, index) => {
+        const mapped = cfg.gridMappings[index];
+        const value = mapped ? row[mapped] : '';
+        return !isEmpty(value) ? String(value).trim() : randomChoice(q.columns);
+      });
+      if (q.type === 'checkbox_grid') return q.rows.map((gridRow, index) => {
+        const mapped = cfg.gridMappings[index];
+        const value = mapped ? row[mapped] : '';
+        return !isEmpty(value) ? splitMulti(value) : randomSubset(cfg.selectedOptions, cfg.minSelect, cfg.maxSelect);
+      });
+
+      const mappedValue = cfg.mapping ? row[cfg.mapping] : '';
+      if (!isEmpty(mappedValue)) return convertImportedValue(q, mappedValue);
+
+      if (['multiple_choice','dropdown','linear_scale','rating'].includes(q.type)) {
+        if (cfg.generatorMode === 'fixed') return cfg.fixedValue;
+        if (cfg.generatorMode === 'weighted') return weightedChoice(q.options, cfg.weights);
+        return randomChoice(q.options);
+      }
+      if (q.type === 'checkbox') return randomSubset(cfg.selectedOptions, cfg.minSelect, cfg.maxSelect);
+      if (q.type === 'short_text' || q.type === 'paragraph') {
+        const samples = cfg.textSamples.split(/\r?\n/).map(v => v.trim()).filter(Boolean);
+        if (!samples.length) return '';
+        return randomChoice(samples).replaceAll('{{n}}', sequence).replaceAll('{{timestamp}}', new Date().toISOString());
+      }
+      return cfg.fixedValue || '';
+    }
+
+    function convertImportedValue(q, value) {
+      if (q.type === 'checkbox') return splitMulti(value);
+      if (q.type === 'linear_scale' || q.type === 'rating') return String(value).trim();
+      if (q.type === 'datetime') {
+        const date = new Date(value);
+        return isNaN(date.getTime()) ? String(value).trim() : date.toISOString();
+      }
+      return String(value).trim();
+    }
+
+    function buildScheduleTimes(count) {
+      const mode = $('scheduleMode').value;
+      const now = new Date();
+      if (mode === 'now') {
+        const min = Number($('minDelay').value || 0);
+        const max = Number($('maxDelay').value || 0);
+        if (min < 1 || max < min) throw new Error('Khoảng nghỉ phải từ 1 giây trở lên và giá trị tối đa không được nhỏ hơn tối thiểu.');
+        let current = now.getTime();
+        return Array.from({ length: count }, (_, i) => {
+          if (i > 0) current += randomInt(Math.round(min * 1000), Math.round(max * 1000));
+          return new Date(current);
+        });
+      }
+      if (mode === 'interval') {
+        const start = new Date($('intervalStart').value);
+        const value = Number($('intervalValue').value);
+        if (isNaN(start.getTime()) || start.getTime() < Date.now() + 15000 || value < 1) throw new Error(t('err_schedule'));
+        const multiplier = $('intervalUnit').value === 'minutes' ? 60000 : $('intervalUnit').value === 'hours' ? 3600000 : 86400000;
+        return Array.from({ length: count }, (_, i) => new Date(start.getTime() + i * value * multiplier));
+      }
+      const startDate = $('dailyStartDate').value;
+      const endDate = $('dailyEndDate').value;
+      const startTime = $('dailyWindowStart').value;
+      const endTime = $('dailyWindowEnd').value;
+      const perDay = Number($('dailyPerDay').value);
+      if (!startDate || !endDate || !startTime || !endTime || perDay < 1) throw new Error(t('err_schedule'));
+      const dates = dateRange(startDate, endDate);
+      const slots = [];
+      dates.forEach(date => {
+        const start = dateWithTime(date, startTime);
+        const end = dateWithTime(date, endTime);
+        if (end <= start) throw new Error(t('err_schedule'));
+        const daySlots = [];
+        for (let i = 0; i < perDay; i++) {
+          const ms = randomInt(start.getTime(), end.getTime());
+          if (ms >= Date.now() + 15000) daySlots.push(new Date(ms));
+        }
+        daySlots.sort((a,b) => a-b);
+        slots.push(...daySlots);
+      });
+      slots.sort((a,b) => a-b);
+      if (slots.length < count) throw new Error(`${t('err_schedule')} Available future slots: ${slots.length}.`);
+      return slots.slice(0, count);
+    }
+
+    function renderPlan() {
+      const hasPlan = state.plan.length > 0;
+      $('planMessage').classList.toggle('hidden', hasPlan);
+      $('planTableWrap').classList.toggle('hidden', !hasPlan);
+      $('validatePlanBtn').disabled = !hasPlan || state.sending;
+      $('downloadPlanBtn').disabled = !hasPlan;
+      // Button is gated by Google connection and explicit owner authorization.
+      // submitCurrentPlan() will retry billing and show the real server error.
+      $('submitPlanBtn').disabled = !hasPlan || state.sending || $('submitPlanBtn').dataset.submissionEnabled !== 'true';
+      updateBillingHint();
+      $('downloadReportBtn').disabled = !hasPlan || !state.plan.some(row => row.status === 'sent' || row.status === 'error');
+      if (!hasPlan) return;
+      const visibleRows = state.plan.slice(0, PLAN_RENDER_LIMIT);
+      let html = visibleRows.map(row => `
+        <tr>
+          <td>${row.index}</td>
+          <td class="nowrap">${escapeHtml(formatDateTime(row.scheduledAt))}</td>
+          <td>${row.dataRow || t('data_row_none')}</td>
+          <td class="preview-cell">${escapeHtml(row.preview)}</td>
+          <td>${statusChip(row.status, row.error)}</td>
+          <td class="nowrap">${escapeHtml(row.googleTimestamp ? formatDateTime(row.googleTimestamp) : '—')}</td>
+        </tr>`).join('');
+      if (state.plan.length > PLAN_RENDER_LIMIT) {
+        html += `<tr><td colspan="6" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng để giữ trang mượt. Toàn bộ ${state.plan.length} dòng vẫn được xử lý và có trong CSV báo cáo.</td></tr>`;
+      }
+      $('planTableBody').innerHTML = html;
+    }
+
+    async function validatePlanBatched(planRows) {
+      const aggregate = { valid: true, total: planRows.length, invalid: 0, results: [] };
+      for (let start = 0; start < planRows.length; start += SERVER_BATCH_SIZE) {
+        const batch = planRows.slice(start, start + SERVER_BATCH_SIZE);
+        const result = await serverCall(
+          'validatePlan',
+          $('formUrl').value.trim(),
+          batch.map(row => ({ answers: row.answers }))
+        );
+        result.results.forEach((res, offset) => {
+          aggregate.results[start + offset] = res;
+          if (!res.valid) aggregate.invalid += 1;
+        });
+        if (!result.valid) aggregate.valid = false;
+        updateProgress(Math.min(start + batch.length, planRows.length), planRows.length);
+      }
+      return aggregate;
+    }
+
+    async function validateCurrentPlan() {
+      if (!state.plan.length) return;
+      setButtonLoading($('validatePlanBtn'), true, t('validating'));
+      $('progressWrap').classList.remove('hidden');
+      updateProgress(0, state.plan.length);
+      try {
+        const result = await validatePlanBatched(state.plan);
+        result.results.forEach((res, index) => {
+          state.plan[index].status = res.valid ? 'valid' : 'invalid';
+          state.plan[index].error = res.issues.join(' | ');
+        });
+        renderPlan();
+        if (!result.valid) throw new Error(`${result.invalid}/${result.total} invalid.`);
+        toast(t('toast_plan_valid'), 'success');
+      } catch (error) {
+        toast(`${t('err_validate')} ${messageOf(error)}`, 'error');
+      } finally {
+        setButtonLoading($('validatePlanBtn'), false);
+      }
+    }
+
+    async function submitCurrentPlan() {
+      if (!state.plan.length || state.sending) return;
+      if (!$('authorizationAck').checked) return toast(t('err_ack'), 'error');
+      const need = state.plan.length;
+      const have = Number(state.billing?.availableCredits || 0);
+      if (!state.billing?.configured) {
+        // Billing may have failed during page initialization because authorization,
+        // allowlisting, or the billing service was temporarily unavailable. Retry once.
+        await checkGoogleConnection();
+        if (!state.billing?.configured) {
+          const detail = state.billing?.lastError ? ` — ${state.billing.lastError}` : '';
+          return toast(`${t('payment_not_configured')}${detail}`, 'error');
+        }
+      }
+      const refreshedHave = Number(state.billing?.availableCredits || 0);
+      if (state.billing.billingEnabled !== false && refreshedHave < need) {
+        await startAutomaticTopup(need - refreshedHave);
+        return;
+      }
+      try {
+        const validation = await validatePlanBatched(state.plan);
+        if (!validation.valid) {
+          validation.results.forEach((res, index) => { state.plan[index].status = res.valid ? 'valid' : 'invalid'; state.plan[index].error = res.issues.join(' | '); });
+          renderPlan();
+          throw new Error(t('err_validate'));
+        }
+        if ($('scheduleMode').value === 'now') await sendImmediate();
+        else await createBackgroundSchedule();
+      } catch (error) {
+        toast(messageOf(error), 'error');
+      }
+    }
+
+    async function sendImmediate() {
+      state.sending = true;
+      $('progressWrap').classList.remove('hidden');
+      renderPlan();
+      const min = Number($('minDelay').value || 0);
+      const max = Number($('maxDelay').value || 0);
+      const runId = makeRunId();
+      let processed = 0;
+      try {
+        for (let batchStart = 0; batchStart < state.plan.length; batchStart += SERVER_BATCH_SIZE) {
+          const batch = state.plan.slice(batchStart, batchStart + SERVER_BATCH_SIZE);
+          const batchNo = Math.floor(batchStart / SERVER_BATCH_SIZE) + 1;
+          let reservation = null;
+          try {
+            reservation = await serverCall(
+              'beginPaidRun',
+              batch.length,
+              `${runId}:batch:${batchNo}`,
+              new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString()
+            );
+
+            for (let j = 0; j < batch.length; j++) {
+              const row = batch[j];
+              row.status = 'sending';
+              if (processed % 10 === 0) renderPlan();
+              updateProgress(processed, state.plan.length);
+              try {
+                const result = await serverCall(
+                  'submitOneResponse',
+                  $('formUrl').value.trim(),
+                  row.answers,
+                  true,
+                  { reservationId: reservation.reservationId, itemKey: `${runId}:${row.index}` }
+                );
+                row.status = 'sent';
+                row.googleTimestamp = result.timestamp;
+                row.responseId = result.responseId;
+                row.editResponseUrl = result.editResponseUrl;
+                row.error = '';
+              } catch (error) {
+                row.status = 'error';
+                row.error = messageOf(error);
+              }
+
+              processed += 1;
+              if (processed % 10 === 0 || processed === state.plan.length) renderPlan();
+              updateProgress(processed, state.plan.length);
+
+              if (processed < state.plan.length) {
+                await wait(randomInt(Math.round(min * 1000), Math.round(max * 1000)));
+              }
+            }
+          } finally {
+            if (reservation?.reservationId && !reservation.freeMode) {
+              try { await serverCall('finalizePaidRun', reservation.reservationId); } catch (_) {}
+            }
+          }
+        }
+      } finally {
+        state.sending = false;
+        renderPlan();
+      }
+      const sentCount = state.plan.filter(row => row.status === 'sent').length;
+      const errorCount = state.plan.filter(row => row.status === 'error').length;
+      if (errorCount > 0) {
+        toast(`Đã gửi ${sentCount}/${state.plan.length} phản hồi. Có ${errorCount} phản hồi lỗi — xem cột Lỗi trong bảng hoặc tải Báo cáo CSV.`, 'error');
+      } else {
+        toast(`Đã gửi thành công ${sentCount}/${state.plan.length} phản hồi.`, 'success');
+      }
+      // Việc cập nhật bộ đếm chỉ là thông tin phụ; nếu endpoint này lỗi
+      // thì tuyệt đối không được biến một lần gửi thành công thành thông báo lỗi.
+      await refreshResponseCount(true);
+    }
+
+
+    async function createBackgroundSchedule() {
+      state.sending = true; renderPlan();
+      try {
+        const entries = state.plan.map(row => ({ scheduledAt: row.scheduledAt, answers: row.answers, preview: row.preview }));
+        await serverCall('createScheduledQaRun', $('formUrl').value.trim(), entries, true, makeRunId());
+        state.plan.forEach(row => row.status = 'queued');
+        renderPlan();
+        toast(t('scheduled_background'), 'success');
+        await loadBillingProfile();
+        await loadScheduledRuns();
+      } finally {
+        state.sending = false; renderPlan();
+      }
+    }
+
+
+    function updateProgress(done, total) {
+      $('progressText').textContent = t('sending_progress', { done, total });
+      $('progressBar').style.width = `${total ? done / total * 100 : 0}%`;
+    }
+
+    async function refreshResponseCount(silent = false) {
+      if (!state.form) return;
+      try {
+        const result = await serverCall('getLiveResponseCount', $('formUrl').value.trim());
+        state.form.responseCount = result.count;
+        state.form.acceptingResponses = result.acceptingResponses;
+        renderFormSummary();
+        if (!silent) toast(t('toast_count', { count: result.count }), 'success');
+      } catch (error) {
+        // Không hiển thị lỗi ở đây: đây chỉ là bước đồng bộ số đếm sau khi gửi.
+        // Nếu Google Forms đã nhận phản hồi thì lần gửi vẫn thành công.
+        console.warn('[AutoFillForm] Không cập nhật được số phản hồi sau khi gửi:', error);
+      }
+    }
+
+    async function loadScheduledRuns() {
+      try {
+        state.scheduledRuns = await serverCall('getScheduledQaRuns');
+        renderScheduledRuns();
+      } catch (error) {
+        // The first visit may not be authorized yet. Keep the app usable.
+        state.scheduledRuns = [];
+        renderScheduledRuns();
+      }
+    }
+
+    function renderScheduledRuns() {
+      const jobs = state.scheduledRuns || [];
+      $('jobsEmpty').classList.toggle('hidden', jobs.length > 0);
+      $('jobsTableWrap').classList.toggle('hidden', jobs.length === 0);
+      if (!jobs.length) return;
+      $('jobsTableBody').innerHTML = jobs.map(job => `
+        <tr>
+          <td><b>${escapeHtml(job.formTitle)}</b><div class="small muted">${escapeHtml(job.id.slice(0,8))}</div></td>
+          <td class="nowrap">${escapeHtml(formatDateTime(job.createdAt))}</td>
+          <td>${job.sent + job.failed + job.canceled}/${job.total}<div class="small muted">${job.sent} sent · ${job.failed} error</div></td>
+          <td class="nowrap">${job.nextAt ? escapeHtml(formatDateTime(job.nextAt)) : '—'}</td>
+          <td>${statusChip(job.status)}</td>
+          <td class="nowrap">
+            ${(job.status === 'scheduled' || job.status === 'running') ? `<button class="btn btn-danger btn-sm job-cancel" data-id="${job.id}">${t('cancel')}</button>` : `<button class="btn btn-outline btn-sm job-delete" data-id="${job.id}">${t('delete')}</button>`}
+          </td>
+        </tr>`).join('');
+      document.querySelectorAll('.job-cancel').forEach(btn => btn.addEventListener('click', () => cancelJob(btn.dataset.id)));
+      document.querySelectorAll('.job-delete').forEach(btn => btn.addEventListener('click', () => deleteJob(btn.dataset.id)));
+    }
+
+    async function cancelJob(id) {
+      if (!confirm(t('confirm_cancel'))) return;
+      try { await serverCall('cancelScheduledQaRun', id); await loadScheduledRuns(); } catch (error) { toast(messageOf(error), 'error'); }
+    }
+    async function deleteJob(id) {
+      if (!confirm(t('confirm_delete'))) return;
+      try { await serverCall('deleteScheduledQaRun', id); await loadScheduledRuns(); } catch (error) { toast(messageOf(error), 'error'); }
+    }
+
+    function downloadPlan(reportOnly) {
+      const rows = state.plan.map(row => ({
+        '#': row.index,
+        scheduled_at: row.scheduledAt,
+        data_row: row.dataRow || '',
+        answer_preview: row.preview,
+        status: row.status,
+        google_timestamp: row.googleTimestamp,
+        response_id: row.responseId,
+        edit_response_url: row.editResponseUrl,
+        error: row.error
+      }));
+      const csv = objectsToCsv(rows);
+      downloadBlob(csv, reportOnly ? 'autofillform-report.csv' : 'autofillform-plan.csv', 'text/csv;charset=utf-8');
+    }
+
+    function invalidatePlan() {
+      if (state.plan.length) { state.plan = []; renderPlan(); }
+    }
+
+    function statusChip(status, error = '') {
+      const map = {
+        ready:['status_ready',''], valid:['status_valid','success'], invalid:['status_invalid','danger'], sending:['status_sending','warning'], sent:['status_sent','success'], error:['status_error','danger'], queued:['status_queued','warning'], canceled:['status_canceled','danger'], completed:['status_completed','success'], completed_with_errors:['status_completed_with_errors','warning'], scheduled:['status_scheduled','warning'], running:['status_running','warning']
+      };
+      const [key, cls] = map[status] || [status,''];
+      return `<span class="status-chip ${cls}" title="${escapeAttr(error)}">${escapeHtml(t(key))}</span>`;
+    }
+
+    async function serverCall(name, ...args) {
+      const response = await fetch('/api/bridge', {
+        method: 'POST', credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({name, args})
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.error || `Máy chủ trả về lỗi ${response.status}`);
+      return data;
+    }
+
+    async function checkGoogleConnection() {
+      try {
+        const r = await fetch('/api/auth/status', {credentials: 'same-origin'});
+        const data = await r.json();
+        const st = $('googleStatus'),btn = $('googleConnectBtn');
+        if (!data.configured) {
+          st.textContent = 'Chưa cấu hình Google'; btn.textContent = 'Cách kết nối';btn.href = '#how';
+        } else if (data.signedIn) {
+          st.textContent = data.email || 'Đã kết nối Google'; btn.textContent = 'Đã kết nối ✓';btn.href = '#app';
+          state.billing = {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:data.email};
+          $('submitPlanBtn').dataset.submissionEnabled=String(!!data.submissionEnabled);
+          updateSubmitButtonLabel();
+          if (!data.submissionEnabled) {
+            $('submitPlanBtn').textContent='Gửi trực tiếp chưa được bật';
+            $('submitPlanBtn').disabled=true;
+          }
+        } else {st.textContent='Chưa đăng nhập';btn.textContent='Kết nối Google →';btn.href='/api/auth/start';}
+        renderPlan();
+      } catch(error) { $('googleStatus').textContent = 'Không kiểm tra được kết nối'; }
+    }
+
+    function setButtonLoading(button, loading, label) {
+      if (loading) {
+        button.dataset.original = button.textContent;
+        button.disabled = true;
+        button.innerHTML = `<span class="spinner"></span>${escapeHtml(label || button.dataset.original)}`;
+      } else {
+        button.disabled = false;
+        button.textContent = button.dataset.original || button.textContent;
+      }
+    }
+
+    function toast(message, type = '') {
+      const el = document.createElement('div');
+      el.className = `toast ${type}`;
+      el.textContent = message;
+      $('toastWrap').appendChild(el);
+      setTimeout(() => el.remove(), 5200);
+    }
+
+    function weightedChoice(options, weights) {
+      const total = options.reduce((sum, option) => sum + Number(weights[option] || 0), 0);
+      let cursor = Math.random() * total;
+      for (const option of options) {
+        cursor -= Number(weights[option] || 0);
+        if (cursor <= 0) return option;
+      }
+      return options[options.length - 1];
+    }
+
+    function randomSubset(options, min, max) {
+      const pool = [...options];
+      const upper = Math.min(max, pool.length);
+      const lower = Math.min(min, upper);
+      const count = randomInt(lower, upper);
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = randomInt(0, i); [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      return pool.slice(0, count);
+    }
+
+    function splitMulti(value) {
+      if (Array.isArray(value)) return value.map(String);
+      const raw = String(value || '').trim();
+      if (!raw) return [];
+      try { const parsed = JSON.parse(raw); if (Array.isArray(parsed)) return parsed.map(String); } catch (_) {}
+      if (raw.includes(';')) return raw.split(';').map(v => v.trim()).filter(Boolean);
+      if (raw.includes('|')) return raw.split('|').map(v => v.trim()).filter(Boolean);
+      return [raw];
+    }
+
+    function formatAnswer(answer, q) {
+      if (Array.isArray(answer)) {
+        if (q.type === 'grid' || q.type === 'checkbox_grid') return q.rows.map((row, i) => `${row}=${Array.isArray(answer[i]) ? answer[i].join('; ') : answer[i]}`).join(' | ');
+        return answer.join('; ');
+      }
+      return String(answer);
+    }
+
+    function objectsToCsv(rows) {
+      if (!rows.length) return '';
+      const headers = Object.keys(rows[0]);
+      return '\uFEFF' + [headers, ...rows.map(row => headers.map(header => row[header]))]
+        .map(line => line.map(csvCell).join(','))
+        .join('\r\n');
+    }
+    function csvCell(value) { const s = String(value ?? ''); return `"${s.replaceAll('"','""')}"`; }
+    function downloadBlob(content, name, type) {
+      const url = URL.createObjectURL(new Blob([content], { type }));
+      const a = document.createElement('a'); a.href = url; a.download = name; a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    function dateRange(startValue, endValue) {
+      const start = new Date(`${startValue}T12:00:00`);
+      const end = new Date(`${endValue}T12:00:00`);
+      if (isNaN(start) || isNaN(end) || end < start) throw new Error(t('err_schedule'));
+      const result = [];
+      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) result.push(new Date(d));
+      return result;
+    }
+    function dateWithTime(date, timeValue) {
+      const [h,m] = timeValue.split(':').map(Number);
+      return new Date(date.getFullYear(), date.getMonth(), date.getDate(), h, m, 0, 0);
+    }
+    function toLocalDateTimeInput(date) {
+      const pad = n => String(n).padStart(2,'0');
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    }
+    function toDateInput(date) {
+      const pad = n => String(n).padStart(2,'0');
+      return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`;
+    }
+    function formatDateTime(value) {
+      if (!value) return '—';
+      const d = new Date(value); if (isNaN(d)) return String(value);
+      return new Intl.DateTimeFormat(state.lang === 'vi' ? 'vi-VN' : 'en-US', { dateStyle:'medium', timeStyle:'medium' }).format(d);
+    }
+
+    function formatVnd(value) { return new Intl.NumberFormat('vi-VN').format(Math.round(Number(value || 0))) + ' VND'; }
+    function formatNumber(value) { return new Intl.NumberFormat(state.lang === 'vi' ? 'vi-VN' : 'en-US').format(Number(value || 0)); }
+    function makeRunId() { return window.crypto?.randomUUID ? window.crypto.randomUUID() : `run-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
+
+    function normalizeKey(value) {
+      return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9]+/g,' ').trim().toLowerCase();
+    }
+    function randomChoice(array) { return array[randomInt(0, array.length - 1)]; }
+    function randomInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+    function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
+    function roundNumber(value) { return Math.round(Number(value) * 100) / 100; }
+    function isEmpty(value) { return value === null || value === undefined || value === '' || (Array.isArray(value) && value.length === 0); }
+    function messageOf(error) { return error?.message || String(error || 'Unknown error'); }
+    function escapeHtml(value) { return String(value ?? '').replace(/[&<>'"]/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[char])); }
+    function escapeAttr(value) { return escapeHtml(value).replace(/`/g, '&#96;'); }
+  </script>
+</body>
+</html>
