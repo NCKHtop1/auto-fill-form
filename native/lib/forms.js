@@ -29,4 +29,114 @@ async function loadOwnedForm(url,token,{withCount=false}={}){const id=formIdFrom
  const info={id,title:form.info?.title||form.info?.documentTitle||'Google Form',description:form.info?.description||'',acceptingResponses:form.publishSettings?.isAcceptingResponses!==false,collectsEmail:null,limitOneResponsePerUser:null,responseCount:0,questions,responderUri:uri,unsupportedCount:questions.filter(q=>!q.supported).length,supportedCount:questions.filter(q=>q.supported).length};
  if(withCount){try{info.responseCount=await responseCount(id,token)}catch{info.responseCount=null}}return info}
 async function responseCount(id,token){let count=0,tokenPage='';do{const data=await googleApi(`forms/${encodeURIComponent(id)}/responses?pageSize=500${tokenPage?'&pageToken='+encodeURIComponent(tokenPage):''}`,token);count+=(data.responses||[]).length;tokenPage=data.nextPageToken||'';if(count>200000)throw new Error('Đã vượt giới hạn đếm.')}while(tokenPage);return count}
-module.exports={formIdFromUrl,readArrayLiteral,publicFormEntries,fromOfficialItem,mergeEntries,loadOwnedForm,responseCount};
+
+/**
+ * Read questions from a published Google Form without Google OAuth.
+ * This is read-only: it does not grant edit access or visibility into responses.
+ * Only public respondent pages at docs.google.com are fetched.
+ */
+const PUBLIC_FORM_CACHE=new Map();
+const PUBLIC_FORM_TTL=45*1000;
+
+function textValue(value){return value==null?'':String(value)}
+function publicChoices(field){
+ if(!Array.isArray(field?.[1]))return [];
+ return field[1].map(option=>textValue(Array.isArray(option)?option[0]:option)).filter(Boolean);
+}
+function fromPublicItem(item,index){
+ if(!Array.isArray(item)||item.length<4)return null;
+ const code=item[3],fields=Array.isArray(item[4])?item[4]:[];
+ // Informational sections, images and videos do not expect an answer.
+ if([8,11,12].includes(code))return null;
+ const title=textValue(item[1])||'Câu hỏi '+(index+1);
+ const helpText=textValue(item[2]);
+ const entryIds=fields.map(f=>textValue(f?.[0])).filter(id=>/^\d+$/.test(id));
+ const required=fields.some(f=>f?.[2]===1||f?.[2]===true);
+ const base={id:textValue(item[0]??index),index,title,helpText,required,
+   supported:true,options:[],entryIds,type:'unsupported'};
+ if(code===0||code===1)base.type=code===0?'short_text':'paragraph';
+ else if(code===2||code===3||code===4){
+  base.type=code===2?'multiple_choice':code===3?'dropdown':'checkbox';
+  base.options=publicChoices(fields[0]);
+  // Detect Google's dedicated "Other" choice, if present.
+  base.allowOther=Array.isArray(fields?.[0]?.[1])&&fields[0][1].some(c=>Array.isArray(c)&&c[4]===1);
+ }else if(code===5){
+  base.type='linear_scale';base.options=publicChoices(fields[0]);
+ }else if(code===7||code===6){
+  // A public grid stores an entry ID and row label for each row.
+  base.type=code===7?'grid':'checkbox_grid';
+  base.rows=fields.map((f,i)=>textValue(f?.[3]?.[0])||'Hàng '+(i+1));
+  base.columns=publicChoices(fields[0]);
+  base.options=base.columns;
+  base.requiredRows=fields.map(f=>f?.[2]===1||f?.[2]===true);
+  if(fields.some(f=>JSON.stringify(publicChoices(f))!==JSON.stringify(base.columns))){
+   base.supported=false;
+   base.reason='Các hàng có lựa chọn khác nhau; chưa thể ghép cột tự động.';
+  }
+ }else if(code===9){
+  base.type='date';
+ }else if(code===10){
+  base.type='time';
+ }else {
+  base.supported=false;
+  base.reason='Loại câu hỏi này chưa hỗ trợ.';
+ }
+ if(!entryIds.length){
+  base.supported=false;base.reason='Không tìm thấy mã trường trả lời công khai.';
+ }else if(['grid','checkbox_grid'].includes(base.type)&&entryIds.length!==base.rows.length){
+  base.supported=false;base.reason='Không tìm thấy đủ trường cho các hàng trong bảng.';
+ }else if(['multiple_choice','dropdown','checkbox','linear_scale','grid','checkbox_grid'].includes(base.type)&&
+    !(base.type==='grid'||base.type==='checkbox_grid'?base.columns:base.options)?.length){
+  base.supported=false;base.reason='Câu hỏi chưa có lựa chọn hợp lệ.';
+ }
+ return base;
+}
+function parsePublicFormHtml(html,id,responderUri){
+ if(typeof html!=='string'||html.length>4_000_000)throw new Error('Dữ liệu Google Form không hợp lệ.');
+ let data;
+ try{data=readArrayLiteral(html,'FB_PUBLIC_LOAD_DATA_')}
+ catch{
+  const error=new Error('Không đọc được câu hỏi công khai. Hãy bật quyền truy cập bằng liên kết trong Google Form hoặc dùng biểu mẫu được công khai.');
+  error.status=403;throw error;
+ }
+ const meta=data?.[1];
+ if(!Array.isArray(meta)||!Array.isArray(meta[1]))throw new Error('Google thay đổi cấu trúc biểu mẫu. Không đọc được danh sách câu hỏi.');
+ const questions=meta[1].map(fromPublicItem).filter(Boolean);
+ const accepts=/<form\b[^>]*\baction=["'][^"']*\/formResponse(?:["'?])/i.test(html);
+ return {id,title:textValue(meta[8])||'Google Form',description:textValue(meta[0]),
+   acceptingResponses:accepts,collectsEmail:null,limitOneResponsePerUser:null,responseCount:null,
+   questions,responderUri,
+   unsupportedCount:questions.filter(q=>!q.supported).length,
+   supportedCount:questions.filter(q=>q.supported).length,accessMode:'public'};
+}
+async function loadPublicForm(url){
+ const id=formIdFromUrl(url);
+ const cached=PUBLIC_FORM_CACHE.get(id);
+ if(cached&&Date.now()-cached.at<PUBLIC_FORM_TTL)return cached.data;
+ // The edit-form ID redirects to its respondent-facing published ID when public.
+ const target='https://docs.google.com/forms/d/'+encodeURIComponent(id)+'/viewform';
+ let response;
+ try{response=await fetch(target,{
+  headers:{'User-Agent':'Mozilla/5.0 (compatible; PandaStudy/1.0)','Accept':'text/html'},
+  redirect:'follow',signal:AbortSignal.timeout(20000)
+ })}catch{
+  const error=new Error('Không kết nối được Google Forms. Hãy thử lại sau.');error.status=502;throw error;
+ }
+ if(!response.ok){
+  const error=new Error(response.status===404?'Không tìm thấy biểu mẫu Google Form.':
+    'Không đọc được biểu mẫu công khai (HTTP '+response.status+').');
+  error.status=response.status===404?404:502;throw error;
+ }
+ const responderUri=response.url||target;
+ const dest=new URL(responderUri);
+ if(dest.hostname!=='docs.google.com'||!/^\/forms\/d\/(?:e\/)?[A-Za-z0-9_-]+\/viewform\/?$/.test(dest.pathname)){
+  const error=new Error('Biểu mẫu yêu cầu đăng nhập hoặc chưa được công khai.');error.status=403;throw error;
+ }
+ const html=await response.text();
+ const info=parsePublicFormHtml(html,id,responderUri);
+ PUBLIC_FORM_CACHE.set(id,{at:Date.now(),data:info});
+ if(PUBLIC_FORM_CACHE.size>20)PUBLIC_FORM_CACHE.delete(PUBLIC_FORM_CACHE.keys().next().value);
+ return info;
+}
+
+module.exports={formIdFromUrl,readArrayLiteral,publicFormEntries,fromOfficialItem,mergeEntries,loadOwnedForm,responseCount,fromPublicItem,parsePublicFormHtml,loadPublicForm};

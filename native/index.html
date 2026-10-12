@@ -1673,7 +1673,8 @@
         autoMapAll();
         renderQuestions();
         $('questionEmpty').classList.add('hidden');
-        $('refreshCountBtn').disabled = false;
+        $('refreshCountBtn').disabled = state.form.responseCount == null;
+        $('refreshCountBtn').title = state.form.responseCount == null ? 'Số phản hồi chỉ xem được khi đăng nhập tài khoản có quyền chỉnh sửa.' : '';
         toast(t('toast_form_imported'), 'success');
       } catch (error) {
         state.form = null;
@@ -1692,10 +1693,10 @@
           <span class="status-chip ${f.acceptingResponses ? 'success' : 'danger'}">${f.acceptingResponses ? t('accepting') : t('not_accepting')}</span>
         </div>
         <div class="summary-grid">
-          <div class="summary-stat"><b>${f.responseCount}</b><span>${t('responses')}</span></div>
+          <div class="summary-stat"><b>${f.responseCount == null ? '—' : f.responseCount}</b><span>${t('responses')}</span></div>
           <div class="summary-stat"><b>${f.supportedCount}</b><span>${t('questions')}</span></div>
           <div class="summary-stat"><b>${f.unsupportedCount}</b><span>${t('unsupported')}</span></div>
-          <div class="summary-stat"><b>${f.collectsEmail ? t('yes') : t('no')}</b><span>${t('collects_email')}</span></div>
+          <div class="summary-stat"><b>${f.collectsEmail == null ? '—' : (f.collectsEmail ? t('yes') : t('no'))}</b><span>${t('collects_email')}</span></div>
         </div>
         ${f.limitOneResponsePerUser ? `<div class="warning-box">${escapeHtml(t('limit_one'))}: ${escapeHtml(t('yes'))}. Programmatic QA submissions may be restricted by the form settings.</div>` : ''}
       `;
@@ -2331,7 +2332,7 @@
         state.form.responseCount = result.count;
         state.form.acceptingResponses = result.acceptingResponses;
         renderFormSummary();
-        if (!silent) toast(t('toast_count', { count: result.count }), 'success');
+        if (!silent && result.count != null) toast(t('toast_count', { count: result.count }), 'success');
       } catch (error) {
         // Không hiển thị lỗi ở đây: đây chỉ là bước đồng bộ số đếm sau khi gửi.
         // Nếu Google Forms đã nhận phản hồi thì lần gửi vẫn thành công.
@@ -2425,7 +2426,9 @@
         const data = await r.json();
         const st = $('googleStatus'),btn = $('googleConnectBtn');
         if (!data.configured) {
-          st.textContent = 'Chưa cấu hình Google'; btn.textContent = 'Cách kết nối';btn.href = '#how';
+          st.textContent = 'Nhập Google Form công khai';
+          btn.textContent = 'Nhập Google Form'; btn.href = '#app';
+          $('submitPlanBtn').dataset.submissionEnabled = 'false';
         } else if (data.signedIn) {
           st.textContent = data.email || 'Đã kết nối Google'; btn.textContent = 'Đã kết nối ✓';btn.href = '#app';
           state.billing = {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:data.email};
@@ -2435,9 +2438,9 @@
             $('submitPlanBtn').textContent='Gửi trực tiếp chưa được bật';
             $('submitPlanBtn').disabled=true;
           }
-        } else {st.textContent='Chưa đăng nhập';btn.textContent='Kết nối Google →';btn.href='/api/auth/start';}
+        } else {st.textContent='Có thể nhập form công khai';btn.textContent='Kết nối Google';btn.href='/api/auth/start';$('submitPlanBtn').dataset.submissionEnabled='false';}
         renderPlan();
-      } catch(error) { $('googleStatus').textContent = 'Không kiểm tra được kết nối'; }
+      } catch(error) { $('googleStatus').textContent = 'Dán liên kết để nhập form'; }
     }
 
     function setButtonLoading(button, loading, label) {
