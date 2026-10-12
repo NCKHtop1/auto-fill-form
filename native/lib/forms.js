@@ -28,6 +28,12 @@ async function loadOwnedForm(url,token,{withCount=false}={}){const id=formIdFrom
  let questions=(form.items||[]).map(fromOfficialItem).filter(Boolean);const published=await publicFormEntries(uri);questions=mergeEntries(questions,published);
  const info={id,title:form.info?.title||form.info?.documentTitle||'Google Form',description:form.info?.description||'',acceptingResponses:form.publishSettings?.isAcceptingResponses!==false,collectsEmail:null,limitOneResponsePerUser:null,responseCount:0,questions,responderUri:uri,unsupportedCount:questions.filter(q=>!q.supported).length,supportedCount:questions.filter(q=>q.supported).length};
  if(withCount){try{info.responseCount=await responseCount(id,token)}catch{info.responseCount=null}}return info}
+async function verifyResponseAccess(id,token){
+ // Read a single page, not the full response set: verifies response visibility
+ // for the Google account currently signed in (no response data is returned).
+ await googleApi('forms/'+encodeURIComponent(id)+'/responses?pageSize=1',token);
+ return true;
+}
 async function responseCount(id,token){let count=0,tokenPage='';do{const data=await googleApi(`forms/${encodeURIComponent(id)}/responses?pageSize=500${tokenPage?'&pageToken='+encodeURIComponent(tokenPage):''}`,token);count+=(data.responses||[]).length;tokenPage=data.nextPageToken||'';if(count>200000)throw new Error('Đã vượt giới hạn đếm.')}while(tokenPage);return count}
 
 /**
@@ -139,4 +145,4 @@ async function loadPublicForm(url){
  return info;
 }
 
-module.exports={formIdFromUrl,readArrayLiteral,publicFormEntries,fromOfficialItem,mergeEntries,loadOwnedForm,responseCount,fromPublicItem,parsePublicFormHtml,loadPublicForm};
+module.exports={formIdFromUrl,readArrayLiteral,publicFormEntries,fromOfficialItem,mergeEntries,loadOwnedForm,verifyResponseAccess,responseCount,fromPublicItem,parsePublicFormHtml,loadPublicForm};

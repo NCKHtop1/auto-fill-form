@@ -29,6 +29,15 @@ function responseUrl(responderUri) {
   url.search='';url.hash='';
   return url.toString();
 }
+function formReady(form) {
+  if(!form || !form.acceptingResponses || !Array.isArray(form.questions) || !form.questions.length)
+    return false;
+  return form.questions.every(q=>{
+    if(!q.supported || !ALLOWED_TYPES.has(q.type) || !Array.isArray(q.entryIds))return false;
+    const needed=['grid','checkbox_grid'].includes(q.type)?(q.rows||[]).length:1;
+    return needed>0 && q.entryIds.length>=needed;
+  });
+}
 function prepareFields(form,answers) {
   if (!form || !Array.isArray(form.questions) || !form.questions.length)
     throw new Error('Không đọc được câu hỏi Google Form.');
@@ -127,4 +136,4 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
    note:'Google Form hiện trang xác nhận đã nhận. Hãy đối chiếu tổng phản hồi trước và sau.'};
 }
 
-module.exports={parseAllowlist,allowedAdmin,canTest,sendingConfigured,responseUrl,prepareFields,hiddenFormValues,sendOne};
+module.exports={parseAllowlist,allowedAdmin,canTest,sendingConfigured,responseUrl,formReady,prepareFields,hiddenFormValues,sendOne};

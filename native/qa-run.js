@@ -76,8 +76,8 @@ async function permission(){
   data=await resp.json();
  }catch{data={canSend:false,reasons:['Không tải được trạng thái kết nối Google.']};}
  $('qaConfigStatus').textContent=data.canSend
-  ?'Đã xác minh quản trị và Form kiểm thử. Có thể gửi sau khi hoàn tất 4a, 4b và xác nhận.'
-  :'Chưa bật gửi thật: '+(data.reasons||[]).join(' ');
+  ?'Google đã xác nhận quyền xem biểu mẫu và phản hồi. Chỉ gửi vào bản sao Form kiểm thử sau khi hoàn tất 4a, 4b.'
+  :'Chưa đủ quyền hoặc Form chưa sẵn sàng: '+(data.reasons||[]).join(' ');
  $('qaRunStartOne').dataset.allowed=String(!!data.canSend);
  $('qaRunStartAll').dataset.allowed=String(!!data.canSend);
  // Buttons show state but sending also checks permission at click time.

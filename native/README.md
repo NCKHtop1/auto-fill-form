@@ -9,7 +9,7 @@ Production: https://auto-fill-form-liard.vercel.app
 - Download question-by-question CSV. PREVIEW CSV DOES NOT SEND RESPONSES.
 - Read a public Google Sheet's row count from a user-supplied Sheet link.
 - Authorized QA step 6: send 1 test row into a duplicate Google Form, then the remaining validated rows. Stop on any ambiguous response, compare the count before/after and export a submission report.
-- Read the real response count via official Google Forms API after administrator sign-in. The Google Forms API does NOT provide a create-response method.
+- Read the real response count via official Google Forms API after signing in with a Google account that has permission to view that Form's responses. The Google Forms API does NOT provide a create-response method.
 
 ## Configure Google OAuth in Vercel
 
@@ -27,9 +27,7 @@ Set these Vercel environment variables for Production (and Preview as needed):
 - GOOGLE_CLIENT_SECRET: OAuth client secret.
 - APP_SESSION_SECRET: a random secret with at least 32 characters.
 - PUBLIC_SITE_URL: https://auto-fill-form-liard.vercel.app
-- PANDASTUDY_ADMIN_EMAILS: comma-separated administrator Google email addresses.
-- PANDASTUDY_TEST_FORM_IDS: comma-separated IDs of COPIES of forms made for testing.
-- ENABLE_QA_SUBMISSIONS: true only after the copy is ready and restrictions are correct.
+Google OAuth test users in the Google Cloud consent screen only control who can sign in while the app is in testing mode. They do not grant Form access. Every signed-in Google account must separately have access to edit the chosen Google Form and read its responses. There is no global Gmail or Form ID allowlist in the per-user QA permission checks.
 
 Enter secrets directly in Vercel Settings > Environment Variables. Do not paste secrets in chat or GitHub. Redeploy after updating environment variables.
 
@@ -39,7 +37,7 @@ Enter secrets directly in Vercel Settings > Environment Variables. Do not paste 
 2. Import the Google Form link, map its questions to data.
 3. Build the plan (4a), validate the data (4b).
 4. Step 5 exports PREVIEW CSV only, not a Google submission.
-5. Step 6 is admin-only and test-form-only: provide a link to its response Sheet, confirm permission, send 1 test row, inspect the result, send the remaining rows, and download the submission report.
+5. Step 6 requires a signed-in Google account with Form read/edit and response-read access: use a DUPLICATE test Form, optionally provide a linked response Sheet, explicitly confirm that the Form is a test copy, send one validated test row, inspect the result, send the remaining rows, and download the submission report. Do not use synthetic test answers on a real research Form.
 
 Results distinguish page-confirmed, failed and unverified. Google Forms response creation via the public formResponse URL is unofficial and may change. There is no official Forms API response.create endpoint. Never assume a 200 HTTP status implies a response was recorded. There are no automatic retries after ambiguous results.
 
