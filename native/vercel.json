@@ -8,13 +8,13 @@
       "maxDuration": 15
     },
     "api/qa-submit.js": {
-      "maxDuration": 30
+      "maxDuration": 60
     },
     "api/qa-verify.js": {
       "maxDuration": 30
     },
     "api/qa-status.js": {
-      "maxDuration": 15
+      "maxDuration": 30
     }
   },
   "headers": [

@@ -29,6 +29,18 @@ test('Real published Google Form: import and validate 50/100 rows without OAuth 
   const invalid=rows.filter(x=>validate(f.questions,x).length);
   assert.equal(invalid.length,0,'All '+n+' test rows should validate');
  }
+ // Read-only preflight of the exact respondent page: verify session fields
+ // required by the 6a sender, without posting a single response.
+ const response=await fetch(f.responderUri,{
+  headers:{'User-Agent':'Mozilla/5.0 (compatible; PandaStudy-QA/1.0)','Accept':'text/html'},
+  signal:AbortSignal.timeout(18000)
+ });
+ assert(response.ok,'Published Google Form respondent page must return HTTP 200');
+ const {hiddenFormValues,responseUrl}=require('../lib/qa-submit');
+ const hidden=hiddenFormValues(await response.text());
+ assert(hidden.get('fbzx'),'Google Form must provide fbzx on the live respondent page');
+ assert(hidden.has('partialResponse'),'Google Form must provide partialResponse');
+ assert(responseUrl(f.responderUri).endsWith('/formResponse'));
  const mapped=fields(f.questions,answers);
  assert(mapped.size>=19,'Published respondent field IDs should be mapped');
  console.log('Verified real published form: '+f.questions.length+
