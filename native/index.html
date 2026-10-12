@@ -1267,7 +1267,7 @@
       $('downloadPlanBtn').addEventListener('click', () => downloadPlan(false));
       $('downloadReportBtn').addEventListener('click', () => downloadPlan(true));
       $('refreshCountBtn').addEventListener('click', refreshResponseCount);
-      $('refreshJobsBtn').addEventListener('click', loadScheduledRuns);
+      if ($('refreshJobsBtn')) $('refreshJobsBtn').addEventListener('click', loadScheduledRuns);
       $('topupQuantity').addEventListener('input', updateTopupTotal);
       $('topupQuantity').addEventListener('keydown', event => {
         if (event.key === 'Enter') {
@@ -2352,6 +2352,7 @@
 
     function renderScheduledRuns() {
       const jobs = state.scheduledRuns || [];
+      if (!$('jobsEmpty') || !$('jobsTableWrap') || !$('jobsTableBody')) return;
       $('jobsEmpty').classList.toggle('hidden', jobs.length > 0);
       $('jobsTableWrap').classList.toggle('hidden', jobs.length === 0);
       if (!jobs.length) return;
