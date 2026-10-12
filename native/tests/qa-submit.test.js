@@ -36,31 +36,83 @@ test('Never send incomplete row',async()=>{
   /Thiếu câu trả lời/);
  assert.equal(hits,0);
 });
-test('Google page confirmation is NOT Forms API verification',async()=>{
+
+const SAMPLE_FORM_HTML = '<html><form method="POST" action="https://docs.google.com/forms/d/e/1FAIpQLSample/formResponse">'+
+ '<input type="hidden" name="fvv" value="1">'+
+ '<input type="hidden" name="partialResponse" value="[null,null,&quot;12345&quot;]">'+
+ '<input type="hidden" name="pageHistory" value="0">'+
+ '<input type="hidden" name="fbzx" value="12345">'+
+ '<input type="hidden" name="submissionTimestamp" value="1760000000">'+
+ '</form></html>';
+function getPage(html=SAMPLE_FORM_HTML,url=testForm.responderUri){
+ return {ok:true,status:200,url,text:async()=>html};
+}
+test('Extracts Google hidden session fields and decodes HTML entities',()=>{
+ const fields=qa.hiddenFormValues(SAMPLE_FORM_HTML);
+ assert.equal(fields.get('fbzx'),'12345');
+ assert.equal(fields.get('partialResponse'),'[null,null,"12345"]');
+ assert.equal(fields.get('pageHistory'),'0');
+ assert.equal(fields.get('submissionTimestamp'),'1760000000');
+});
+test('Fetches fresh Google respondent page before submitting mapped answers',async()=>{
+ const calls=[];
  const result=await qa.sendOne({
   form:testForm,answers:{1:'Có',2:['1','2']},
   fetchImpl:async(url,opts)=>{
-   const data=new URLSearchParams(opts.body);
-   assert.equal(data.get('entry.123'),'Có');
-   assert.equal(data.get('entry.234'),'1');
-   assert.equal(data.get('entry.345'),'2');
+   calls.push(opts.method);
+   if(opts.method==='GET')return getPage();
+   const fields=new URLSearchParams(opts.body);
+   assert.equal(fields.get('entry.123'),'Có');
+   assert.equal(fields.get('entry.234'),'1');
+   assert.equal(fields.get('entry.345'),'2');
+   assert.equal(fields.get('fbzx'),'12345');
+   assert.equal(fields.get('partialResponse'),'[null,null,"12345"]');
+   assert.equal(fields.get('submissionTimestamp'),'1760000000');
    assert.equal(url,'https://docs.google.com/forms/d/e/1FAIpQLSample/formResponse');
-   return {ok:true,status:200,url, text:async()=>'<html>Your response has been recorded</html>'};
-  }
- });
+   return {ok:true,status:200,url,text:async()=>'<html>Your response has been recorded</html>'};
+  }});
  assert.equal(result.status,'page-confirmed');
- assert.match(result.note,/đối chiếu/);
+ assert.deepEqual(calls,['GET','POST']);
 });
-test('Ambiguous confirmation does not trigger retry',async()=>{
- let count=0;
+test('Missing Google fbzx prevents sending an incomplete request',async()=>{
+ let posted=false;
  const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
- fetchImpl:async()=>{count++;return {ok:true,status:200,text:async()=>'<html>Sign in to continue</html>'};}});
- assert.equal(count,1);
+ fetchImpl:async(url,opts)=>{
+  if(opts.method==='POST')posted=true;
+  return getPage('<html><input type="hidden" name="partialResponse" value="[]"></html>');
+ }});
+ assert.equal(posted,false);
+ assert.equal(result.status,'failed');
+ assert.match(result.note,/fbzx/);
+});
+test('Google login redirect prevents sending',async()=>{
+ let posted=false;
+ const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
+ fetchImpl:async(url,opts)=>{
+  if(opts.method==='POST')posted=true;
+  return getPage(SAMPLE_FORM_HTML,'https://accounts.google.com/ServiceLogin');
+ }});
+ assert.equal(posted,false);
+ assert.equal(result.status,'failed');
+});
+test('Ambiguous confirmation stops after one attempt, never retries',async()=>{
+ let posts=0;
+ const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
+ fetchImpl:async(url,opts)=>{
+  if(opts.method==='GET')return getPage();
+  posts++;return {ok:true,status:200,url,text:async()=>'<html>Sign in to continue</html>'};
+ }});
+ assert.equal(posts,1);
  assert.equal(result.status,'unverified');
 });
-test('Network uncertainty never claims sent',async()=>{
+test('Post-request network uncertainty never claims Google received the row',async()=>{
+ let posts=0;
  const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
- fetchImpl:async()=>{throw Error('timeout')}});
+ fetchImpl:async(url,opts)=>{
+  if(opts.method==='GET')return getPage();
+  posts++;throw Error('timeout');
+ }});
+ assert.equal(posts,1);
  assert.equal(result.status,'unverified');
 });
 test('Refuses Sheet URLs outside docs.google.com',()=>{
