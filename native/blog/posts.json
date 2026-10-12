@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "posts": [
+    {
+      "id": "huong-dan-spss",
+      "title": "Hướng dẫn phân tích dữ liệu với SPSS",
+      "summary": "Nhập dữ liệu, khai báo biến, kiểm tra lỗi và xem thống kê mô tả.",
+      "category": "SPSS",
+      "date": "2026-10-12",
+      "cover": "SPSS",
+      "content": "# Bắt đầu từ bảng dữ liệu\n\nTrong SPSS, mỗi hàng thường là một người trả lời, mỗi cột là một biến. Trước khi phân tích, hãy kiểm tra tên biến, cách mã hóa và các giá trị bị thiếu.\n\n## 1. Nhập và khai báo biến\n\n- Mở File → Open → Data để chọn Excel hoặc CSV.\n\n- Nếu nhập Excel, chọn hàng đầu tiên là tên biến khi phù hợp.\n\n- Chuyển sang Variable View để đặt nhãn biến, kiểu dữ liệu và nhãn giá trị (ví dụ: 1 = Nam, 2 = Nữ).\n\n- Với thang đo Likert, kiểm tra cùng một chiều mã hóa trước khi tính điểm tổng hợp.\n\n## 2. Kiểm tra dữ liệu trước khi chạy\n\nVào Analyze → Descriptive Statistics → Frequencies để xem số lượng theo từng phương án. Một biến thang 1–5 nhưng xuất hiện giá trị 99 có thể là mã thiếu, cần được định nghĩa rõ.\n\nSử dụng Analyze → Descriptive Statistics → Descriptives để xem trung bình, độ lệch chuẩn, giá trị nhỏ nhất và lớn nhất của biến số.\n\n## 3. Chọn phép phân tích\n\n- So sánh hai nhóm độc lập: cân nhắc Independent-Samples T Test, sau khi kiểm tra giả định.\n\n- Kiểm tra mối liên hệ hai biến phân loại: Crosstabs và Chi-square khi điều kiện áp dụng phù hợp.\n\n- Đánh giá liên hệ tuyến tính giữa hai biến số: Correlations hoặc Linear Regression tùy câu hỏi nghiên cứu.\n\n## 4. Xuất bảng và ghi kết quả\n\nKhông chỉ chép mỗi giá trị p. Cần báo cáo cỡ mẫu, thống kê mô tả, hệ số hoặc độ lớn hiệu ứng thích hợp và điều kiện áp dụng phép kiểm định.\n\nTrước khi nộp báo cáo, lưu file dữ liệu gốc, file đã làm sạch và Syntax SPSS riêng để có thể kiểm tra lại."
+    },
+    {
+      "id": "lam-quen-stata",
+      "title": "Làm quen với Stata",
+      "summary": "Các lệnh cơ bản để nhập, kiểm tra và phân tích dữ liệu.",
+      "category": "Stata",
+      "date": "2026-10-12",
+      "cover": "Stata",
+      "content": "# Làm quen với Stata\n\nStata hỗ trợ phân tích dữ liệu bằng cả giao diện và câu lệnh. Khi làm nghiên cứu, viết do-file giúp bạn chạy lại đúng các bước mà không cần nhớ mình đã bấm gì.\n\n## 1. Đọc dữ liệu\n\nBạn có thể mở Excel bằng lệnh:\n\n```stata\n\nimport excel \"data.xlsx\", firstrow clear\n\ndescribe\n\nbrowse\n\n```\n\nLệnh firstrow nhận dòng đầu làm tên biến. Hãy xem kỹ tên biến và kiểu dữ liệu vừa nhập.\n\n## 2. Kiểm tra giá trị\n\n```stata\n\nsummarize\n\ntabulate gender, missing\n\nmisstable summarize\n\nduplicates report id\n\n```\n\nĐây là những lệnh cơ bản để xem mô tả, tần suất, dữ liệu thiếu và bản ghi trùng.\n\n## 3. Thống kê và hồi quy\n\n```stata\n\ntabulate group\n\nsummarize income, detail\n\nregress outcome age income\n\n```\n\nVí dụ hồi quy chỉ minh họa cú pháp. Cần xác định mô hình và kiểm tra giả định dựa trên nghiên cứu thực tế.\n\n## 4. Lưu do-file và log\n\nGhi câu lệnh vào Do-file Editor, lưu kèm phiên bản dữ liệu. Có thể dùng log using analysis.log, replace text để lưu kết quả chạy.\n\nĐừng xóa dữ liệu gốc khi làm sạch. Hãy tạo file mới và ghi chú lý do thay đổi."
+    },
+    {
+      "id": "phan-tich-du-lieu-python",
+      "title": "Phân tích dữ liệu bằng Python",
+      "summary": "Đọc file, kiểm tra dữ liệu và vẽ biểu đồ bằng pandas.",
+      "category": "Python",
+      "date": "2026-10-12",
+      "cover": "Python",
+      "content": "# Phân tích dữ liệu với pandas\n\nPython phù hợp khi bạn cần lặp lại nhiều bước kiểm tra, xử lý dữ liệu lớn hoặc vẽ biểu đồ tùy chỉnh. Với dữ liệu khảo sát, pandas là thư viện nên bắt đầu.\n\n## 1. Đọc file CSV hoặc Excel\n\n```python\n\nimport pandas as pd\n\ndf = pd.read_csv('data.csv', encoding='utf-8')\n\n# Hoac: df = pd.read_excel('data.xlsx')\n\nprint(df.head())\n\nprint(df.info())\n\n```\n\nKiểm tra số hàng, số cột và kiểu dữ liệu ngay sau khi nhập. Giá trị ngày tháng và số có dấu phẩy có thể cần chuyển kiểu.\n\n## 2. Kiểm tra dữ liệu thiếu và trùng\n\n```python\n\nprint(df.isna().sum())\n\nprint(df.duplicated().sum())\n\nprint(df.describe(include='all'))\n\n```\n\nKhông nên tự động xóa mọi hàng thiếu. Hãy xem tỷ lệ thiếu, nguyên nhân và vai trò của từng biến trước khi chọn cách xử lý.\n\n## 3. Xem nhanh phân phối\n\n```python\n\nimport matplotlib.pyplot as plt\n\ndf['age'].dropna().hist(bins=12)\n\nplt.xlabel('Tuổi')\n\nplt.ylabel('Số quan sát')\n\nplt.show()\n\n```\n\nĐổi age thành tên cột thực tế. Nên đọc biểu đồ cùng với bảng mô tả, nhất là khi phân phối lệch hoặc có giá trị quá lớn.\n\n## 4. Lưu kết quả\n\n```python\n\ndf.to_csv('data_clean.csv', index=False, encoding='utf-8-sig')\n\n```\n\nĐặt tên file rõ ràng và ghi lại các bước xử lý để người khác có thể chạy lại."
+    },
+    {
+      "id": "cach-lam-sach-du-lieu",
+      "title": "Cách làm sạch dữ liệu nghiên cứu",
+      "summary": "Kiểm tra dữ liệu thiếu, bản ghi trùng và giá trị bất thường.",
+      "category": "Dữ liệu",
+      "date": "2026-10-12",
+      "cover": "Data",
+      "content": "# Làm sạch dữ liệu: kiểm tra trước khi sửa\n\nLàm sạch dữ liệu không phải là xóa những dòng trông có vẻ lạ. Mục tiêu là phát hiện lỗi và xử lý theo quy tắc có thể giải thích.\n\n## 1. Kiểm tra cấu trúc\n\n- Mỗi cột nên đại diện cho một biến, có tên rõ ràng và nhất quán.\n\n- Mỗi hàng nên là một quan sát theo đúng đơn vị phân tích.\n\n- Kiểm tra dấu phân cách, kiểu ngày tháng và mã tiếng Việt sau khi nhập.\n\n## 2. Tìm dữ liệu thiếu\n\nLập bảng tỷ lệ thiếu của từng cột. Phân biệt câu hỏi không áp dụng với trường hợp người trả lời bỏ qua; chúng có thể cần cách mã hóa khác nhau.\n\n## 3. Tìm bản ghi trùng\n\nCó hai người cùng tên chưa chắc là dữ liệu trùng. Nên dựa vào mã phiếu, thời điểm và tập biến định danh phù hợp trước khi gộp hoặc xóa.\n\n## 4. Kiểm tra giá trị bất thường\n\nVới tuổi, số tiền, số lần hoặc điểm thang đo, đối chiếu giá trị nhỏ nhất/lớn nhất với quy tắc của bảng hỏi. Nếu thang 1–5 mà thấy 9 hoặc 99, hãy tra bảng mã trước.\n\n## 5. Ghi nhật ký thay đổi\n\n- Giữ nguyên file ban đầu ở chế độ chỉ đọc.\n\n- Tạo bản sao để xử lý.\n\n- Ghi rõ số dòng, tên biến, vấn đề phát hiện và cách xử lý.\n\nCuối cùng, chạy lại các bảng kiểm tra để chắc chắn việc sửa không tạo thêm lỗi mới."
+    },
+    {
+      "id": "chon-phuong-phap-nghien-cuu",
+      "title": "Chọn phương pháp nghiên cứu phù hợp",
+      "summary": "Phân biệt định tính, định lượng và phương pháp hỗn hợp.",
+      "category": "Phương pháp",
+      "date": "2026-10-12",
+      "cover": "Method",
+      "content": "# Chọn phương pháp từ câu hỏi nghiên cứu\n\nKhông có một phương pháp tốt nhất cho mọi đề tài. Hãy bắt đầu từ điều bạn cần tìm hiểu, rồi chọn dữ liệu và cách phân tích.\n\n## 1. Khi nào nên dùng định lượng?\n\nNếu muốn ước lượng tỷ lệ, so sánh nhóm hoặc kiểm định mối liên hệ giữa các biến, nghiên cứu định lượng thường phù hợp. Cần làm rõ tổng thể nghiên cứu, cách chọn mẫu và công cụ đo lường.\n\nVí dụ: Tỷ lệ sinh viên sử dụng một dịch vụ là bao nhiêu? Điểm hài lòng có khác nhau giữa hai nhóm không?\n\n## 2. Khi nào nên dùng định tính?\n\nNếu cần hiểu trải nghiệm, cách ra quyết định hoặc lý do đằng sau một hành vi, phỏng vấn sâu, thảo luận nhóm và quan sát có thể hữu ích.\n\nVí dụ: Vì sao một số người ngại tham gia chương trình sức khỏe dù biết lợi ích?\n\n## 3. Khi nào kết hợp hai phương pháp?\n\nPhương pháp hỗn hợp giúp đặt kết quả định lượng trong bối cảnh giải thích sâu hơn. Tuy nhiên, phải nêu rõ thứ tự thu thập dữ liệu và cách tích hợp kết quả.\n\n## 4. Kiểm tra tính khả thi\n\n- Bạn có thể tiếp cận đúng nhóm người tham gia không?\n\n- Có đủ thời gian và nguồn lực để lấy dữ liệu tin cậy không?\n\n- Thang đo hoặc bảng hỏi đã được thử nghiệm phù hợp chưa?\n\n- Kết quả sẽ trả lời trực tiếp mục tiêu nào?\n\nPhần phương pháp nên giải thích được vì sao lựa chọn này giúp trả lời câu hỏi nghiên cứu, chứ không chỉ liệt kê tên phần mềm."
+    }
+  ]
+}
