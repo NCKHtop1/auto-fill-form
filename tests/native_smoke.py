@@ -41,7 +41,7 @@ try:
         assert "SPSS" in page.locator("#articleTitle").inner_text()
         assert "Bắt đầu từ bảng dữ liệu" in page.locator("#articleContent").inner_text()
         page.locator('#blogReader a[href="#blog"]').first.click()
-        assert page.locator("#blogGrid article").first.is_visible()
+        page.locator("#blogGrid article").first.wait_for(state="visible", timeout=10000)
         page.locator('a[href="#blog-viet-bai"]').first.click()
         page.locator("#postTitle").fill("Bài thử đăng blog PandaStudy")
         page.locator("#postSummary").fill("Đây là phần tóm tắt để thử tính năng lưu bản nháp.")
