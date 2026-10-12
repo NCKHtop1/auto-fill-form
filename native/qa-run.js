@@ -1,4 +1,4 @@
-/* PandaStudy: verified, owner-approved QA submissions, no automatic retries. */
+/* PandaStudy: consented published-Form submissions, no automatic retries. */
 (function(){
 'use strict';
 const $=id=>document.getElementById(id);
@@ -79,7 +79,7 @@ async function permission(){
  }catch{data={canSend:false,reasons:['Không tải được trạng thái kết nối Google.']};}
  if(version!==permissionVersion)return false;
  $('qaConfigStatus').textContent=data.canSend
-  ?'Đã xác minh tài khoản Google có quyền truy cập Form. Hoàn tất 4a, 4b và xác nhận trước khi gửi.'
+  ?'Đã đăng nhập Google. Form công khai có thể nhận câu trả lời; hoàn tất 4a, 4b và chỉ gửi vào Form kiểm thử.'
   :'Chưa sẵn sàng gửi: '+(data.reasons||[]).join(' ');
  $('qaRunStartOne').dataset.allowed=String(!!data.canSend);
  $('qaRunStartAll').dataset.allowed=String(!!data.canSend);
@@ -124,7 +124,7 @@ async function run(maxRows){
   return status('Còn dòng chưa kiểm tra. Bấm 4b trước khi gửi.',true);
  if(state.stopped)return status('Đã dừng vì có lỗi hoặc kết quả chưa rõ. Kiểm tra số phản hồi trước.',true);
  const allowed=await permission();
- if(!allowed)return status('Chưa đăng nhập hoặc tài khoản Google không truy cập được Form này. Xem thông báo quyền ở bước 6.',true);
+ if(!allowed)return status('Chưa thể gửi. Xem thông báo về trang trả lời Form ở Bước 6.',true);
  if(state.history.length===0){state.attempted=new Set();recoverAttempts();}
  const unsent=rows.filter(r=>r.status==='valid'&&!state.attempted.has(r.index));
  if(!unsent.length)return status('Không có dòng hợp lệ chưa gửi; tránh gửi trùng.',true);
@@ -134,8 +134,15 @@ async function run(maxRows){
  $('qaRunStartOne').disabled=true;$('qaRunStartAll').disabled=true;
  try{
   if(state.before===null){
-   const p=await verify(true);
-   status('Tổng phản hồi trước khi gửi: '+p.count+' ('+providerLabel()+').');
+   try{
+    const p=await verify(true);
+    status('Tổng phản hồi trước khi gửi: '+p.count+' ('+providerLabel()+').');
+   }catch(e){
+    // Form API response-count permission is optional; do not mislabel this
+    // as a Google login or submission permission error.
+    state.before=null;
+    status('Chưa đọc được tổng trước khi gửi: '+e.message+'. Vẫn có thể gửi thử và xem xác nhận Google; cần Sheet để đối chiếu.',true);
+   }
   }
   const batch=unsent.slice(0,maxRows);
   for(const r of batch){
@@ -205,7 +212,7 @@ function init(){
  const connect=node('div','qa-settings');
  const statusConfig=node('p','workflow-result','Đang kiểm tra cấu hình gửi Form...');
  statusConfig.id='qaConfigStatus';connect.appendChild(statusConfig);
- const google=node('a','btn btn-outline','Kết nối Google quản trị');
+ const google=node('a','btn btn-outline','Kết nối lại Google');
  google.id='qaConnectBtn';google.href='/api/auth/start';google.hidden=true;connect.appendChild(google);
  panel.appendChild(connect);
  const sheetLabel=node('label','qa-sheet-label','Google Sheet đối chiếu (tùy chọn, phải được chia sẻ quyền xem)');
