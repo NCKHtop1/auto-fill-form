@@ -1,47 +1,62 @@
-# PandaStudy — Auto Fill Form
+# PandaStudy — Form workspace
 
-Ứng dụng web độc lập (HTML/CSS/JavaScript thuần) cho danh sách học sinh/học viên điền sẵn Google Forms. Không liên quan FinQuery. Deploy thẳng GitHub → Vercel; không cần build, database hoặc server.
+Website hỗ trợ chuẩn bị dữ liệu Excel/CSV để tạo liên kết Google Forms đã điền sẵn. Giao diện được chia thành sáu tab và có hướng dẫn riêng cho người mới sử dụng.
 
-## Hỗ trợ
+## Các tab trong ứng dụng
 
-- Nhận link `docs.google.com/forms/d/.../viewform` hoặc link điền trước có `entry.<số>`.
-- Tự nhận dạng entry ID, thêm/sửa tên câu hỏi; bắt buộc/không bắt buộc; kiểu văn bản, email, số, số điện thoại, ngày, checkbox nhiều lựa chọn (phân cách `;`).
-- Nhập UTF-8 CSV (`,` hoặc `;`), TSV, `.xlsx` (Excel OpenXML, đọc sheet đầu tiên bằng ZIP/DecompressionStream built-in), tối đa 5 MB, 2.000 dòng và 100 cột.
-- Kiểm tra lỗi chi tiết: đuôi tệp, dữ liệu nhị phân giả CSV, Excel sai định dạng/giải nén lỗi, mã hóa, dấu ngoặc kép CSV, thiếu/trùng tiêu đề, số cột không đều, mapping thiếu, trường bắt buộc, email/số/điện thoại/ngày.
-- Báo lỗi gồm mã, vị trí dòng/cột, nguyên nhân và cách sửa; có thể tải CSV báo cáo lỗi.
-- Xem trước 8 dòng, xem 10 liên kết và xuất toàn bộ liên kết đã điền sẵn ra CSV.
-- Nhập file và xử lý hoàn toàn trên trình duyệt, không upload server. Chỉ cấu hình biểu mẫu được lưu localStorage.
+| Tab | Nội dung |
+| --- | --- |
+| Trang chủ | Giới thiệu PandaStudy, ba bước làm việc, tình huống thường gặp |
+| Thiết lập form | Nhận liên kết điền trước, xác định các mã `entry`, đặt tên và kiểu dữ liệu |
+| Nhập dữ liệu | Tải Excel/CSV/TSV, ghép cột, xem trước dữ liệu và lỗi ngay trên tab |
+| Kiểm tra & xuất | Hiển thị nguyên nhân, dòng/cột lỗi, cách sửa; tải báo cáo và link CSV |
+| Hướng dẫn | Hướng dẫn từng bước, tải file mẫu, câu hỏi thường gặp |
+| Về PandaStudy | Giới thiệu sản phẩm, cách xử lý dữ liệu, liên kết Apps Script trước đây |
 
-## Giới hạn đã biết
+Việc chuyển tab không làm mất dữ liệu đang nhập. Giao diện tương thích máy tính và điện thoại; bàn phím có thể chuyển qua các tab. Cấu hình form được lưu ở `localStorage` trong trình duyệt, file dữ liệu không được tải lên server.
 
-- **Không tự gửi form**. Người dùng mở link để kiểm tra và nhấn Gửi trên Google Forms. Không vượt captcha/đăng nhập; các trường upload file phải xử lý trên Google Forms.
-- Link Apps Script `/exec` không chứa `Code.gs` và không phải link Google Form. Cần mã nguồn Apps Script gốc để port 1:1 nghiệp vụ backend.
-- Với Excel cũ `.xls` hãy Save As `.xlsx`; CSV lưu mã hóa UTF-8.
-- `.xlsx` dùng native `DecompressionStream('deflate-raw')`, cần Chrome/Edge hiện đại. Nếu không hỗ trợ, lưu dưới CSV UTF-8.
-- Cột ngày phải dạng ISO `YYYY-MM-DD`. Checkbox nhiều đáp án dùng dấu `;`.
-- Lần triển khai đầu nên thử với 2-3 dòng và một form test do bạn sở hữu, tránh nhập dữ liệu nhạy cảm không cần thiết.
+## Hỗ trợ dữ liệu
 
-## Chạy ở máy tính
+- Google Forms dạng `docs.google.com/forms/d/.../viewform`, ưu tiên đường liên kết điền trước có mã `entry.<số>`.
+- Kiểu câu hỏi: văn bản, email, số, điện thoại, ngày `YYYY-MM-DD`, checkbox đa lựa chọn ngăn cách bằng dấu `;`.
+- File CSV UTF-8 (phân cách bằng dấu phẩy hoặc chấm phẩy), TSV, Excel `.xlsx` (đọc sheet đầu tiên).
+- Giới hạn 5 MB, 2.000 dòng dữ liệu, 100 cột.
+- Phát hiện đuôi file sai hoặc giả định dạng, mã hóa không phải UTF-8, lỗi dấu ngoặc kép trong CSV, tiêu đề cột thiếu/trùng, số cột không đều, chưa ghép cột, ô bắt buộc trống, email/số/điện thoại/ngày không hợp lệ.
+- Lỗi xuất hiện dưới dạng tiêu đề dễ hiểu bằng tiếng Việt. Phần chi tiết ghi vị trí, nguyên nhân và hướng sửa. Báo cáo tải về có cả mã lỗi kỹ thuật để đối chiếu khi cần.
+
+## Phạm vi chức năng hiện tại
+
+PandaStudy **tạo liên kết Google Forms đã điền sẵn**, không tự bấm Gửi hoặc bỏ qua quyền truy cập/đăng nhập/CAPTCHA. Hãy mở thử các link trước khi gửi cho người khác.
+
+Bản Google Apps Script cũ vẫn chạy riêng. Link `/exec` công khai không trả về mã nguồn `Code.gs`; khi có mã nguồn, cần đối chiếu chức năng backend trước khi tích hợp. Không tự ý sao chép hay thay đổi FinQuery.
+
+## Chạy cục bộ
 
 ```sh
 python3 -m http.server 8000
-# http://localhost:8000
+# Mở http://localhost:8000
 ```
-
-## Triển khai Vercel
-
-- Import repo riêng `NCKHtop1/auto-fill-form` hoặc deploy folder này.
-- Framework preset: Other. Root: repo root. Build command: none. Output Directory: `.`.
-- Domain mặc định `<project>.vercel.app`. Không tạo, thay đổi cấu hình bất kỳ dự án FinQuery nào.
 
 ## Kiểm thử
 
-`tests/smoke.py` dùng Chromium qua Playwright và tạo CSV/XLSX fixtures. Nó kiểm tra 21 ca: input hợp lệ, file sai định dạng, Excel UTF-8, hàng/cột sai, ngày không tồn tại và xuất liên kết. Chạy: `python3 tests/smoke.py`.
+Kiểm tra cú pháp JavaScript và chạy Chromium bằng Playwright:
 
-## Tạo dự án Vercel bằng một lần bấm
+```sh
+node --check app.js
+python3 tests/smoke.py
+```
 
-Nếu tài khoản công cụ tự động không được cấp quyền tạo Vercel project (403), chủ tài khoản có thể import repo tại:
+Bộ kiểm thử hiện có **28 tình huống**, từ các lỗi tệp và dữ liệu đến điều hướng tab, hướng dẫn, nhập Excel thật, xuất liên kết và giao diện mobile. GitHub Actions chạy tự động sau mỗi lần push lên `main`.
 
-https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNCKHtop1%2Fauto-fill-form&project-name=pandastudy
+## Đưa lên Vercel
 
-Chọn team `ngochailuong`, giữ build framework Other / no build; Vercel dùng `pandastudy.vercel.app` nếu tên còn trống.
+Import repository `NCKHtop1/auto-fill-form` vào một project mới mang tên `pandastudy`.
+
+- Framework: Other.
+- Root Directory: `/` (gốc repository).
+- Build Command: để trống.
+- Output Directory: mặc định cho website tĩnh.
+- Không cần kết nối database hoặc khai báo token.
+- Địa chỉ sẽ có dạng `https://pandastudy.vercel.app` nếu tên còn khả dụng. Không nên coi URL đó là đã hoạt động cho đến khi Vercel trả trạng thái **READY**.
+
+Đi thẳng tới luồng import: https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FNCKHtop1%2Fauto-fill-form&project-name=pandastudy
