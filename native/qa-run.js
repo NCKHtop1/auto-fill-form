@@ -15,6 +15,7 @@ function node(tag,klass,label){
 function status(message,error=false){
  const el=$('qaRunMessage');if(!el)return;
  el.textContent=message;el.className='workflow-result'+(error?' is-error':'');
+ el.hidden=!message;
 }
 function actionUrl(){
  return '/api/qa-verify';
@@ -31,6 +32,8 @@ function providerLabel(){
   state.source==='google-sheet-public-csv'?'Google Sheet công khai':'Chưa kết nối';
 }
 function updateCounts(){
+ // Keep idle counters hidden; show after send or verification.
+ $('qaRunCounters').hidden=state.history.length===0&&state.before===null&&state.after===null;
  const accepted=state.history.filter(h=>h.status==='page-confirmed').length;
  const failed=state.history.filter(h=>h.status==='failed').length;
  const uncertain=state.history.filter(h=>h.status==='unverified').length;
@@ -236,9 +239,9 @@ function init(){
  ];
  names.forEach(([id,label,klass])=>{const btn=node('button',klass,label);btn.type='button';btn.id=id;btn.disabled=id!=='qaRunVerify';actions.appendChild(btn);});
  panel.appendChild(actions);
- const message=node('p','workflow-result','Chưa gửi dữ liệu.');
- message.id='qaRunMessage';message.setAttribute('role','status');panel.appendChild(message);
- const counter=node('p','small muted','Chưa có lượt gửi.');counter.id='qaRunCounters';panel.appendChild(counter);
+ const message=node('p','workflow-result','');
+ message.id='qaRunMessage';message.hidden=true;message.setAttribute('role','status');panel.appendChild(message);
+ const counter=node('p','small muted','');counter.id='qaRunCounters';counter.hidden=true;panel.appendChild(counter);
  previous.after(panel);
  $('qaRunStartOne').addEventListener('click',()=>run(1));
  $('qaRunStartAll').addEventListener('click',()=>run(Number.MAX_SAFE_INTEGER));
