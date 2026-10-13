@@ -31,7 +31,7 @@ def note(case,group,detail,priority="P3"):
     records.append(rec)
     print("UX_CASE "+json.dumps(rec,ensure_ascii=False),flush=True)
 def wait_hash(page,screen):
-    page.wait_for_function("(page)=>document.body.dataset.pandaPage===page",screen,timeout=6000)
+    page.wait_for_function("(screen)=>document.body.dataset.pandaPage===screen",arg=screen,timeout=6000)
 def navigate(page,hash_value,screen):
     page.evaluate("(hash)=>{window.location.hash=hash}",hash_value)
     wait_hash(page,screen)
