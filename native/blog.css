@@ -138,6 +138,33 @@
 }
 
 
+/* Responsive header: keep Google connection reachable on 320px screens.
+   This corrects overflow at the source rather than clipping the viewport. */
+@media(max-width:650px){
+  .nav-wrap{min-width:0;gap:10px;padding:0 12px}
+  .brand{min-width:0;margin-right:0;flex:0 1 auto;font-size:1.06rem}
+  .brand-mark{flex-shrink:0}
+  #mobileMenu{margin-left:auto;flex:0 0 auto}
+  .nav-actions{margin-left:0;min-width:0;flex:0 1 auto;gap:6px}
+  .nav-actions .btn{white-space:nowrap;padding:8px 10px;min-height:38px}
+}
+@media(max-width:359px){
+  .nav-wrap{padding:0 8px;gap:7px}
+  .brand{font-size:.98rem;gap:5px}
+  .brand-mark{width:28px;height:28px}
+  #mobileMenu{width:36px;height:36px;flex-shrink:0}
+  .nav-actions .btn{font-size:.69rem;padding:7px 7px;min-height:36px}
+}
+
+/* Six-step overview, with the final confirmation stage clearly visible. */
+.steps-strip{grid-template-columns:repeat(6,minmax(0,1fr))}
+@media(max-width:1090px){.steps-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:640px){.steps-strip{grid-template-columns:repeat(2,minmax(0,1fr))}}
+#qaRunStep{scroll-margin-top:90px}
+
+/* Keep important workflow feedback; remove redundant empty-state notices. */
+#planMessage{display:none!important}
+
 /* Controlled Google Form QA submission and verification step */
 .qa-run-panel{scroll-margin-top:95px;border-top:1px solid #dbe8d6;}
 .qa-run-panel .qa-settings{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;}

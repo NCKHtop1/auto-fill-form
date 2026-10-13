@@ -40,6 +40,9 @@ jobs:
         run: .venv/bin/python tests/qa_browser.py
       - name: Comprehensive UX, responsive and accessibility audit
         run: .venv/bin/python tests/ux_audit.py
+      - name: Post-merge production browser smoke (read-only)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: .venv/bin/python tests/production_smoke.py
       - name: Upload QA evidence (screenshots + test results)
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

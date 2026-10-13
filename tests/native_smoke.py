@@ -82,7 +82,11 @@ try:
         page.locator("#questionList .question-card").first.wait_for(timeout=10000)
         assert page.locator("#questionList .question-card").count() == 2
         assert "Google Form thử nghiệm" in page.locator("#formSummary").inner_text()
-        assert page.locator(".steps-strip a").count() == 5
+        assert page.locator(".steps-strip a").count() == 6
+        assert page.locator(".steps-strip a").last.get_attribute("href") == "#qaRunStep"
+        assert page.locator("#formUrl").get_attribute("aria-label") == "Đường dẫn Google Form"
+        assert page.locator("#billingHint").is_hidden()
+        assert page.locator("#planMessage").is_hidden()
         assert page.locator("#buildPlanBtn").inner_text().startswith("4a.")
         assert page.locator("#validatePlanBtn").inner_text().startswith("4b.")
         assert page.locator("#downloadPlanBtn").is_disabled()
