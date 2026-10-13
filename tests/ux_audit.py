@@ -53,8 +53,18 @@ def geometry(page):
            height:Math.round(e.getBoundingClientRect().height)}))
         .filter(e => e.width>0&&e.height>0&&(e.height<32||e.width<24))
         .slice(0,10);
+      const offenders=[...document.querySelectorAll('body *')]
+        .filter(e=>{const rect=e.getBoundingClientRect(),style=getComputedStyle(e);
+          return style.display!=='none' && rect.width>0&&rect.right>w+4
+            && rect.left>=-1&&rect.left<w+15;})
+        .map(e=>({element:e.tagName.toLowerCase()+'#'+(e.id||'')+'.'+
+                    String(e.className||'').replace(/\\s+/g,'.').slice(0,35),
+          left:Math.round(e.getBoundingClientRect().left),
+          right:Math.round(e.getBoundingClientRect().right),
+          width:Math.round(e.getBoundingClientRect().width)}))
+        .sort((a,b)=>b.right-a.right).slice(0,6);
       return {viewport:w,viewportHeight:h,scrollWidth:root.scrollWidth,
-        overflow:overflow,smallTargets:bad};
+        overflow:overflow,smallTargets:bad,offenders:offenders};
     }""")
 def unnamed_inputs(page):
     return page.evaluate("""() => {
@@ -197,7 +207,8 @@ try:
             result=geometry(page)
             ok=result["overflow"]<=4
             check("VIEW-%s-%s"%(tab.upper(),width),"Responsive","P2",ok,
-                  "scrollWidth=%s; overflow=%spx"%(result["scrollWidth"],result["overflow"]),
+                  "scrollWidth=%s; overflow=%spx; elements=%s"%(result["scrollWidth"],
+                    result["overflow"],json.dumps(result["offenders"][:3],ensure_ascii=False)),
                   viewport=str(width)+"px")
             if not ok:
                 snap(page,"overflow_%s_%s"%(tab,width))
