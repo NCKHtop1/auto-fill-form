@@ -1996,7 +1996,7 @@
         buildPlan();
         $('progressWrap').classList.add('hidden');
         $('workflowResult').className = 'workflow-result';
-        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa gửi. Bấm 4b để kiểm tra.`;
+        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa kiểm tra. Chưa gửi. Bấm 4b.`;
         $('previewSection').scrollIntoView({behavior:'smooth',block:'start'});
         toast(`Đã tạo ${state.plan.length} dòng xem trước. Bấm 4b để kiểm tra.`, 'success');
       } catch (error) {
