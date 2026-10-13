@@ -38,3 +38,13 @@ jobs:
         run: .venv/bin/python tests/native_smoke.py
       - name: QA submission flow browser test (mocked; no Google writes)
         run: .venv/bin/python tests/qa_browser.py
+      - name: Comprehensive UX, responsive and accessibility audit
+        run: .venv/bin/python tests/ux_audit.py
+      - name: Upload QA evidence (screenshots + test results)
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: pandastudy-ux-audit
+          path: qa-artifacts/
+          retention-days: 14
+          if-no-files-found: ignore
