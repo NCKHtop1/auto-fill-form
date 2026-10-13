@@ -6,6 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>PandaStudy</title>
   <meta name="theme-color" content="#245936">
+  <meta name="pandastudy-ui-revision" content="2026-10-13-uxfix1">
   <meta name="description" content="PandaStudy: công cụ Google Form, Excel/CSV và blog về phân tích dữ liệu.">
   <link rel="icon" type="image/svg+xml" href="/panda.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -14,7 +15,7 @@
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js" defer></script>
   <script src="/ui-navigation.js?v=20261013c" defer></script>
   <script src="/blog.js" defer></script>
-  <script src="/qa-run.js?v=20261013c" defer></script>
+  <script src="/qa-run.js?v=20261013d" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -725,7 +726,7 @@
   body[data-panda-page]:not([data-panda-page="home"]) main{padding-top:18px}
   #blog,#how,#faq,#about{scroll-margin-top:86px}
 </style>
-<link rel="stylesheet" href="/blog.css">
+<link rel="stylesheet" href="/blog.css?v=20261013d">
 </head>
 <body>
   <header class="topbar" id="top"><div class="nav-wrap">
@@ -742,7 +743,7 @@
  <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay ↗</a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
 </div>
  <div class="hero-art" role="img" aria-label="Gấu trúc PandaStudy, bảng Excel và Google Form"><img src="/assets/hero.png" alt="PandaStudy" loading="eager"></div></div></section>
- <div class="steps-strip" aria-label="5 bước sử dụng"><a href="#dropZone"><b>1</b><span><strong>Chọn file</strong><small>Có thể bỏ qua</small></span></a><a href="#formSetupStep"><b>2</b><span><strong>Nhập Google Form</strong><small>Dán link /edit</small></span></a><a href="#mappingStep"><b>3</b><span><strong>Ghép dữ liệu</strong><small>Chọn cột câu hỏi</small></span></a><a href="#planStep"><b>4</b><span><strong>Tạo &amp; kiểm tra</strong><small>50, 100 dòng...</small></span></a><a href="#previewSection"><b>5</b><span><strong>Tải dữ liệu</strong><small>CSV cho Sheets</small></span></a></div>
+ <div class="steps-strip" aria-label="6 bước sử dụng"><a href="#dropZone"><b>1</b><span><strong>Chọn file</strong><small>Có thể bỏ qua</small></span></a><a href="#formSetupStep"><b>2</b><span><strong>Nhập Google Form</strong><small>Dán link /edit</small></span></a><a href="#mappingStep"><b>3</b><span><strong>Ghép dữ liệu</strong><small>Chọn cột câu hỏi</small></span></a><a href="#planStep"><b>4</b><span><strong>Tạo &amp; kiểm tra</strong><small>50, 100 dòng...</small></span></a><a href="#previewSection"><b>5</b><span><strong>Tải dữ liệu</strong><small>CSV cho Sheets</small></span></a><a href="#qaRunStep"><b>6</b><span><strong>Gửi &amp; đối chiếu</strong><small>Kiểm tra tổng</small></span></a></div>
 
   <main>
     <section class="workspace" id="app">
@@ -832,7 +833,7 @@
         </div>
 
         <div class="input-action">
-          <input id="formUrl" type="url" placeholder="https://docs.google.com/forms/d/.../edit" autocomplete="off">
+          <input id="formUrl" type="url" aria-label="Đường dẫn Google Form" placeholder="https://docs.google.com/forms/d/.../edit" autocomplete="off">
           <button id="importFormBtn" class="btn btn-primary" type="button" data-i18n="import_btn">Nhập biểu mẫu</button>
         </div>
         <div id="formSummary" class="form-summary hidden"></div>
@@ -991,14 +992,14 @@
           </table>
         </div>
 
-        <div id="billingHint" class="info-box">Bấm 4b để kiểm tra dữ liệu.</div>
+        <div id="billingHint" class="info-box" hidden>Bấm 4b để kiểm tra dữ liệu.</div>
         <div class="action-row">
           <button id="downloadPlanBtn" class="btn btn-success" type="button" disabled>5. Tải CSV theo từng câu hỏi</button>
           <button id="submitPlanBtn" class="btn btn-secondary" type="button" disabled hidden>Gửi vào Google Form (chưa bật)</button>
           <button id="downloadReportBtn" class="btn btn-soft" type="button" disabled hidden>Tải báo cáo gửi thật</button>
           <button id="refreshCountBtn" class="btn btn-outline" type="button" disabled hidden>Cập nhật số phản hồi thật</button>
         </div>
-        <p class="export-help">CSV tải về máy, không tự cập nhật Google Sheet.</p>
+        <p class="export-help">CSV chỉ được tải về máy.</p>
       </div>
 
     </section>
@@ -1100,8 +1101,8 @@
           <p data-i18n="faq_100_a">Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.</p>
         </details>
         <details>
-          <summary data-i18n="faq_delay_q">Khoảng nghỉ tối thiểu/tối đa để làm gì?</summary>
-          <p data-i18n="faq_delay_a">Nó tạo thời gian chờ giữa các phản hồi trong chế độ gửi ngay. Nếu cần 1 giờ/lần hoặc 10 phản hồi ở các thời điểm khác nhau trong ngày, dùng chế độ lịch chạy nền.</p>
+          <summary data-i18n="faq_delay_q">6a và 6b khác nhau thế nào?</summary>
+          <p data-i18n="faq_delay_a">6a gửi 1 dòng để kiểm tra; 6b gửi các dòng còn lại. Dùng 6c để đối chiếu kết quả.</p>
         </details>
         <details>
           <summary data-i18n="faq_likert_q">Dữ liệu Likert có bắt buộc mã hóa 1–5 không?</summary>
@@ -1154,7 +1155,7 @@
         features_title:'Tính năng phục vụ kiểm thử và thu thập dữ liệu có kiểm soát', features_desc:'Từ tạo dữ liệu mẫu đến nhập dữ liệu sẵn có, lên lịch và xuất báo cáo.', feature_random_title:'Tạo câu trả lời ngẫu nhiên', feature_random_desc:'Random đều, chọn giá trị cố định hoặc cấu hình tỷ lệ phần trăm tùy chỉnh cho câu hỏi lựa chọn và Likert.', feature_import_title:'Nhập Excel, CSV, JSON', feature_import_desc:'Ánh xạ cột vào từng câu hỏi. Thang Likert chấp nhận cả nhãn chữ và mã 1–5 theo thứ tự lựa chọn.', feature_schedule_title:'Lên lịch chạy nền', feature_schedule_desc:'Gửi theo khoảng cách thời gian hoặc phân bổ trong khung giờ của nhiều ngày mà không cần giữ trang mở.', feature_grid_title:'Hỗ trợ Likert dạng lưới', feature_grid_desc:'Hỗ trợ Multiple-choice grid và Checkbox grid, ánh xạ từng hàng của lưới với cột dữ liệu tương ứng.', feature_report_title:'Kế hoạch và báo cáo CSV', feature_report_desc:'Tải danh sách dự kiến, trạng thái gửi, response ID, timestamp và liên kết chỉnh sửa khi Google cung cấp.', feature_service_title:'Dịch vụ dữ liệu theo yêu cầu', feature_service_desc:'Khu vực giới thiệu dịch vụ thu thập dữ liệu công khai hoặc dữ liệu được cấp phép. Giao dịch thực tế thực hiện qua liên hệ và thỏa thuận riêng.',
         how_title:'Cách hoạt động', how_desc:'Quy trình rõ ràng để tránh gửi nhầm dữ liệu.', how1_title:'Nhập biểu mẫu', how1_desc:'Dán URL /edit để nhập câu hỏi.', how2_title:'Ánh xạ hoặc tạo dữ liệu', how2_desc:'Chọn cột Excel/CSV/JSON hoặc thiết lập quy tắc random, tỷ lệ và giá trị mẫu.', how3_title:'Xem trước và xác thực', how3_desc:'Kiểm tra dữ liệu theo từng lô. Bạn có thể chọn 50, 100 hoặc số dòng khác.', how4_title:'Gửi và đối chiếu', how4_desc:'Gửi dữ liệu, đối chiếu kết quả Form/Sheet.',
         pricing_title:'Bảng giá', pricing_desc:'Giá rõ ràng, nạp bao nhiêu dùng bấy nhiêu.', price_main_title:'Điền biểu mẫu', per_response:'/ phiếu', price_main_desc:'Số dư chỉ trừ khi phản hồi được gửi thành công.', price_item_topup:'Nạp tiền bằng mã QR ngân hàng', price_item_auto:'Quản trị viên xác nhận sau khi kiểm tra ngân hàng', price_item_balance:'Số dư được lưu theo tài khoản Google', price_tools_title:'Công cụ đầy đủ', included:'Đã gồm', price_tools_desc:'Không thu thêm phí dùng Excel, tạo dữ liệu, lên lịch hay xuất báo cáo.', price_item_50:'Tối đa 50 phiếu mỗi lượt', price_item_import:'Nhập Excel/CSV/JSON', price_item_report:'Xuất kế hoạch và báo cáo', price_support_title:'Hỗ trợ riêng', price_contact:'Liên hệ', price_support_desc:'Hỗ trợ cài đặt, tùy chỉnh biểu mẫu và xử lý dữ liệu theo yêu cầu.', price_item_setup:'Cài đặt và hướng dẫn', price_item_custom:'Tùy chỉnh theo nhu cầu', price_item_support:'Hỗ trợ kỹ thuật',
-        faq_desc:'Giải thích các phần dễ gây nhầm lẫn trong giao diện.', faq_mapping_q:'“Excel / data column” dùng để làm gì?', faq_mapping_a:'Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.', faq_100_q:'Tại sao có tổng 100%?', faq_100_a:'Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.', faq_delay_q:'Khoảng nghỉ tối thiểu/tối đa để làm gì?', faq_delay_a:'Nó tạo thời gian chờ giữa các phản hồi trong chế độ gửi ngay. Nếu cần 1 giờ/lần hoặc 10 phản hồi ở các thời điểm khác nhau trong ngày, dùng chế độ lịch chạy nền.', faq_likert_q:'Dữ liệu Likert có bắt buộc mã hóa 1–5 không?', faq_likert_a:'Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.', faq_url_q:'Có dùng đường dẫn /viewform được không?', faq_url_a:'Hiện chỉ nhận URL /edit để nhập Form.', faq_upload_q:'Câu hỏi tải tệp có được hỗ trợ không?', faq_upload_a:'Chưa hỗ trợ gửi câu trả lời cho câu hỏi tải tệp. Nếu câu hỏi bắt buộc, hệ thống sẽ báo lỗi trước khi gửi.',
+        faq_desc:'Giải thích các phần dễ gây nhầm lẫn trong giao diện.', faq_mapping_q:'“Excel / data column” dùng để làm gì?', faq_mapping_a:'Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.', faq_100_q:'Tại sao có tổng 100%?', faq_100_a:'Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.', faq_delay_q:'6a và 6b khác nhau thế nào?', faq_delay_a:'6a gửi 1 dòng để kiểm tra; 6b gửi các dòng còn lại. Dùng 6c để đối chiếu kết quả.', faq_likert_q:'Dữ liệu Likert có bắt buộc mã hóa 1–5 không?', faq_likert_a:'Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.', faq_url_q:'Có dùng đường dẫn /viewform được không?', faq_url_a:'Hiện chỉ nhận URL /edit để nhập Form.', faq_upload_q:'Câu hỏi tải tệp có được hỗ trợ không?', faq_upload_a:'Chưa hỗ trợ gửi câu trả lời cho câu hỏi tải tệp. Nếu câu hỏi bắt buộc, hệ thống sẽ báo lỗi trước khi gửi.',
         contact_title:'Cần tùy biến biểu mẫu hoặc dịch vụ dữ liệu?', contact_desc:'Gửi cấu trúc biểu mẫu, tệp mẫu và yêu cầu đầu ra để được tư vấn phạm vi triển khai.', footer_note:'Chỉ dùng cho QA có ủy quyền.', terms:'Điều khoản sử dụng', privacy:'Chính sách bảo mật', terms_h1:'1. Phạm vi được phép', terms_p1:'Chỉ gửi phản hồi vào biểu mẫu do bạn sở hữu hoặc được chủ sở hữu cho phép kiểm thử. Không sử dụng để giả mạo người tham gia, can thiệp khảo sát, tạo đánh giá giả, né giới hạn hoặc gây quá tải dịch vụ.', terms_h2:'2. Trách nhiệm dữ liệu', terms_p2:'Bạn chịu trách nhiệm về tính hợp pháp, độ chính xác, quyền sử dụng và thời hạn lưu trữ của dữ liệu được nhập hoặc tạo.', terms_h3:'3. Giới hạn kỹ thuật', terms_p3:'Các lượt gửi ngay lớn được tự động chia thành lô kỹ thuật 50 phản hồi. Lịch chạy nền vẫn giới hạn 50 phản hồi cho mỗi lịch để phù hợp hạn mức Apps Script. Câu hỏi tải tệp và một số quy tắc đặc biệt của Google Forms có thể không được hỗ trợ.', terms_h4:'4. Thanh toán', terms_p4:'Đơn giá là 500 đồng cho một phản hồi gửi thành công. Phản hồi lỗi được hoàn lại số dư tự động. Quản trị viên chỉ cộng số dư sau khi đối chiếu giao dịch ngân hàng. Khoản nạp đã được cộng vào số dư không quy đổi thành tiền mặt, trừ trường hợp pháp luật yêu cầu.', privacy_h1:'Dữ liệu tệp', privacy_p1:'Tệp Excel, CSV và JSON được đọc trong trình duyệt. Khi bạn tạo lịch chạy nền, các câu trả lời trong kế hoạch được lưu nén vào User Properties của chính tài khoản Apps Script đang sử dụng.', privacy_h2:'Quyền Google', privacy_p2:'Ứng dụng yêu cầu quyền truy cập Google Forms và quyền tạo trigger để thực hiện chức năng bạn chọn. Google quyết định tài khoản có được mở và gửi vào biểu mẫu hay không.', privacy_h3:'Dữ liệu cá nhân', privacy_p3:'Không nhập dữ liệu nhạy cảm hoặc dữ liệu cá nhân khi chưa có căn cứ xử lý phù hợp. Không bán hoặc chia sẻ dữ liệu cá nhân nếu chưa có quyền và sự đồng ý cần thiết.',
         form_title:'Tên biểu mẫu', responses:'Phản hồi hiện có', questions:'Câu hỏi hỗ trợ', unsupported:'Không hỗ trợ', accepting:'Đang nhận phản hồi', not_accepting:'Đã đóng phản hồi', collects_email:'Thu email', limit_one:'Giới hạn 1 phản hồi', yes:'Có', no:'Không',
         file_rows:'Dòng dữ liệu', file_columns:'Cột dữ liệu', file_name:'Tệp', clear_data:'Xóa dữ liệu', no_column:'Không chọn cột — dùng quy tắc bên dưới', data_column:'Cột Excel / dữ liệu', mapping_help:'Nếu ô dữ liệu trống, hệ thống sẽ dùng quy tắc tạo dự phòng.', question_type:'Loại', required:'Bắt buộc', optional:'Không bắt buộc', unsupported_question:'Loại câu hỏi này chưa được hỗ trợ.',
@@ -1181,7 +1182,7 @@
         features_title:'Features for controlled testing and data workflows', features_desc:'From sample generation and data import to scheduling and reporting.', feature_random_title:'Random answer generation', feature_random_desc:'Uniform random, fixed values or custom percentage weights for choice and Likert questions.', feature_import_title:'Excel, CSV and JSON import', feature_import_desc:'Map columns to questions. Likert accepts both text labels and numeric 1–5 codes in option order.', feature_schedule_title:'Persistent background scheduling', feature_schedule_desc:'Submit at intervals or distribute runs within daily windows without keeping the page open.', feature_grid_title:'Likert grid support', feature_grid_desc:'Supports multiple-choice grids and checkbox grids with per-row column mapping.', feature_report_title:'Plan and report CSV files', feature_report_desc:'Download planned answers, status, response ID, timestamp and edit links when available.', feature_service_title:'Data services by request', feature_service_desc:'A landing section for public or licensed data collection services. Actual transactions are handled through direct contact and a separate agreement.',
         how_title:'How it works', how_desc:'A clear workflow designed to prevent accidental submissions.', how1_title:'Import the form', how1_desc:'Paste the /edit URL and let Google verify the account’s edit permission.', how2_title:'Map or generate data', how2_desc:'Choose Excel/CSV/JSON columns or configure random, weighted and sample-value rules.', how3_title:'Preview and validate', how3_desc:'Build up to 50 rows and check required fields and option compatibility before submission.', how4_title:'Send now or schedule', how4_desc:'Track status and timestamps, then download a report.',
         pricing_title:'Pricing', pricing_desc:'Simple pay-as-you-go pricing.', price_main_title:'Form responses', per_response:'/ response', price_main_desc:'Your balance is charged only after a successful submission.', price_item_topup:'Top up with a bank QR code', price_item_auto:'Admin confirmation after bank verification', price_item_balance:'Balance saved to your Google account', price_tools_title:'All tools included', included:'Included', price_tools_desc:'No extra fee for Excel import, generation, scheduling or reports.', price_item_50:'Large runs are automatically split into batches of 50', price_item_import:'Excel/CSV/JSON import', price_item_report:'Plan and report exports', price_support_title:'Custom support', price_contact:'Contact us', price_support_desc:'Setup, form customization and data support by request.', price_item_setup:'Setup and guidance', price_item_custom:'Custom configuration', price_item_support:'Technical support',
-        faq_desc:'Explanations for the most confusing parts of the interface.', faq_mapping_q:'What does “Excel / data column” do?', faq_mapping_a:'It connects a column in the uploaded file to a Google Form question. Each row in that column becomes the answer for the mapped question. When no column is selected, the generator rule is used.', faq_100_q:'Why must the total be 100%?', faq_100_a:'The 100% total appears only in “Custom weights” mode and defines the expected distribution of choices. “Uniform random” requires no sliders or 100% total.', faq_delay_q:'What are minimum and maximum delay for?', faq_delay_a:'They add a wait between responses in Send now mode. For hourly runs or several random times per day, use a persistent background schedule.', faq_likert_q:'Must Likert data be encoded as 1–5?', faq_likert_a:'No. You may use exact Google Form labels such as “Agree” or “Strongly agree”. Numeric codes 1, 2, 3… are also accepted in top-to-bottom or left-to-right option order. For a Likert grid, map each grid row to its data column.', faq_url_q:'Can I use a /viewform URL?', faq_url_a:'No. The app only accepts an /edit URL so Google can verify that the current account has edit access.', faq_upload_q:'Are file-upload questions supported?', faq_upload_a:'No. Apps Script does not provide a safe way to attach files to new responses in this workflow. A required file-upload question blocks the plan.',
+        faq_desc:'Explanations for the most confusing parts of the interface.', faq_mapping_q:'What does “Excel / data column” do?', faq_mapping_a:'It connects a column in the uploaded file to a Google Form question. Each row in that column becomes the answer for the mapped question. When no column is selected, the generator rule is used.', faq_100_q:'Why must the total be 100%?', faq_100_a:'The 100% total appears only in “Custom weights” mode and defines the expected distribution of choices. “Uniform random” requires no sliders or 100% total.', faq_delay_q:'What do 6a and 6b do?', faq_delay_a:'6a sends one test row; 6b sends the remaining rows. Use 6c to compare the results.', faq_likert_q:'Must Likert data be encoded as 1–5?', faq_likert_a:'No. You may use exact Google Form labels such as “Agree” or “Strongly agree”. Numeric codes 1, 2, 3… are also accepted in top-to-bottom or left-to-right option order. For a Likert grid, map each grid row to its data column.', faq_url_q:'Can I use a /viewform URL?', faq_url_a:'No. The app only accepts an /edit URL so Google can verify that the current account has edit access.', faq_upload_q:'Are file-upload questions supported?', faq_upload_a:'No. Apps Script does not provide a safe way to attach files to new responses in this workflow. A required file-upload question blocks the plan.',
         contact_title:'Need form customization or a data service?', contact_desc:'Send the form structure, sample file and expected output for a deployment-scope review.', footer_note:'Authorized QA use only.', terms:'Terms of use', privacy:'Privacy policy', terms_h1:'1. Permitted scope', terms_p1:'Submit only to forms you own or are authorized to test. Do not impersonate participants, manipulate surveys, generate fake reviews, evade limits or overload services.', terms_h2:'2. Data responsibility', terms_p2:'You are responsible for the legality, accuracy, usage rights and retention period of imported or generated data.', terms_h3:'3. Technical limits', terms_p3:'Large immediate runs are automatically split into technical batches of 50. Background schedules remain limited to 50 responses per schedule to stay within Apps Script limits. File-upload questions and some special Google Forms rules may not be supported.', terms_h4:'4. Payments', terms_p4:'The price is 500 VND per successful response. Failed submissions are automatically refunded to the balance. The administrator credits the balance only after checking the bank transaction. Credited top-ups are not cash-redeemable unless required by law.', privacy_h1:'Uploaded files', privacy_p1:'Excel, CSV and JSON files are read in the browser. When a persistent schedule is created, planned answers are compressed and stored in the current account’s Apps Script User Properties.', privacy_h2:'Google permissions', privacy_p2:'The app requests Google Forms access and trigger creation permission for selected functions. Google decides whether the account can open and submit to a form.', privacy_h3:'Personal data', privacy_p3:'Do not import sensitive or personal data without a lawful basis. Do not sell or share personal data without the required rights and consent.',
         form_title:'Form title', responses:'Existing responses', questions:'Supported questions', unsupported:'Unsupported', accepting:'Accepting responses', not_accepting:'Not accepting responses', collects_email:'Collects email', limit_one:'One response per user', yes:'Yes', no:'No',
         file_rows:'Data rows', file_columns:'Columns', file_name:'File', clear_data:'Clear data', no_column:'No column — use the generator rule below', data_column:'Excel / data column', mapping_help:'If a mapped cell is empty, the fallback generator rule is used.', question_type:'Type', required:'Required', optional:'Optional', unsupported_question:'This question type is not supported.',
@@ -1684,7 +1685,7 @@
         $('refreshCountBtn').disabled = state.form.responseCount == null;
         $('refreshCountBtn').title = state.form.responseCount == null ? 'Số phản hồi thật chỉ xem được khi đăng nhập tài khoản có quyền chỉnh sửa.' : '';
         $('workflowResult').className = 'workflow-result';
-        $('workflowResult').textContent = `Đã nhập ${state.form.questions.length} câu hỏi. Tiếp theo: Bước 3 ghép dữ liệu, rồi bấm 4a và 4b. Chưa gửi phản hồi nào.`;
+        $('workflowResult').textContent = `Đã nhập ${state.form.questions.length} câu hỏi. Tiếp theo, ghép dữ liệu ở bước 3.`;
         toast(t('toast_form_imported'), 'success');
       } catch (error) {
         state.form = null;
@@ -1995,7 +1996,7 @@
         buildPlan();
         $('progressWrap').classList.add('hidden');
         $('workflowResult').className = 'workflow-result';
-        $('workflowResult').textContent = `Đã tạo bảng ${state.plan.length} dòng xem trước. Chưa kiểm tra, chưa gửi Google Form/Sheet. Tiếp theo bấm 4b. Kiểm tra dữ liệu.`;
+        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa gửi. Bấm 4b để kiểm tra.`;
         $('previewSection').scrollIntoView({behavior:'smooth',block:'start'});
         toast(`Đã tạo ${state.plan.length} dòng xem trước. Bấm 4b để kiểm tra.`, 'success');
       } catch (error) {
@@ -2214,11 +2215,11 @@
         renderPlan();
         if (!result.valid) {
           $('workflowResult').className='workflow-result is-error';
-          $('workflowResult').textContent=`${result.invalid}/${result.total} dòng có lỗi. Xem cột Kiểm tra bên dưới, sửa dữ liệu rồi kiểm tra lại. Chưa gửi Google Form/Sheet.`;
+          $('workflowResult').textContent=`${result.invalid}/${result.total} dòng có lỗi. Xem cột Kiểm tra, sửa dữ liệu và bấm lại 4b.`;
           throw new Error(`${result.invalid}/${result.total} dòng chưa hợp lệ.`);
         }
         $('workflowResult').className = 'workflow-result is-success';
-        $('workflowResult').textContent = `Đã kiểm tra ${result.total}/${result.total} dòng hợp lệ. Chưa gửi vào Google Form hay Google Sheet. Tiếp theo: Bước 5, bấm “Tải CSV theo từng câu hỏi”.`;
+        $('workflowResult').textContent = `Đã kiểm tra ${result.total} dòng hợp lệ. Chưa gửi. Bạn có thể tải CSV ở bước 5.`;
         toast(`Đã kiểm tra ${result.total}/${result.total} dòng. Chưa gửi Google Form/Sheet.`, 'success');
       } catch (error) {
         toast(`${t('err_validate')} ${messageOf(error)}`, 'error');
