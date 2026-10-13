@@ -178,6 +178,16 @@ try:
           "Bỏ chữ thử ở tiêu đề")
     check("UX-017","Câu chữ","P2","Chưa sẵn sàng gửi:" not in page.locator("#qaRunStep").inner_text(),
           "Không còn thông điệp khóa cũ")
+    check("UX-024","Trạng thái","P2",page.locator("#qaRunCounters").is_hidden(),
+          "Không hiển thị bộ đếm 0 trước lần gửi/đối chiếu đầu tiên")
+    check("UX-025","Trạng thái","P2",page.locator("#qaRunMessage").is_hidden(),
+          "Không hiển thị thông báo chưa gửi thừa thãi")
+    check("UX-026","Trạng thái","P2",page.locator("#billingHint").is_hidden()
+          and page.locator("#planMessage").is_hidden(),
+          "Bước 5 chỉ có một thông báo khi chưa có dữ liệu")
+    check("UX-027","Điều hướng","P2",page.locator(".steps-strip a").last.get_attribute("href")=="#qaRunStep",
+          "Mốc 6 từ thanh điều hướng mở đúng bước gửi")
+
     schedule_disabled=page.locator("#scheduleMode option[value='interval']").is_disabled()
     faq_copy=page.locator("#faq [data-i18n='faq_delay_a']").inner_text()
     check("UX-018","Câu chữ","P2",not(schedule_disabled and "lịch chạy nền" in faq_copy),
@@ -251,5 +261,5 @@ summary={
 }
 (OUT/"ux_audit.json").write_text(json.dumps({"summary":summary,"cases":records},ensure_ascii=False,indent=2),encoding="utf-8")
 print("UX_SUMMARY "+json.dumps(summary,ensure_ascii=False),flush=True)
-if summary["by_priority"]["P0"] or summary["by_priority"]["P1"]:
-    raise SystemExit("Blocking P0/P1 failures. See qa-artifacts/ux_audit.json")
+if sum(summary["by_priority"][p] for p in ["P0","P1","P2"]) > 0:
+    raise SystemExit("UX regression detected (P0/P1/P2). See qa-artifacts/ux_audit.json")
