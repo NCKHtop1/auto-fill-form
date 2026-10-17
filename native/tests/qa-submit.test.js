@@ -114,6 +114,22 @@ test('Post-request network uncertainty never claims Google received the row',asy
  }});
  assert.equal(posts,1);
  assert.equal(result.status,'unverified');
+ assert.equal(result.delivery,'unknown');
+});
+test('An HTTP error after POST is unknown, not proof that no response was recorded',async()=>{
+ let posts=0;
+ const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
+ fetchImpl:async(url,opts)=>{
+  if(opts.method==='GET')return getPage();
+  posts++;return {ok:false,status:502,url};
+ }});
+ assert.equal(posts,1);assert.equal(result.status,'unverified');assert.equal(result.delivery,'unknown');
+});
+test('A failure fetching the respondent session is definitely not sent',async()=>{
+ let posts=0;
+ const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
+ fetchImpl:async(url,opts)=>{if(opts.method==='POST')posts++;throw Error('GET timeout');}});
+ assert.equal(posts,0);assert.equal(result.status,'failed');assert.equal(result.delivery,'not_sent');
 });
 test('Refuses Sheet URLs outside docs.google.com',()=>{
  const id='1T_gGTt8xFY_-Jylbm_Di-90J69BdNsElyv2lLNaiks8';

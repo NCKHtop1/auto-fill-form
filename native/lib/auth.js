@@ -21,4 +21,30 @@ async function session(req,res){const data=unseal(cookies(req)[COOKIE_NAME]||'')
  const refreshed=await tokenRequest({client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,refresh_token:data.refresh_token,grant_type:'refresh_token'});
  data.access_token=refreshed.access_token;data.expires_at=Date.now()+(refreshed.expires_in||3500)*1000;setCookie(res,COOKIE_NAME,seal(data),2592000);return data}
 function setSession(res,data){setCookie(res,COOKIE_NAME,seal(data),2592000)}
-module.exports={COOKIE_NAME,STATE_NAME,OAUTH_SCOPES,configured,seal,unseal,cookies,setCookie,clearCookie,origin,redirectUri,tokenRequest,session,setSession};
+// Billing uses Google's stable subject, never an email supplied by the browser.
+// Existing cookies are upgraded on demand so the current Form flow stays valid.
+async function billingIdentity(req,res,existingSession){
+ const data=existingSession||await session(req,res);
+ const fresh=Number(data.identity_checked_at)>Date.now()-3600000;
+ if(!data.sub||data.email_verified!==true||!fresh){
+  let response,user;
+  try{
+   response=await fetch('https://openidconnect.googleapis.com/v1/userinfo',{
+    headers:{Authorization:`Bearer ${data.access_token}`},signal:AbortSignal.timeout(10000)});
+   user=response.ok?await response.json():null;
+  }catch{
+   const e=new Error('Chưa xác minh được tài khoản Google. Hãy thử lại.');e.status=503;throw e;
+  }
+  if(!user||typeof user.sub!=='string'||!user.sub||user.sub.length>255||
+     typeof user.email!=='string'||!user.email.includes('@')||user.email_verified!==true){
+   const e=new Error('Hãy kết nối lại tài khoản Google có email đã xác minh để sử dụng lượt.');e.status=401;throw e;
+  }
+  if(data.sub&&data.sub!==user.sub){
+   const e=new Error('Tài khoản Google không khớp phiên đăng nhập. Hãy kết nối lại.');e.status=401;throw e;
+  }
+  data.sub=user.sub;data.email=user.email;data.email_verified=true;data.identity_checked_at=Date.now();
+  setSession(res,data);
+ }
+ return {sub:data.sub,email:data.email,email_verified:data.email_verified};
+}
+module.exports={COOKIE_NAME,STATE_NAME,OAUTH_SCOPES,configured,seal,unseal,cookies,setCookie,clearCookie,origin,redirectUri,tokenRequest,session,setSession,billingIdentity};

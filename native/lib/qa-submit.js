@@ -89,13 +89,13 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
      headers:{'User-Agent':'Mozilla/5.0 (compatible; PandaStudy-QA/1.0)','Accept':'text/html'},
      signal:AbortSignal.timeout(18000)});
  }catch{
-   return {status:'failed',note:'Không đọc được phiên Google Form trước khi gửi; chưa gửi câu trả lời.'};
+   return {status:'failed',delivery:'not_sent',note:'Không đọc được phiên Google Form trước khi gửi; chưa gửi câu trả lời.'};
  }
  if(!context.ok||!googleRespondentPage(context.url||form.responderUri))
-   return {status:'failed',note:'Biểu mẫu yêu cầu quyền truy cập hoặc không mở cho người trả lời công khai. Chưa gửi câu trả lời.'};
+   return {status:'failed',delivery:'not_sent',note:'Biểu mẫu yêu cầu quyền truy cập hoặc không mở cho người trả lời công khai. Chưa gửi câu trả lời.'};
  let hidden;
  try{hidden=hiddenFormValues(await context.text());}
- catch(e){return {status:'failed',note:e.message};}
+ catch(e){return {status:'failed',delivery:'not_sent',note:e.message};}
  for(const [key,value] of hidden.entries())body.set(key,value);
  if(!body.has('fvv'))body.set('fvv','1');
  if(!body.has('pageHistory'))body.set('pageHistory','0');
@@ -110,20 +110,20 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
      body:body.toString(),signal:AbortSignal.timeout(20000)
    });
  }catch{
-   return {status:'unverified',note:'Mất kết nối khi gửi. Có thể đã ghi, không tự gửi lại để tránh trùng.'};
+   return {status:'unverified',delivery:'unknown',note:'Mất kết nối khi gửi. Có thể đã ghi, không tự gửi lại để tránh trùng.'};
  }
- if(!response.ok)return {status:'failed',note:'Google trả về lỗi HTTP '+response.status+'. Cần kiểm tra trước khi gửi tiếp.'};
+ if(!response.ok)return {status:'unverified',delivery:'unknown',note:'Google trả về lỗi HTTP '+response.status+' sau yêu cầu gửi. Cần kiểm tra trước khi gửi tiếp.'};
  let final;
  try{final=new URL(response.url||destination);}
- catch{return {status:'unverified',note:'Không xác định được nơi Google chuyển hướng sau khi gửi.'};}
+ catch{return {status:'unverified',delivery:'unknown',note:'Không xác định được nơi Google chuyển hướng sau khi gửi.'};}
  if(final.hostname!=='docs.google.com'||!final.pathname.endsWith('/formResponse'))
-   return {status:'unverified',note:'Google không chuyển đến trang xác nhận phản hồi. Cần kiểm tra Form/Sheet.'};
+   return {status:'unverified',delivery:'unknown',note:'Google không chuyển đến trang xác nhận phản hồi. Cần kiểm tra Form/Sheet.'};
  let resultHtml='';
  try{resultHtml=(await response.text()).slice(0,250000);}
- catch{return {status:'unverified',note:'Không đọc được trang xác nhận. Không tự gửi lại.'};}
+ catch{return {status:'unverified',delivery:'unknown',note:'Không đọc được trang xác nhận. Không tự gửi lại.'};}
  if(!CONFIRMATION.test(resultHtml))
-   return {status:'unverified',note:'Không thấy thông báo Google đã nhận. Kiểm tra số phản hồi trước khi thử lại.'};
- return {status:'page-confirmed',receivedAt:new Date().toISOString(),
+   return {status:'unverified',delivery:'unknown',note:'Không thấy thông báo Google đã nhận. Kiểm tra số phản hồi trước khi thử lại.'};
+ return {status:'page-confirmed',delivery:'confirmed',receivedAt:new Date().toISOString(),
    note:'Google Form hiện trang xác nhận đã nhận. Hãy đối chiếu tổng phản hồi trước và sau.'};
 }
 

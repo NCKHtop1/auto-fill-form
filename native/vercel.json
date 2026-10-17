@@ -15,6 +15,15 @@
     },
     "api/qa-status.js": {
       "maxDuration": 30
+    },
+    "api/billing.js": {
+      "maxDuration": 60
+    },
+    "api/admin-topups.js": {
+      "maxDuration": 60
+    },
+    "api/billing-notifications.js": {
+      "maxDuration": 60
     }
   },
   "headers": [

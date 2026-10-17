@@ -16,6 +16,7 @@
   <script src="/ui-navigation.js?v=20261013c" defer></script>
   <script src="/blog.js" defer></script>
   <script src="/qa-run.js?v=20261013d" defer></script>
+  <script src="/billing-ui.js?v=20261017a" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -727,6 +728,7 @@
   #blog,#how,#faq,#about{scroll-margin-top:86px}
 </style>
 <link rel="stylesheet" href="/blog.css?v=20261013d">
+<link rel="stylesheet" href="/billing.css?v=20261017a">
 </head>
 <body>
   <header class="topbar" id="top"><div class="nav-wrap">
@@ -735,6 +737,7 @@
    <nav class="nav-links" id="mainNav" aria-label="Điều hướng chính"><a href="#home">Trang chủ</a><a href="#app">Thiết lập form</a><a href="#dropZone">Nhập dữ liệu</a><a href="#previewSection">Kiểm tra &amp; xuất</a><a href="#blog">Blog</a><a href="#how">Hướng dẫn</a><a href="#faq">FAQ</a><a href="#about">Về PandaStudy</a></nav>
    <div class="nav-actions"><span id="googleStatus" class="google-status">Chưa kết nối Google</span><a class="btn btn-primary" id="googleConnectBtn" href="/api/auth/start">Kết nối Google →</a></div>
  </div></header>
+ <div id="pandaBillingRoot" class="pb-account-bar" hidden aria-label="Tài khoản và phiếu gửi"></div>
 
   <section class="hero" id="home"><div class="hero-inner"><div class="hero-copy">
  <span class="pill">🌿 Dữ liệu nghiên cứu · Google Form</span>
@@ -1245,6 +1248,7 @@
     // Read-only access to the existing verified preview plan for the separate QA step.
     window.PandaStudyQA = {
       getUrl() { return $('formUrl').value.trim(); },
+      getPlanToken() { return state.plan; },
       getRows() { return state.plan.map(r => ({
         index: r.index, status: r.status, answers: r.answers
       })); },
