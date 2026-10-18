@@ -26,6 +26,12 @@
       "maxDuration": 60
     }
   },
+  "crons": [
+    {
+      "path": "/api/billing-notifications",
+      "schedule": "*/5 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",
