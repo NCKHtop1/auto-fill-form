@@ -5,9 +5,17 @@
   "description": "PandaStudy - Google Forms QA tools on Vercel, no Apps Script runtime",
   "scripts": {
     "test": "node --test tests/*.test.js",
-    "check": "node --check api/bridge.js && node --check api/auth/start.js && node --check api/auth/callback.js && node --check lib/forms.js && node --check lib/auth.js && node --check lib/validation.js && node --check api/qa-submit.js && node --check api/qa-verify.js && node --check api/qa-status.js && node --check lib/qa-submit.js && node --check lib/public-sheet.js && node --check qa-run.js && node --check ui-navigation.js"
+    "check": "node scripts/check-syntax.js",
+    "migrate:billing": "node scripts/migrate-billing.js",
+    "test:postgres": "node --test tests/billing-postgres.test.js"
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "0.5.10"
   }
 }

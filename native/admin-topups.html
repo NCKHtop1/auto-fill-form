@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#245936">
+  <title>Duyệt nạp phiếu · PandaStudy</title>
+  <link rel="icon" type="image/svg+xml" href="/panda.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/billing.css?v=20261017a">
+  <script src="/admin-topups.js?v=20261017a" defer></script>
+</head>
+<body class="pb-admin">
+  <header class="pb-admin-header">
+    <div class="pb-admin-header-inner">
+      <div>
+        <a class="pb-admin-brand" href="/index.html#app"><img src="/panda.svg" alt="">PandaStudy</a>
+        <h1>Duyệt nạp phiếu</h1>
+      </div>
+      <a class="pb-button" href="/index.html#app">Về công cụ</a>
+    </div>
+  </header>
+  <main class="pb-admin-main">
+    <section id="paSession" class="pb-admin-session pb-notice" aria-live="polite">Đang kiểm tra tài khoản quản trị…</section>
+    <div id="paMessage" class="pb-status" role="status" aria-live="polite" aria-atomic="true"></div>
+    <div id="paWorkspace" hidden>
+      <div class="pb-admin-toolbar">
+        <label class="pb-field" for="paFilter">Trạng thái đơn
+          <select id="paFilter">
+            <option value="pending_review">Chờ duyệt</option>
+            <option value="pending_payment">Chờ người dùng chuyển khoản</option>
+            <option value="approved">Đã cộng phiếu</option>
+            <option value="rejected">Đã từ chối</option>
+            <option value="all">Tất cả</option>
+          </select>
+        </label>
+        <div class="pb-actions">
+          <button class="pb-button" id="paRefresh" type="button">Làm mới</button>
+          <button class="pb-button" id="paRetryEmail" type="button">Thử gửi lại email lỗi</button>
+        </div>
+      </div>
+      <div class="pb-admin-grid">
+        <section class="pb-card" aria-labelledby="paOrdersTitle">
+          <h2 id="paOrdersTitle">Đơn mua phiếu</h2>
+          <p class="pb-small pb-muted">Đối chiếu giao dịch tiền vào ngân hàng trước khi duyệt. Thông báo của người dùng và email chưa xác nhận tiền đã về.</p>
+          <div id="paOrders" aria-live="polite"></div>
+        </section>
+        <section class="pb-card" id="paDetail" aria-label="Chi tiết đơn" tabindex="-1">
+          <p class="pb-admin-empty">Chọn một đơn để xem và xử lý.</p>
+        </section>
+      </div>
+      <section class="pb-card" style="margin-top:20px" aria-labelledby="paOperationsTitle">
+        <h2 id="paOperationsTitle" tabindex="-1">Phiếu chờ đối chiếu kết quả gửi</h2>
+        <p class="pb-small pb-muted">Các lượt đang giữ chưa được quyết toán. Chỉ xác nhận sau khi kiểm tra được kết quả gửi; thao tác ở đây không gửi lại Form.</p>
+        <div id="paOperations"></div>
+      </section>
+    </div>
+  </main>
+  <noscript><p class="pb-admin-main">Bật JavaScript để xem và duyệt đơn.</p></noscript>
+</body>
+</html>

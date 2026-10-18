@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const wait=ms=>new Promise(done=>setTimeout(done,ms));
-let state={working:false,attempted:new Set(),history:[],before:null,after:null,source:'',runKey:'',stopped:false};
+let state={working:false,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',stopped:false,contextChanged:false};
 let permissionVersion=0,permissionTimer=null;
 
 function node(tag,klass,label){
@@ -17,6 +17,11 @@ function status(message,error=false){
  el.textContent=message;el.className='workflow-result'+(error?' is-error':'');
  el.hidden=!message;
 }
+function billingNote(profile=window.PandaBilling?.getProfile()){
+ const el=$('qaBillingNotice');if(!el)return;
+ el.hidden=!profile?.billingEnabled;
+ if(!el.hidden)el.textContent='Mỗi dòng Google báo nhận dùng 1 phiếu ('+Number(profile.unitPriceVnd||500).toLocaleString('vi-VN')+' đ/phiếu). Kết quả chưa rõ được giữ phiếu để đối chiếu.';
+}
 function actionUrl(){
  return '/api/qa-verify';
 }
@@ -24,7 +29,7 @@ async function post(url,data){
  const response=await fetch(url,{method:'POST',credentials:'same-origin',
   headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
  const out=await response.json().catch(()=>({}));
- if(!response.ok)throw Error(out.error||'Máy chủ trả lỗi '+response.status);
+ if(!response.ok){const error=Error(out.error||'Máy chủ trả lỗi '+response.status);error.status=response.status;error.delivery=out.delivery;error.code=out.code;throw error;}
  return out;
 }
 function providerLabel(){
@@ -61,6 +66,7 @@ function recoverAttempts(){
  state.runKey=makeKey();
  try{
   const record=JSON.parse(sessionStorage.getItem(state.runKey)||'{}');
+  state.operations=record.operations&&typeof record.operations==='object'?record.operations:{};
   const old=Array.isArray(record.attempted)?record.attempted:[];
   old.forEach(n=>state.attempted.add(Number(n)));
   if(old.length)status('Đã thực hiện '+old.length+' lượt gửi trong phiên này. Kiểm tra kết quả trước khi gửi tiếp.',true);
@@ -68,8 +74,20 @@ function recoverAttempts(){
 }
 function rememberAttempt(index){
  state.attempted.add(index);
+ if(!state.operations[index]){
+  if(crypto.randomUUID)state.operations[index]=crypto.randomUUID();
+  else{
+   const bytes=crypto.getRandomValues(new Uint8Array(16));bytes[6]=(bytes[6]&15)|64;bytes[8]=(bytes[8]&63)|128;
+   const hex=Array.from(bytes,x=>x.toString(16).padStart(2,'0')).join('');
+   state.operations[index]=hex.slice(0,8)+'-'+hex.slice(8,12)+'-'+hex.slice(12,16)+'-'+hex.slice(16,20)+'-'+hex.slice(20);
+  }
+ }
+ saveAttempts();
+ return state.operations[index];
+}
+function saveAttempts(){
  try{sessionStorage.setItem(state.runKey,
-  JSON.stringify({attempted:Array.from(state.attempted),at:new Date().toISOString()}));}catch{}
+  JSON.stringify({attempted:Array.from(state.attempted),operations:state.operations,at:new Date().toISOString()}));}catch{}
 }
 async function permission(){
  const version=++permissionVersion;
@@ -99,11 +117,11 @@ async function permission(){
  updateCounts();
  return !!data.canSend;
 }
-async function verify(isInitial=false){
+async function verify(isInitial=false,formUrl){
  const bridge=window.PandaStudyQA;
  if(!bridge?.getUrl())throw Error('Dán Google Form ở Bước 2 trước.');
  const result=await post(actionUrl(),{
-  formUrl:bridge.getUrl(),sheetUrl:$('qaSheetUrl').value.trim()||undefined});
+  formUrl:formUrl||bridge.getUrl(),sheetUrl:$('qaSheetUrl').value.trim()||undefined});
  if(isInitial){state.before=result.count;state.source=result.source;}
  else{state.after=result.count;state.source=result.source;}
  updateCounts();
@@ -127,23 +145,43 @@ async function run(maxRows){
  const bridge=window.PandaStudyQA;
  if(!bridge)return status('Chưa có bảng dữ liệu. Hãy nhập Form và bấm 4a, 4b.',true);
  const rows=bridge.getRows();
+ const formUrl=bridge.getUrl(),planToken=bridge.getPlanToken?.();
+ const sameContext=()=>bridge.getUrl()===formUrl&&bridge.getPlanToken?.()===planToken&&!state.contextChanged;
  if(!rows.length)return status('Chưa có dữ liệu để gửi. Hãy bấm 4a và 4b.',true);
  if(rows.some(r=>!['valid','sent','error'].includes(r.status)))
   return status('Còn dòng chưa kiểm tra. Bấm 4b trước khi gửi.',true);
  if(state.stopped)return status('Đã dừng vì có lỗi hoặc kết quả chưa rõ. Kiểm tra số phản hồi trước.',true);
  const allowed=await permission();
  if(!allowed)return status('Chưa thể gửi. Xem thông báo về trang trả lời Form ở Bước 6.',true);
+ if(bridge.getUrl()!==formUrl||bridge.getPlanToken?.()!==planToken)
+  return status('Form hoặc bảng dữ liệu vừa thay đổi. Kiểm tra lại rồi chủ động bấm gửi.',true);
  if(state.history.length===0){state.attempted=new Set();recoverAttempts();}
  const unsent=rows.filter(r=>r.status==='valid'&&!state.attempted.has(r.index));
  if(!unsent.length)return status('Không có dòng hợp lệ chưa gửi; tránh gửi trùng.',true);
  if(state.attempted.size && unsent.length<rows.filter(r=>r.status==='valid').length)
   return status('Một số dòng đã gửi trong phiên này. Kiểm tra kết quả trước khi gửi tiếp.',true);
- state.working=true;
+ state.working=true;state.contextChanged=false;
+ // Keep the active Form and plan stable while requests are in flight. Tokens
+ // also detect an import/build that was already pending when this run began.
+ const editing=['fileStep','formSetupStep','mappingStep','planStep','previewSection'].map($).filter(Boolean).map(el=>({el,inert:el.inert}));
+ editing.forEach(({el})=>{el.inert=true;});
  $('qaRunStartOne').disabled=true;$('qaRunStartAll').disabled=true;
  try{
+  const batch=unsent.slice(0,maxRows).map(row=>({...row,answers:JSON.parse(JSON.stringify(row.answers))}));
+  const lastProfile=window.PandaBilling?.getProfile();
+  const profile=await window.PandaBilling?.refresh();
+  if(!profile&&lastProfile?.billingEnabled)return status('Chưa kiểm tra được số lượt. Dữ liệu vẫn được giữ; hãy thử lại khi kết nối ổn định.',true);
+  if(profile?.billingEnabled){
+   if(!profile.configured)return status('Tạm dừng gửi có tính lượt vì hệ thống thanh toán chưa sẵn sàng. Dữ liệu của bạn vẫn được giữ.',true);
+   if(profile.availableCredits<batch.length){
+    status('Cần '+batch.length+' lượt để gửi nhóm này; hiện có '+profile.availableCredits+' lượt. Mua thêm rồi chủ động bấm gửi lại.',true);
+    window.PandaBilling?.openPurchase();return;
+   }
+  }
+  let blockedBeforeDispatch=false;
   if(state.before===null){
    try{
-    const p=await verify(true);
+    const p=await verify(true,formUrl);
     status('Tổng phản hồi trước khi gửi: '+p.count+' ('+providerLabel()+').');
    }catch(e){
     // Form API response-count permission is optional; do not mislabel this
@@ -152,23 +190,37 @@ async function run(maxRows){
     status('Không đọc được tổng ban đầu: '+e.message+'. Kiểm tra phản hồi Google và đối chiếu trên Sheet.',true);
    }
   }
-  const batch=unsent.slice(0,maxRows);
   for(const r of batch){
-   rememberAttempt(r.index); // store BEFORE request; never blindly retry after timeout
+   if(!sameContext()){
+    state.stopped=true;status('Đã dừng vì Form hoặc bảng dữ liệu thay đổi. Không gửi các dòng còn lại; hãy đối chiếu kết quả đã có.',true);break;
+   }
+   const operationId=rememberAttempt(r.index); // stable ID is stored BEFORE dispatch
    status('Đang gửi dòng '+r.index+'/'+rows.length+'...');
    let answer;
    try{
     answer=await post('/api/qa-submit',{
-     formUrl:bridge.getUrl(),answers:r.answers,confirmedTestOnly:true
+     formUrl,answers:r.answers,confirmedTestOnly:true,operationId
     });
    }catch(e){
+    if(e.delivery==='not_sent'){
+     // The server confirms that Google was never called. Preserve the row for
+     // a later explicit click; approval and balance refresh never resume it.
+     state.attempted.delete(r.index);saveAttempts();blockedBeforeDispatch=true;
+     status('Chưa gửi dòng '+r.index+': '+e.message+'. Dữ liệu vẫn được giữ để bạn chủ động gửi lại.',true);
+     if(e.status===402)window.PandaBilling?.openPurchase();
+     break;
+    }
     answer={status:'unverified',note:'Lỗi khi gửi: '+e.message+'. Có thể Google đã nhận, không tự gửi lại.'};
    }
-   const result={index:r.index,status:answer.status,note:answer.note||'',
-     receivedAt:answer.receivedAt||'',answers:r.answers};
+   const result={index:r.index,status:answer.status,note:(answer.note||'')+(answer.operationId?' Mã lượt gửi: '+answer.operationId+'.':''),
+     receivedAt:answer.receivedAt||'',operationId:answer.operationId||operationId,answers:r.answers};
    state.history.push(result);
    const idx=rows.findIndex(item=>item.index===r.index);
-   bridge.updateRow(idx,answer.status==='page-confirmed'?'sent':'error',answer.receivedAt||'',result.note);
+   if(sameContext())bridge.updateRow(idx,answer.status==='page-confirmed'?'sent':'error',answer.receivedAt||'',result.note);
+   else{
+    state.stopped=true;updateCounts();
+    status('Đã dừng vì Form hoặc bảng dữ liệu thay đổi. Kết quả dòng vừa xử lý thuộc dữ liệu trước: '+result.note+' Tải kết quả để đối chiếu.',true);break;
+   }
    updateCounts();
    if(answer.status!=='page-confirmed'){
     state.stopped=true;
@@ -179,16 +231,20 @@ async function run(maxRows){
    status('Trang Google báo nhận '+state.history.length+' dòng. Đang kiểm tra số thực tế...');
    if(r!==batch[batch.length-1])await wait(2500);
   }
-  await wait(1200);
-  try{
-   await verify(false);
-   updateReport();
-  }catch(e){
-   status('Chưa đối chiếu được tổng phản hồi: '+e.message,true);
+  if(!state.stopped&&!blockedBeforeDispatch&&sameContext()){
+   await wait(1200);
+   try{
+    await verify(false,formUrl);
+    updateReport();
+   }catch(e){
+    status('Chưa đối chiếu được tổng phản hồi: '+e.message,true);
+   }
   }
  }catch(e){status('Chưa bắt đầu gửi: '+e.message,true);}
  finally{
+  editing.forEach(({el,inert})=>{el.inert=inert;});
   state.working=false;updateCounts();
+  window.dispatchEvent(new Event('pandastudy:billing-refresh'));
   if(!state.stopped){const allowedButton=$('qaRunStartOne').dataset.allowed==='true';$('qaRunStartOne').disabled=!allowedButton;$('qaRunStartAll').disabled=!allowedButton;}
  }
 }
@@ -222,6 +278,8 @@ function init(){
  const google=node('a','btn btn-outline','Kết nối lại Google');
  google.id='qaConnectBtn';google.href='/api/auth/start';google.hidden=true;connect.appendChild(google);
  panel.appendChild(connect);
+ const paymentNote=node('p','small muted','');paymentNote.id='qaBillingNotice';paymentNote.hidden=true;
+ panel.appendChild(paymentNote);
  const sheetLabel=node('label','qa-sheet-label','Google Sheet đối chiếu (tùy chọn)');
  const sheet=node('input','qa-sheet-input');
  sheet.id='qaSheetUrl';sheet.type='url';sheet.placeholder='https://docs.google.com/spreadsheets/d/.../edit?gid=...';
@@ -250,11 +308,16 @@ function init(){
   catch(e){status('Không đọc được tổng: '+e.message,true);}
  });
  $('qaRunExport').addEventListener('click',download);
- const refreshForm=()=>{state.before=null;state.after=null;state.history=[];state.attempted.clear();state.stopped=false;clearTimeout(permissionTimer);permissionTimer=setTimeout(permission,350);updateCounts();};
+ const refreshForm=()=>{
+  if(state.working){state.contextChanged=true;status('Form vừa thay đổi. Đang giữ kết quả dòng hiện tại và dừng các dòng tiếp theo.',true);return;}
+  state.before=null;state.after=null;state.history=[];state.attempted.clear();state.operations={};state.stopped=false;state.contextChanged=false;
+  clearTimeout(permissionTimer);permissionTimer=setTimeout(permission,350);updateCounts();
+ };
  $('formUrl').addEventListener('input',refreshForm);
  $('formUrl').addEventListener('change',()=>{clearTimeout(permissionTimer);permission();});
  $('importFormBtn')?.addEventListener('click',()=>{clearTimeout(permissionTimer);permissionTimer=setTimeout(permission,500);});
- permission();updateCounts();
+ document.addEventListener('pandastudy:billing-profile',event=>billingNote(event.detail));
+ permission();updateCounts();billingNote();
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();

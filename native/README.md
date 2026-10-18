@@ -27,9 +27,7 @@ Set these Vercel environment variables for Production (and Preview as needed):
 - GOOGLE_CLIENT_SECRET: OAuth client secret.
 - APP_SESSION_SECRET: a random secret with at least 32 characters.
 - PUBLIC_SITE_URL: https://auto-fill-form-liard.vercel.app
-- PANDASTUDY_ADMIN_EMAILS: comma-separated administrator Google email addresses.
-- PANDASTUDY_TEST_FORM_IDS: comma-separated IDs of COPIES of forms made for testing.
-- ENABLE_QA_SUBMISSIONS: true only after the copy is ready and restrictions are correct.
+The existing Step 6 API checks Google sign-in, explicit consent and a supported public respondent Form. Legacy `PANDASTUDY_ADMIN_EMAILS`, `PANDASTUDY_TEST_FORM_IDS` and `ENABLE_QA_SUBMISSIONS` helpers are not called by the current submission route; they must not be mistaken for an enforced administrator boundary. Payment approval uses its separate verified `BILLING_ADMIN_EMAILS` role.
 
 Enter secrets directly in Vercel Settings > Environment Variables. Do not paste secrets in chat or GitHub. Redeploy after updating environment variables.
 
@@ -39,7 +37,7 @@ Enter secrets directly in Vercel Settings > Environment Variables. Do not paste 
 2. Import the Google Form link, map its questions to data.
 3. Build the plan (4a), validate the data (4b).
 4. Step 5 exports PREVIEW CSV only, not a Google submission.
-5. Step 6 is admin-only and test-form-only: provide a link to its response Sheet, confirm permission, send 1 test row, inspect the result, send the remaining rows, and download the submission report.
+5. Step 6 requires Google sign-in and consent: provide a link to the response Sheet, send 1 authorized test row, inspect the result, send the remaining rows, and download the submission report. Use a duplicate Form with synthetic data for testing.
 
 Results distinguish page-confirmed, failed and unverified. Google Forms response creation via the public formResponse URL is unofficial and may change. There is no official Forms API response.create endpoint. Never assume a 200 HTTP status implies a response was recorded. There are no automatic retries after ambiguous results.
 
@@ -52,5 +50,19 @@ Do not inject synthetic responses into a live study. Only test with a Form COPY,
 From the native directory run: npm test ; npm run check
 
 CI browser tests include tests/qa_browser.py (mocked network, no real Google writes).
+
+## Manual bank top-ups and usage credits
+
+The new payment module is disabled by default and preserves the existing six-step flow. It adds a separate wallet modal and `/admin-topups.html`, a PostgreSQL ledger, durable email notifications, and server-side credit enforcement. The fixed price is 500 VND per credit. Approval only adds credits; it never resumes Form submission.
+
+See [the billing deployment and UAT runbook](../qa/BILLING_RELEASE.md) for configuration, evidence, release gates and the incident procedure. Provision the real database and verified email sender before enabling `BILLING_ENABLED`. Apply the migration explicitly with `npm run migrate:billing`; application requests do not run migrations.
+
+Merchant details, the approved QR URL and notification recipients are configured through the environment variables listed in `.env.example`; no real bank account or payment QR is included in this change. The QR asset must be served from the same origin as the application. Notification recipients and payment administrators are configured separately. Missing or invalid required configuration keeps purchases unavailable.
+
+Use `BILLING_TOPUPS_PAUSED=true` to pause purchases after launch while keeping existing balances and approvals usable. Disabling billing enforcement after paid launch would restore the old free submission path and is not a financial rollback.
+
+The GitHub workflow `billing-notifications.yml` retries the durable queue every five minutes after the repository variable `PANDASTUDY_BILLING_LIVE=true` and matching worker secret have been configured. Scheduled Actions may be delayed; an initial bounded delivery attempt happens during the payment report request and administrators can retry from their page.
+
+`tests/billing_browser.py` exercises the wallet/admin UI with simulated APIs. `native/tests/billing-postgres.test.js` runs the real PostgreSQL concurrency gate when `BILLING_TEST_DATABASE_URL` points to an isolated UAT database. It creates and drops only its own random schema.
 
 No Apps Script runtime. FinQuery is never modified.

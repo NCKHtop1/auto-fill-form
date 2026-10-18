@@ -26,6 +26,7 @@ jobs:
         run: .venv/bin/python tests/smoke.py
       - name: PandaStudy native JavaScript and backend tests
         run: |
+          npm ci --prefix native
           node --check native/blog.js
           node --check .github/scripts/publish-blog.cjs
           node --test tests/publish-blog.test.cjs
@@ -38,6 +39,8 @@ jobs:
         run: .venv/bin/python tests/native_smoke.py
       - name: QA submission flow browser test (mocked; no Google writes)
         run: .venv/bin/python tests/qa_browser.py
+      - name: Billing and admin browser UAT (mocked; no payments or emails)
+        run: .venv/bin/python tests/billing_browser.py
       - name: Comprehensive UX, responsive and accessibility audit
         run: .venv/bin/python tests/ux_audit.py
       - name: Post-merge production browser smoke (read-only)
@@ -51,3 +54,30 @@ jobs:
           path: qa-artifacts/
           retention-days: 14
           if-no-files-found: ignore
+  billing-postgres:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: pandastudy_test
+          POSTGRES_PASSWORD: ephemeral_ci_password
+          POSTGRES_DB: pandastudy_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pandastudy_test -d pandastudy_ci"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Install locked backend dependencies
+        run: npm ci --prefix native
+      - name: PostgreSQL transactions, duplicate approvals and concurrent credit UAT
+        env:
+          BILLING_TEST_DATABASE_URL: postgresql://pandastudy_test:ephemeral_ci_password@localhost:5432/pandastudy_ci
+        run: cd native && npm run test:postgres
