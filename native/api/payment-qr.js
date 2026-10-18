@@ -6,6 +6,12 @@ module.exports = async function handler(req, res) {
     return res.status(405).end();
   }
 
+  // Do not expose merchant payment details before the billing feature is live,
+  // or while new top-ups are intentionally paused.
+  if (process.env.BILLING_ENABLED !== 'true' || process.env.BILLING_TOPUPS_PAUSED === 'true') {
+    return res.status(404).end();
+  }
+
   const bankId = String(process.env.BILLING_BANK_ID || '').trim();
   const accountNumber = String(process.env.BILLING_BANK_ACCOUNT_NUMBER || '').trim();
   const accountName = String(process.env.BILLING_BANK_ACCOUNT_NAME || '').trim();
