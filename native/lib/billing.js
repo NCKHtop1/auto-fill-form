@@ -156,13 +156,16 @@ function orderView(row) {
   };
 }
 
-async function ensureCustomer(identity) {
-  assertReady();
+async function ensureAccount(identity) {
   const current = verifiedIdentity(identity);
   const result = await db.query(`INSERT INTO ps_billing_customers(id,google_sub,email)
     VALUES($1,$2,$3) ON CONFLICT(google_sub) DO UPDATE SET email=EXCLUDED.email,updated_at=now()
     RETURNING *`, [crypto.randomUUID(), current.sub, current.email]);
   return result.rows[0];
+}
+async function ensureCustomer(identity) {
+  assertReady();
+  return ensureAccount(identity);
 }
 
 async function getProfile(identity = null) {
@@ -172,11 +175,21 @@ async function getProfile(identity = null) {
   catch (error) {
     if (!(error instanceof BillingError) || error.status !== 401) throw error;
   }
+  let persisted = null;
+  if (account && process.env.DATABASE_URL) {
+    try {
+      const readiness = await db.query('SELECT version FROM ps_billing_schema_migrations WHERE version=1');
+      if (readiness.rowCount) persisted = await ensureAccount(account);
+    } catch (error) {
+      console.error('[PandaStudy account persistence]', error.code || 'UNAVAILABLE');
+    }
+  }
   const base = {
     billingEnabled: config.billingEnabled, configured: config.configured,
     purchasesEnabled: purchasesEnabled() && config.configured,
-    signedIn: !!account, user: account ? identityView(account) : null,
-    availableCredits: 0, reservedCredits: 0,
+    signedIn: !!account, user: persisted ? customerView(persisted, account) : (account ? identityView(account) : null),
+    availableCredits: persisted ? number(persisted.available_credits) : 0,
+    reservedCredits: persisted ? number(persisted.reserved_credits) : 0,
     unitPriceVnd: UNIT_PRICE_VND, minTopupCredits: 1, maxTopupCredits: MAX_TOPUP_CREDITS,
     bank: null, warnings: config.warnings || []
   };
@@ -186,7 +199,7 @@ async function getProfile(identity = null) {
     const readiness = await db.query('SELECT version FROM ps_billing_schema_migrations WHERE version=1');
     if (!readiness.rowCount) throw new Error('SCHEMA_NOT_READY');
     if (!account) return base;
-    const customer = await ensureCustomer(account);
+    const customer = persisted || await ensureAccount(account);
     return {...base, signedIn: true, user: customerView(customer, account),
       availableCredits: number(customer.available_credits), reservedCredits: number(customer.reserved_credits), bank: {...bankConfig()}};
   } catch (error) {
@@ -539,6 +552,6 @@ async function resolveOperation(identity, input) {
 
 module.exports = {BillingError,UNIT_PRICE_VND,MAX_TOPUP_CREDITS,
   get BANK() { return bankConfig(); }, get NOTIFICATION_RECIPIENTS() { return notificationRecipients(); },
-  enabled,purchasesEnabled,getConfigStatus,assertReady,verifiedIdentity,isAdmin,requireAdmin,ensureCustomer,getProfile,
+  enabled,purchasesEnabled,getConfigStatus,assertReady,verifiedIdentity,isAdmin,requireAdmin,ensureAccount,ensureCustomer,getProfile,
   createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,listAdminUsers,
   reserveSubmission,settleSubmission,resolveOperation};
