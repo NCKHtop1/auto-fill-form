@@ -21,6 +21,10 @@ async function session(req,res){const data=unseal(cookies(req)[COOKIE_NAME]||'')
  const refreshed=await tokenRequest({client_id:process.env.GOOGLE_CLIENT_ID,client_secret:process.env.GOOGLE_CLIENT_SECRET,refresh_token:data.refresh_token,grant_type:'refresh_token'});
  data.access_token=refreshed.access_token;data.expires_at=Date.now()+(refreshed.expires_in||3500)*1000;setCookie(res,COOKIE_NAME,seal(data),2592000);return data}
 function setSession(res,data){setCookie(res,COOKIE_NAME,seal(data),2592000)}
+function hasScope(data,scope){
+ const granted=String(data?.scope||'').split(/\s+/).filter(Boolean);
+ return granted.includes(scope);
+}
 // Billing uses Google's stable subject, never an email supplied by the browser.
 // Existing cookies are upgraded on demand so the current Form flow stays valid.
 async function billingIdentity(req,res,existingSession){
@@ -47,4 +51,4 @@ async function billingIdentity(req,res,existingSession){
  }
  return {sub:data.sub,email:data.email,email_verified:data.email_verified};
 }
-module.exports={COOKIE_NAME,STATE_NAME,OAUTH_SCOPES,configured,seal,unseal,cookies,setCookie,clearCookie,origin,redirectUri,tokenRequest,session,setSession,billingIdentity};
+module.exports={COOKIE_NAME,STATE_NAME,OAUTH_SCOPES,configured,seal,unseal,cookies,setCookie,clearCookie,origin,redirectUri,tokenRequest,session,setSession,hasScope,billingIdentity};
