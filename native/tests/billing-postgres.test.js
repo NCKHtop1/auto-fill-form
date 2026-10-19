@@ -57,7 +57,7 @@ test('Real PostgreSQL billing: concurrency, ownership and atomic recovery', {
       env: {...process.env, DATABASE_URL: scopedUrl.toString()}, timeout: 30000,
       maxBuffer: 256000
     });
-    assert.match(stdout, /migration 001 applied/);
+    assert.match(stdout, /migrations 001-002 applied/);
   }
   async function pendingOrder(customer, quantity = 3, extras = {}) {
     const order = await billing.createOrder(customer, {quantity, idempotencyKey: newKey(), ...extras});
@@ -104,6 +104,7 @@ test('Real PostgreSQL billing: concurrency, ownership and atomic recovery', {
     createdSchema = true;
     // Two genuine migration processes contend on the advisory lock.
     await Promise.all([runMigration(), runMigration()]);
+    await pool.query("UPDATE ps_billing_promotions SET enabled=false");
     db.setTestAdapter(pool);
     await pool.query(`CREATE TABLE uat_reject_ledger (customer_id uuid NOT NULL, kind text NOT NULL,
       PRIMARY KEY(customer_id,kind));
@@ -122,7 +123,7 @@ test('Real PostgreSQL billing: concurrency, ownership and atomic recovery', {
       const order = await fund(customer, 4);
       await runMigration();
       const versions = await pool.query('SELECT version,count(*) AS n FROM ps_billing_schema_migrations GROUP BY version');
-      assert.deepEqual(versions.rows, [{version: 1, n: '1'}]);
+      assert.deepEqual(versions.rows, [{version: 1, n: '1'},{version: 2, n: '1'}]);
       assert.equal((await billing.getOrder(customer, order.id)).status, 'approved');
       assert.equal((await account(customer)).available_credits, 4);
     });
