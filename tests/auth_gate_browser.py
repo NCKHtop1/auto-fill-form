@@ -26,7 +26,7 @@ def main():
     )
     Thread(target=server.serve_forever, daemon=True).start()
     base = "http://127.0.0.1:" + str(server.server_address[1])
-    state = {"signed_in": False}
+    state = {"signed_in": False, "is_admin": False}
 
     try:
         with sync_playwright() as p:
@@ -42,6 +42,7 @@ def main():
                         "configured": True,
                         "signedIn": state["signed_in"],
                         "email": "member@example.test" if state["signed_in"] else "",
+                        "isAdmin": bool(state["signed_in"] and state["is_admin"]),
                         "submissionEnabled": False,
                     }
                     return route.fulfill(
@@ -141,6 +142,23 @@ def main():
             assert gate.is_hidden()
             assert page.locator(".topbar").is_visible()
             assert page.locator("#app").is_visible()
+            page.wait_for_timeout(100)
+            assert page.locator("#blogWriteBtn").is_hidden()
+            page.evaluate("location.hash='#blog-viet-bai'")
+            page.wait_for_timeout(100)
+            assert page.locator("#blogEditor").is_hidden()
+            assert "Chỉ quản trị viên PandaStudy" in page.locator("#blogLoadStatus").inner_text()
+            print("PASS blog role: signed-in non-admin cannot see or route into the article editor")
+
+            state["is_admin"] = True
+            page.reload(wait_until="domcontentloaded")
+            page.wait_for_function("document.body.dataset.authenticated === 'true'")
+            page.wait_for_function("!document.getElementById('blogWriteBtn').hidden")
+            assert page.locator("#blogWriteBtn").is_visible()
+            page.evaluate("location.hash='#blog-viet-bai'")
+            page.wait_for_timeout(100)
+            assert page.locator("#blogEditor").is_visible()
+            print("PASS blog role: authenticated PandaStudy admin can open the article editor")
             page.wait_for_function(
                 "document.getElementById('pandaBillingRoot').textContent.includes('12 phiếu')"
             )
