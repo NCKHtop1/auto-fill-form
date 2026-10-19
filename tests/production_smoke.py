@@ -80,8 +80,8 @@ assert status in (301, 308), ("Unexpected apex redirect", status)
 assert headers.get("location", "").startswith(BASE), headers.get("location")
 print("POST_DEPLOY_PASS apex redirects to canonical www", flush=True)
 
-# OAuth start must use the custom-domain callback while preserving the existing
-# Google Forms read scopes. No Google login is completed by this smoke test.
+# OAuth start must use the custom-domain callback and request identity-only
+# scopes. Sensitive Google Forms scopes must not be part of ordinary sign-in.
 status, headers, _ = no_redirect(BASE + "/api/auth/start")
 assert status in (302, 303, 307, 308), ("OAuth start did not redirect", status)
 location = headers.get("location", "")
@@ -90,16 +90,9 @@ assert parsed.hostname == "accounts.google.com", location
 params = parse_qs(parsed.query)
 assert params.get("redirect_uri") == [BASE + "/api/auth/callback"], params.get("redirect_uri")
 scopes = set((params.get("scope") or [""])[0].split())
-for required in [
-    "openid",
-    "email",
-    "profile",
-    "https://www.googleapis.com/auth/forms.body.readonly",
-    "https://www.googleapis.com/auth/forms.responses.readonly",
-]:
-    assert required in scopes, required
+assert scopes == {"openid", "email", "profile"}, scopes
 assert params.get("state") and params.get("client_id"), "OAuth state/client missing"
-print("POST_DEPLOY_PASS OAuth callback and Forms scopes", flush=True)
+print("POST_DEPLOY_PASS OAuth callback and identity-only scopes", flush=True)
 
 # Read-only billing infrastructure readiness. No secrets or rows are exposed.
 request = Request(
