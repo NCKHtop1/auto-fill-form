@@ -133,7 +133,7 @@ def main():
                 assert len(data["evidence"].strip()) >= 20
                 state["operations"] = [item for item in state["operations"] if item["id"] != data["operationId"]]
         elif parsed.path == "/api/auth/status":
-            response = {"configured": False, "signedIn": False, "submissionEnabled": False}
+            response = {"configured": True, "signedIn": True, "email": "shell@example.test", "submissionEnabled": False}
         elif parsed.path == "/api/qa-status":
             response = {"ok": True, "configured": state["can_send"], "signedIn": state["can_send"],
                         "canSend": state["can_send"], "formAllowed": state["can_send"], "reasons": []}
