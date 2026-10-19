@@ -136,14 +136,11 @@ assert isinstance(profile.get("purchasesEnabled"), bool), profile
 if profile.get("billingEnabled"):
     assert profile.get("configured") is True, profile
 
-# Merchant QR must never be exposed unless top-ups are actually open.
-qr_status, qr_headers, _ = no_redirect(BASE + "/api/payment-qr")
-if profile.get("purchasesEnabled"):
-    assert qr_status == 200, ("Live purchase QR unavailable", qr_status)
-    assert str(qr_headers.get("content-type", "")).lower().startswith("image/")
-else:
-    assert qr_status == 404, ("QR exposed while purchases are gated", qr_status)
-print("POST_DEPLOY_PASS billing readiness and QR release gate", flush=True)
+# Merchant QR is order-specific and authenticated. A naked request must
+# never reveal payment instructions, even while purchases are live.
+qr_status, _, _ = no_redirect(BASE + "/api/payment-qr")
+assert qr_status == 404, ("Unauthenticated QR endpoint exposed", qr_status)
+print("POST_DEPLOY_PASS billing readiness and authenticated QR boundary", flush=True)
 
 # Administration must not leak data to an unauthenticated request.
 admin_status, _, _ = no_redirect(BASE + "/api/admin-topups")
