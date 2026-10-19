@@ -725,14 +725,25 @@ async function auditCommerce(client,actor,action,entityType,entityId,payload) {
 }
 async function listAdminCommerce(identity) {
   requireAdmin(identity); assertReady();
-  const [packages,promotions]=await Promise.all([
+  const [packages,promotions,audit]=await Promise.all([
     loadPackages(true),
     db.query(`SELECT p.*,COALESCE(g.granted_count,0) AS granted_count
       FROM ps_billing_promotions p
       LEFT JOIN LATERAL (SELECT count(*) AS granted_count FROM ps_billing_promotion_grants WHERE promotion_id=p.id) g ON true
-      ORDER BY p.starts_at DESC,p.created_at DESC LIMIT 100`)
+      ORDER BY p.starts_at DESC,p.created_at DESC LIMIT 100`),
+    db.query(`SELECT a.action,a.entity_type,a.entity_id,a.payload_json,a.created_at,c.email AS actor_email
+      FROM ps_billing_config_audit a
+      JOIN ps_billing_customers c ON c.id=a.actor_id
+      ORDER BY a.created_at DESC LIMIT 50`)
   ]);
-  return {packages,promotions:promotions.rows.map(promotionView)};
+  return {
+    packages,
+    promotions:promotions.rows.map(promotionView),
+    audit:audit.rows.map(row=>({
+      action:row.action,entityType:row.entity_type,entityId:row.entity_id,
+      actorEmail:row.actor_email,createdAt:asDate(row.created_at),payload:row.payload_json || {}
+    }))
+  };
 }
 async function saveAdminPackage(identity,input) {
   requireAdmin(identity); assertReady();
