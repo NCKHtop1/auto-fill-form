@@ -33,7 +33,7 @@ try:
     page.on('pageerror',lambda error:errors.append(str(error)))
     page.route('**/api/auth/status',lambda r:r.fulfill(
         status=200,content_type='application/json',
-        body=json.dumps({'configured':False,'signedIn':False,'submissionEnabled':False})))
+        body=json.dumps({'configured':True,'signedIn':True,'email':'qa@example.test','submissionEnabled':False})))
     page.route('**/api/qa-status**',lambda r:r.fulfill(
         status=200,content_type='application/json',
         body=json.dumps({'ok':True,'canSend':True,'configured':True,'signedIn':True,
