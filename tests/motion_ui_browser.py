@@ -98,8 +98,8 @@ try:
         image = page.locator(".hero-art img")
         image.wait_for(state="visible")
         assert image.get_attribute("src") == "/assets/hero-cinematic-v3.webp"
-        assert image.get_attribute("width") == "800"
-        assert image.get_attribute("height") == "450"
+        assert image.get_attribute("width") == "600"
+        assert image.get_attribute("height") == "338"
         page.wait_for_function("document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0")
         dimensions = image.evaluate("el => [el.naturalWidth, el.naturalHeight]")
         assert dimensions == [600, 338], dimensions
