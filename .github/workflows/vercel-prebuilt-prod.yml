@@ -1,15 +1,17 @@
-name: PandaStudy emergency prebuilt production deploy
+name: PandaStudy prebuilt production deploy
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+    paths:
+      - .github/workflows/vercel-prebuilt-prod.yml
 
 permissions:
   contents: read
 
 jobs:
-  deploy-prebuilt:
-    if: github.event.head_commit.message == 'ops: force prebuilt production deploy'
+  deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
@@ -22,6 +24,7 @@ jobs:
           persist-credentials: false
 
       - name: Require Vercel CLI credential
+        shell: bash
         run: |
           if [ -z "$VERCEL_TOKEN" ]; then
             echo "::error::VERCEL_TOKEN repository secret is not configured."
@@ -30,6 +33,7 @@ jobs:
 
       - name: Pin project context
         working-directory: native
+        shell: bash
         run: |
           mkdir -p .vercel
           printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
