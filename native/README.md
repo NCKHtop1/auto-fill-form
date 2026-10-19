@@ -1,6 +1,6 @@
 # PandaStudy native Vercel application
 
-Production: https://auto-fill-form-liard.vercel.app
+Production: https://www.pandastudy.info.vn
 
 ## Working features
 
@@ -15,9 +15,9 @@ Production: https://auto-fill-form-liard.vercel.app
 
 In Google Cloud Console, enable the Google Forms API, configure the OAuth consent screen, and create an OAuth Client ID of type Web application.
 
-Authorized JavaScript origin: https://auto-fill-form-liard.vercel.app
+Authorized JavaScript origin: https://www.pandastudy.info.vn
 
-Authorized redirect URI: https://auto-fill-form-liard.vercel.app/api/auth/callback
+Authorized redirect URI: https://www.pandastudy.info.vn/api/auth/callback
 
 Vercel project: ngochailuong/auto-fill-form. Root Directory: native.
 
@@ -26,14 +26,16 @@ Set these Vercel environment variables for Production (and Preview as needed):
 - GOOGLE_CLIENT_ID: OAuth web client ID.
 - GOOGLE_CLIENT_SECRET: OAuth client secret.
 - APP_SESSION_SECRET: a random secret with at least 32 characters.
-- PUBLIC_SITE_URL: https://auto-fill-form-liard.vercel.app
+- PUBLIC_SITE_URL: https://www.pandastudy.info.vn
 The existing Step 6 API checks Google sign-in, explicit consent and a supported public respondent Form. Legacy `PANDASTUDY_ADMIN_EMAILS`, `PANDASTUDY_TEST_FORM_IDS` and `ENABLE_QA_SUBMISSIONS` helpers are not called by the current submission route; they must not be mistaken for an enforced administrator boundary. Payment approval uses its separate verified `BILLING_ADMIN_EMAILS` role.
 
 Enter secrets directly in Vercel Settings > Environment Variables. Do not paste secrets in chat or GitHub. Redeploy after updating environment variables.
 
 ## Workflow
 
-1. Upload Excel/CSV with data you are authorized to handle, or use a duplicate Form with synthetic QA data.
+PandaStudy now requires Google sign-in before the main application shell is shown. The login wall is a UX boundary; all privileged APIs continue to enforce their own server-side authorization.
+
+1. Sign in with Google.\n2. Upload Excel/CSV with data you are authorized to handle, or use a duplicate Form with synthetic QA data.
 2. Import the Google Form link, map its questions to data.
 3. Build the plan (4a), validate the data (4b).
 4. Step 5 exports PREVIEW CSV only, not a Google submission.
@@ -55,7 +57,7 @@ CI browser tests include tests/qa_browser.py (mocked network, no real Google wri
 
 The new payment module is disabled by default and preserves the existing six-step flow. It adds a separate wallet modal and `/admin-topups.html`, a PostgreSQL ledger, durable email notifications, and server-side credit enforcement. The fixed price is 500 VND per credit. Approval only adds credits; it never resumes Form submission.
 
-See [the billing deployment and UAT runbook](../qa/BILLING_RELEASE.md) for configuration, evidence, release gates and the incident procedure. Provision the real database and verified email sender before enabling `BILLING_ENABLED`. Apply the migration explicitly with `npm run migrate:billing`; application requests do not run migrations.
+See [the billing deployment and UAT runbook](../qa/BILLING_RELEASE.md) for configuration, evidence, release gates and the incident procedure. Provision the real database before enabling `BILLING_ENABLED`. Email notification delivery is optional operational support; missing email configuration does not authorize or block bank approval, ledgering or credits. Apply the migration explicitly with `npm run migrate:billing`; application requests do not run migrations.
 
 Merchant details, the approved QR URL and notification recipients are configured through the environment variables listed in `.env.example`; no real bank account or payment QR is included in this change. The QR asset must be served from the same origin as the application. Notification recipients and payment administrators are configured separately. Missing or invalid required configuration keeps purchases unavailable.
 
