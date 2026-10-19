@@ -1,0 +1,51 @@
+name: PandaStudy emergency prebuilt production deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-prebuilt:
+    if: github.event.head_commit.message == 'ops: force prebuilt production deploy'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: team_rczIInh7a5toP2TZco1ESojg
+      VERCEL_PROJECT_ID: prj_BNL9GBoMnWf4otcPGCG53qIeERcb
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - name: Require Vercel CLI credential
+        run: |
+          if [ -z "$VERCEL_TOKEN" ]; then
+            echo "::error::VERCEL_TOKEN repository secret is not configured."
+            exit 1
+          fi
+
+      - name: Pin project context
+        working-directory: native
+        run: |
+          mkdir -p .vercel
+          printf '{"orgId":"%s","projectId":"%s"}\n' "$VERCEL_ORG_ID" "$VERCEL_PROJECT_ID" > .vercel/project.json
+
+      - name: Verify linked Vercel project
+        working-directory: native
+        run: npx --yes vercel@latest project inspect --non-interactive --scope ngochailuong
+
+      - name: Pull production environment
+        working-directory: native
+        run: npx --yes vercel@latest pull --yes --environment=production --scope ngochailuong
+
+      - name: Build production output locally
+        working-directory: native
+        run: npx --yes vercel@latest build --prod --scope ngochailuong
+
+      - name: Deploy prebuilt output to production
+        working-directory: native
+        run: npx --yes vercel@latest deploy --prebuilt --prod --yes --scope ngochailuong
