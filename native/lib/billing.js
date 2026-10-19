@@ -142,6 +142,7 @@ function orderView(row) {
   const bank = accountBank(row);
   const currentBank = bankConfig();
   const sameBank = Object.keys(bank).every(key => bank[key] === currentBank[key]);
+  const manualConfirmation = typeof row.reference_original === 'string' && row.reference_original.startsWith('MANUAL_CONFIRMATION:');
   return {
     id: row.id, orderCode: row.order_code, quantity: row.quantity,
     unitPriceVnd: row.unit_price_vnd, amountVnd: number(row.amount_vnd),
@@ -152,7 +153,8 @@ function orderView(row) {
     createdAt: asDate(row.created_at), submittedAt: asDate(row.submitted_at),
     reviewedAt: asDate(row.reviewed_at), adminNote: row.review_note || '',
     ...(row.customer_email ? {customer: {id: row.customer_id, email: row.customer_email}} : {}),
-    ...(row.reference_original ? {bankReference: row.reference_original, receivedAmountVnd: number(row.received_amount_vnd)} : {})
+    ...(row.reference_original && !manualConfirmation ? {bankReference: row.reference_original, receivedAmountVnd: number(row.received_amount_vnd)} : {}),
+    ...(manualConfirmation ? {manualBankConfirmation: true} : {})
   };
 }
 
@@ -298,34 +300,52 @@ async function beginAdminAction(client, actor, action, targetId, key, payload, e
 async function approveOrder(identity, input) {
   requireAdmin(identity);
   const orderId = uuid(input?.orderId), key = requestKey(input?.idempotencyKey);
-  const reference = textNote(input?.bankReference,3,120);
-  const referenceNorm = reference.toUpperCase().replace(/\s+/g,'');
-  if (referenceNorm.length < 3) fail(400,'INVALID_BANK_REFERENCE','Mã giao dịch ngân hàng không hợp lệ.');
-  if (input.confirmedBankTransfer !== true) fail(400,'BANK_CONFIRMATION_REQUIRED','Hãy xác nhận đã kiểm tra khoản tiền thực nhận tại ngân hàng.');
-  if (!Number.isSafeInteger(input.receivedAmountVnd) || input.receivedAmountVnd <= 0)
-    fail(400,'INVALID_RECEIVED_AMOUNT','Hãy nhập số tiền thực nhận đã đối soát.');
+  if (input.confirmedBankTransfer !== true)
+    fail(400,'BANK_CONFIRMATION_REQUIRED','Hãy tick xác nhận đã tự kiểm tra khoản tiền vào trước khi duyệt.');
+
+  const suppliedReference = typeof input?.bankReference === 'string' ? input.bankReference.trim() : '';
+  if (suppliedReference.length > 120 || (suppliedReference && suppliedReference.length < 3))
+    fail(400,'INVALID_BANK_REFERENCE','Nếu nhập mã giao dịch ngân hàng thì cần từ 3 đến 120 ký tự.');
+  const suppliedAmount = input?.receivedAmountVnd === null || input?.receivedAmountVnd === undefined || input?.receivedAmountVnd === ''
+    ? null : input.receivedAmountVnd;
+  if (suppliedAmount !== null && (!Number.isSafeInteger(suppliedAmount) || suppliedAmount <= 0))
+    fail(400,'INVALID_RECEIVED_AMOUNT','Nếu nhập số tiền thực nhận thì phải là số nguyên dương.');
+
   const note = textNote(input.note);
   const actor = await ensureCustomer(identity);
   try {
     return await db.transaction(async client => {
-      await beginAdminAction(client,actor,'approve',orderId,key,
-        {action:'approve',orderId,referenceNorm,receivedAmountVnd:input.receivedAmountVnd,note},note);
       const selected = await client.query('SELECT * FROM ps_billing_orders WHERE id=$1 FOR UPDATE', [orderId]);
       if (!selected.rowCount) fail(404,'ORDER_NOT_FOUND','Không tìm thấy yêu cầu nạp.');
       const order = selected.rows[0];
-      if (number(order.amount_vnd) !== input.receivedAmountVnd)
-        fail(409,'AMOUNT_MISMATCH','Số tiền thực nhận không khớp yêu cầu. Chưa cộng lượt; cần đối soát riêng.');
+
+      if (suppliedAmount !== null && number(order.amount_vnd) !== suppliedAmount)
+        fail(409,'AMOUNT_MISMATCH','Số tiền thực nhận đã nhập không khớp yêu cầu. Có thể sửa lại hoặc để trống rồi xác nhận bằng ô tick.');
+
+      const manualReference = 'MANUAL_CONFIRMATION:' + orderId;
+      const reference = suppliedReference || manualReference;
+      const referenceNorm = suppliedReference
+        ? suppliedReference.toUpperCase().replace(/\s+/g,'')
+        : ('MANUAL' + orderId.replace(/-/g,'').toUpperCase());
+      const effectiveAmount = suppliedAmount === null ? number(order.amount_vnd) : suppliedAmount;
+
+      await beginAdminAction(client,actor,'approve',orderId,key,
+        {action:'approve',orderId,bankReferenceProvided:!!suppliedReference,
+          receivedAmountVnd:suppliedAmount,note,confirmedBankTransfer:true},note);
+
       if (order.status === 'approved') {
         const payment = await client.query('SELECT reference_norm FROM ps_billing_bank_payments WHERE order_id=$1',[orderId]);
         if (!payment.rowCount || payment.rows[0].reference_norm !== referenceNorm)
-          fail(409,'ORDER_ALREADY_APPROVED','Yêu cầu đã được duyệt bằng một giao dịch khác.');
+          fail(409,'ORDER_ALREADY_APPROVED','Yêu cầu đã được duyệt bằng một lần xác nhận khác.');
         return orderView(order);
       }
       if (order.status !== 'pending_review') fail(409,'ORDER_NOT_PENDING','Yêu cầu không còn ở trạng thái chờ đối soát.');
+
       await client.query('SELECT id FROM ps_billing_customers WHERE id=$1 FOR UPDATE',[order.customer_id]);
       await client.query(`INSERT INTO ps_billing_bank_payments(id,order_id,bank_id,account_number,reference_norm,reference_original,amount_vnd,verified_by)
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
-      [crypto.randomUUID(),orderId,order.bank_id,order.account_number,referenceNorm,reference,input.receivedAmountVnd,actor.id]);
+      [crypto.randomUUID(),orderId,order.bank_id,order.account_number,referenceNorm,reference,effectiveAmount,actor.id]);
+
       await client.query(`UPDATE ps_billing_customers SET available_credits=available_credits+$2,updated_at=now() WHERE id=$1`,[order.customer_id,order.quantity]);
       await ledger(client,order.customer_id,'topup',orderId,order.quantity,0);
       const updated = await client.query(`UPDATE ps_billing_orders SET status='approved',reviewed_at=now(),reviewed_by=$2,review_note=$3,updated_at=now()
