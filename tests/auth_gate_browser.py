@@ -49,6 +49,19 @@ def main():
                         content_type="application/json",
                         body=json.dumps(body),
                     )
+                if path.startswith("/api/admin-topups"):
+                    return route.fulfill(
+                        status=200,
+                        content_type="application/json",
+                        body=json.dumps({
+                            "ok": True,
+                            "orders": [
+                                {"id": "pending-1", "status": "pending_review"},
+                                {"id": "pending-2", "status": "pending_review"},
+                            ],
+                            "pendingOperations": [],
+                        }),
+                    )
                 if path.startswith("/api/billing"):
                     body = {
                         "ok": True,
@@ -134,7 +147,7 @@ def main():
             account = page.locator("#pandaBillingRoot")
             assert "member@example.test" in account.inner_text()
             assert page.get_by_role("button", name="Nạp phiếu", exact=True).count() == 1
-            admin = page.get_by_role("link", name="Quản trị nạp", exact=True)
+            admin = page.get_by_role("link", name="Quản trị nạp · 2 chờ duyệt", exact=True)
             assert admin.get_attribute("href") == "/admin-topups.html"
             assert page.get_by_role("button", name="Đăng xuất", exact=True).count() == 1
             print("PASS authenticated shell: account, balance, top-up, admin and logout are exposed after sign-in")
