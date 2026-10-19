@@ -31,7 +31,7 @@ try:
         page.on("pageerror", lambda err: errors.append(str(err)))
         page.route("**/api/auth/status", lambda route: route.fulfill(
             status=200, content_type="application/json",
-            body='{"configured":false,"signedIn":false,"submissionEnabled":false}'))
+            body='{"configured":true,"signedIn":true,"email":"qa@example.test","submissionEnabled":false}'))
         form_url = "https://docs.google.com/forms/d/1RC3eFGv0NBSFxzD7PHkhaENbaXf64Lfw28K5TTjisRE/edit"
         sample_questions = [
             {"id": "100", "index": 0, "title": "Giới tính", "helpText": "",
@@ -187,7 +187,7 @@ try:
         phone = mobile.new_page()
         phone.route("**/api/auth/status", lambda route: route.fulfill(
             status=200, content_type="application/json",
-            body='{"configured":false,"signedIn":false,"submissionEnabled":false}'))
+            body='{"configured":true,"signedIn":true,"email":"qa@example.test","submissionEnabled":false}'))
         phone.goto(base + "/#home", wait_until="domcontentloaded")
         phone.locator("#mobileMenu").click()
         assert phone.locator("#mainNav").is_visible()

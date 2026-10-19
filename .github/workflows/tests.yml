@@ -39,6 +39,8 @@ jobs:
         run: .venv/bin/python tests/native_smoke.py
       - name: QA submission flow browser test (mocked; no Google writes)
         run: .venv/bin/python tests/qa_browser.py
+      - name: Mandatory login wall browser UAT (mocked; no external writes)
+        run: .venv/bin/python tests/auth_gate_browser.py
       - name: Billing and admin browser UAT (mocked; no payments or emails)
         run: .venv/bin/python tests/billing_browser.py
       - name: Comprehensive UX, responsive and accessibility audit

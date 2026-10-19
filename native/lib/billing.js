@@ -14,6 +14,11 @@ function fail(status, code, message) { throw new BillingError(status, code, mess
 function enabled() { return process.env.BILLING_ENABLED === 'true'; }
 function purchasesEnabled() { return enabled() && process.env.BILLING_TOPUPS_PAUSED !== 'true'; }
 function validEmail(value) { return typeof value === 'string' && value.length <= 254 && /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(value); }
+function notificationTransportConfigured() {
+  const sender = String(process.env.BILLING_EMAIL_FROM || '').trim();
+  const senderAddress = sender.match(/<([^<>]+)>$/)?.[1] || sender;
+  return !!String(process.env.RESEND_API_KEY || '').trim() && !/[\r\n]/.test(sender) && validEmail(senderAddress);
+}
 function adminEmails() {
   return String(process.env.BILLING_ADMIN_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(validEmail);
 }
@@ -31,9 +36,11 @@ function validBank(bank) {
     name(bank.bankName,80) && name(bank.accountName,120);
 }
 function notificationRecipients() {
-  const recipients = String(process.env.BILLING_NOTIFICATION_EMAILS || '').toLowerCase().split(',').map(x => x.trim());
-  // Do not silently drop a mistyped recipient or fall back to the RBAC list.
-  if (recipients.length > 10 || !recipients.every(validEmail)) return Object.freeze([]);
+  if (!notificationTransportConfigured()) return Object.freeze([]);
+  const recipients = String(process.env.BILLING_NOTIFICATION_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
+  // Email is operationally optional. When enabled, never silently drop a
+  // mistyped recipient or fall back to the RBAC list.
+  if (!recipients.length || recipients.length > 10 || !recipients.every(validEmail)) return Object.freeze([]);
   return Object.freeze([...new Set(recipients)]);
 }
 function siteOrigin() {
@@ -74,19 +81,22 @@ function requireAdmin(identity) {
   return current;
 }
 function getConfigStatus() {
-  const missing = [];
+  const missing = [], warnings = [];
   if (!process.env.DATABASE_URL) missing.push('database');
-  const sender = String(process.env.BILLING_EMAIL_FROM || '').trim();
-  const senderAddress = sender.match(/<([^<>]+)>$/)?.[1] || sender;
-  if (!String(process.env.RESEND_API_KEY || '').trim() || /[\r\n]/.test(sender) || !validEmail(senderAddress)) missing.push('email');
-  if (![process.env.BILLING_CRON_SECRET,process.env.CRON_SECRET].some(value => String(value || '').length >= 32)) missing.push('notification_worker');
   if (!adminEmails().length) missing.push('administrators');
-  if (!notificationRecipients().length) missing.push('notification_recipients');
   if (!validBank(bankConfig())) missing.push('bank');
   if (!qrImageUrl()) missing.push('payment_qr');
   const site = process.env.BILLING_PUBLIC_SITE_URL || process.env.PUBLIC_SITE_URL;
-  if (site && !siteOrigin()) missing.push('admin_url');
-  return {billingEnabled: enabled(), configured: !enabled() || missing.length === 0, missing};
+  if (!site || !siteOrigin()) missing.push('admin_url');
+
+  // Email is useful but not financial authorization. Manual bank review and
+  // the durable ledger must remain usable when a mail provider is unavailable.
+  if (!notificationTransportConfigured()) warnings.push('email_notifications');
+  if (!notificationRecipients().length) warnings.push('notification_recipients');
+  if (![process.env.BILLING_CRON_SECRET,process.env.CRON_SECRET].some(value => String(value || '').length >= 32))
+    warnings.push('notification_worker');
+
+  return {billingEnabled: enabled(), configured: !enabled() || missing.length === 0, missing, warnings};
 }
 function assertReady() {
   const config = getConfigStatus();
@@ -120,6 +130,11 @@ function hash(value) { return crypto.createHash('sha256').update(canonical(value
 function number(value) { return Number(value || 0); }
 function asDate(value) { return value ? new Date(value).toISOString() : null; }
 function customerView(row, identity) { return {id: row.id, email: row.email, isAdmin: isAdmin(identity)}; }
+function identityView(identity) {
+  const current = verifiedIdentity(identity);
+  const digest = crypto.createHash('sha256').update(current.sub).digest('hex').slice(0,24);
+  return {id: 'google-' + digest, email: current.email, isAdmin: isAdmin(current)};
+}
 function accountBank(row) {
   return {bankId: row.bank_id, bankName: row.bank_name, accountNumber: row.account_number, accountName: row.account_name};
 }
@@ -131,8 +146,9 @@ function orderView(row) {
     id: row.id, orderCode: row.order_code, quantity: row.quantity,
     unitPriceVnd: row.unit_price_vnd, amountVnd: number(row.amount_vnd),
     status: row.status, paymentMemo: row.payment_memo, bank,
-    qrImageUrl: purchasesEnabled() && sameBank && ['pending_payment','pending_review'].includes(row.status) ? qrImageUrl() : null,
-    qrHasAmountAndMemo: false,
+    qrImageUrl: purchasesEnabled() && sameBank && ['pending_payment','pending_review'].includes(row.status)
+      ? (qrImageUrl() === '/api/payment-qr' ? '/api/payment-qr?orderId=' + encodeURIComponent(row.id) : qrImageUrl()) : null,
+    qrHasAmountAndMemo: qrImageUrl() === '/api/payment-qr',
     createdAt: asDate(row.created_at), submittedAt: asDate(row.submitted_at),
     reviewedAt: asDate(row.reviewed_at), adminNote: row.review_note || '',
     ...(row.customer_email ? {customer: {id: row.customer_id, email: row.customer_email}} : {}),
@@ -151,20 +167,27 @@ async function ensureCustomer(identity) {
 
 async function getProfile(identity = null) {
   const config = getConfigStatus();
+  let account = null;
+  try { if (identity) account = verifiedIdentity(identity); }
+  catch (error) {
+    if (!(error instanceof BillingError) || error.status !== 401) throw error;
+  }
   const base = {
     billingEnabled: config.billingEnabled, configured: config.configured,
     purchasesEnabled: purchasesEnabled() && config.configured,
-    signedIn: false, user: null, availableCredits: 0, reservedCredits: 0,
-    unitPriceVnd: UNIT_PRICE_VND, minTopupCredits: 1, maxTopupCredits: MAX_TOPUP_CREDITS, bank: null
+    signedIn: !!account, user: account ? identityView(account) : null,
+    availableCredits: 0, reservedCredits: 0,
+    unitPriceVnd: UNIT_PRICE_VND, minTopupCredits: 1, maxTopupCredits: MAX_TOPUP_CREDITS,
+    bank: null, warnings: config.warnings || []
   };
   if (!config.billingEnabled) return base;
   if (!config.configured) return {...base, message: 'Chức năng mua lượt đang được cấu hình. Vui lòng chưa chuyển khoản.'};
   try {
     const readiness = await db.query('SELECT version FROM ps_billing_schema_migrations WHERE version=1');
     if (!readiness.rowCount) throw new Error('SCHEMA_NOT_READY');
-    if (!identity) return base;
-    const customer = await ensureCustomer(identity);
-    return {...base, signedIn: true, user: customerView(customer, identity),
+    if (!account) return base;
+    const customer = await ensureCustomer(account);
+    return {...base, signedIn: true, user: customerView(customer, account),
       availableCredits: number(customer.available_credits), reservedCredits: number(customer.reserved_credits), bank: {...bankConfig()}};
   } catch (error) {
     if (error instanceof BillingError && error.status === 401) return {...base, message: error.message};

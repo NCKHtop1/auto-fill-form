@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-13-uxfix1"
+EXPECTED = "2026-10-19-authbilling1"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -101,6 +101,23 @@ for required in [
 assert params.get("state") and params.get("client_id"), "OAuth state/client missing"
 print("POST_DEPLOY_PASS OAuth callback and Forms scopes", flush=True)
 
+# Read-only billing infrastructure readiness. No secrets or rows are exposed.
+request = Request(
+    BASE + "/api/billing?action=health",
+    headers={
+        "User-Agent": "PandaStudy-readonly-postdeploy-smoke",
+        "Cache-Control": "no-cache",
+    },
+)
+with urlopen(request, timeout=15) as response:
+    health = json.loads(response.read().decode("utf-8"))
+assert health.get("ok") is True, health
+assert health.get("financialConfigReady") is True, health
+assert health.get("databaseReachable") is True, health
+assert health.get("schemaReady") is True, health
+assert health.get("schemaVersion") == 1, health
+print("POST_DEPLOY_PASS billing database schema and financial config ready", flush=True)
+
 # Read-only billing readiness. Never create an order here.
 request = Request(
     BASE + "/api/billing?action=profile",
@@ -116,24 +133,35 @@ assert profile.get("unitPriceVnd") == 500, profile
 assert profile.get("signedIn") is False, profile
 assert isinstance(profile.get("billingEnabled"), bool), profile
 assert isinstance(profile.get("purchasesEnabled"), bool), profile
+if profile.get("billingEnabled"):
+    assert profile.get("configured") is True, profile
 
-# Merchant QR must never be exposed unless top-ups are actually open.
-qr_status, qr_headers, _ = no_redirect(BASE + "/api/payment-qr")
-if profile.get("purchasesEnabled"):
-    assert qr_status == 200, ("Live purchase QR unavailable", qr_status)
-    assert str(qr_headers.get("content-type", "")).lower().startswith("image/")
-else:
-    assert qr_status == 404, ("QR exposed while purchases are gated", qr_status)
-print("POST_DEPLOY_PASS billing readiness and QR release gate", flush=True)
+# Merchant QR is order-specific and authenticated. A naked request must
+# never reveal payment instructions, even while purchases are live.
+qr_status, _, _ = no_redirect(BASE + "/api/payment-qr")
+assert qr_status == 404, ("Unauthenticated QR endpoint exposed", qr_status)
+print("POST_DEPLOY_PASS billing readiness and authenticated QR boundary", flush=True)
 
 # Administration must not leak data to an unauthenticated request.
 admin_status, _, _ = no_redirect(BASE + "/api/admin-topups")
 assert admin_status in (401, 403), ("Admin API exposed without session", admin_status)
 print("POST_DEPLOY_PASS unauthenticated admin API denied", flush=True)
 
-# Existing six-step UI must remain unchanged and responsive.
+# Signed-out visitors must see only the login wall.
 with sync_playwright() as p:
     browser = p.chromium.launch(headless=True)
+    signed_out = browser.new_context(viewport={"width": 390, "height": 844})
+    gate_page = signed_out.new_page()
+    gate_page.route("https://cdn.jsdelivr.net/**", lambda route: route.abort())
+    gate_page.goto(BASE + "/index.html#app", wait_until="domcontentloaded", timeout=30000)
+    gate_page.locator("#psAuthGate").wait_for(state="visible", timeout=12000)
+    assert gate_page.locator(".topbar").is_hidden()
+    assert gate_page.locator("#app").is_hidden()
+    assert gate_page.get_by_role("link", name="Đăng nhập với Google →").get_attribute("href") == "/api/auth/start"
+    signed_out.close()
+    print("POST_DEPLOY_PASS signed-out visitor is blocked by login wall", flush=True)
+
+    # Existing six-step UI must remain unchanged and responsive after authentication.
     for width in [320, 390, 768, 1440]:
         context = browser.new_context(viewport={"width": width, "height": 860})
         page = context.new_page()
