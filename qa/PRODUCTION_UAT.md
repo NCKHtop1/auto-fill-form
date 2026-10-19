@@ -135,3 +135,17 @@ GO only when:
 - there are no unresolved blocking production errors.
 
 After GO, keep `BILLING_TOPUPS_PAUSED` as the operational kill switch for new purchases. Do not use `BILLING_ENABLED=false` as the normal financial rollback after paid credits exist.
+
+
+## Manual UAT H — package pricing and revenue reporting
+
+1. Open the top-up dialog after login and confirm four package cards: 20/10,000; 100/45,000; 250/110,000; 500/200,000 VND.
+2. Confirm the Popular package is highlighted and shows 10% savings.
+3. Select each package and verify the transfer total before creating an order.
+4. Create a Popular order and confirm the order/QR amount is exactly 45,000 VND while approval credits exactly 100.
+5. Enter a custom quantity and confirm it uses 500 VND per credit with no package discount.
+6. In admin, verify package name, advertised credits, list price, discount and final amount are visible on the order.
+7. Approve a controlled order and verify the current-month revenue card increases by the exact approved amount, credits sold by the advertised package credits, and package performance by one approved order.
+8. Verify the 12-month table is grouped in Asia/Ho_Chi_Minh and pending-review amounts are not counted as revenue.
+
+Pass criteria: package prices are enforced server-side, credited quantities match the advertised bundle, and only approved orders contribute to revenue.
