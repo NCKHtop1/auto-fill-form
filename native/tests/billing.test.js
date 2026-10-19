@@ -22,7 +22,8 @@ const admin2 = {sub:'google-admin-002',email:'admin2@example.test',email_verifie
 let engine, adapter, fault, afterFault;
 let keySequence = 0;
 const key = label => `${label}-${String(++keySequence).padStart(8,'0')}`;
-const schema = fs.readFileSync(path.join(__dirname,'../migrations/001_billing.sql'),'utf8');
+const schema = fs.readFileSync(path.join(__dirname,'../migrations/001_billing.sql'),'utf8') +
+  '\n' + fs.readFileSync(path.join(__dirname,'../migrations/002_admin_commerce.sql'),'utf8');
 
 function configure() {
   process.env.BILLING_ENABLED = 'true';
@@ -72,6 +73,7 @@ test.before(async () => {
 test.beforeEach(async () => {
   configure(); fault = null; afterFault = null; db.setTestAdapter(adapter);
   await db.query('TRUNCATE ps_billing_customers CASCADE');
+  await db.query("UPDATE ps_billing_promotions SET enabled=false");
 });
 test.after(async () => { db.setTestAdapter(null); await engine.close(); });
 
@@ -224,11 +226,15 @@ test('discount packages charge exact bundle price and credit the advertised quan
   assert.equal(popular.amountVnd,45000);
   assert.equal(popular.listPriceVnd,50000);
   assert.equal(popular.discountPercent,10);
-  const stored=(await db.query('SELECT quantity,unit_price_vnd,amount_vnd,order_code FROM ps_billing_orders WHERE id=$1',[popular.id])).rows[0];
-  assert.equal(Number(stored.quantity),90);
-  assert.equal(Number(stored.unit_price_vnd),500);
+  const stored=(await db.query('SELECT quantity,credited_quantity,unit_price_vnd,amount_vnd,order_code,package_id,package_name,list_price_vnd FROM ps_billing_orders WHERE id=$1',[popular.id])).rows[0];
+  assert.equal(Number(stored.quantity),100);
+  assert.equal(Number(stored.credited_quantity),100);
+  assert.equal(Number(stored.unit_price_vnd),450);
   assert.equal(Number(stored.amount_vnd),45000);
-  assert.match(stored.order_code,/^PSPOPULAR-/);
+  assert.equal(Number(stored.list_price_vnd),50000);
+  assert.equal(stored.package_id,'popular');
+  assert.equal(stored.package_name,'Phổ biến');
+  assert.match(stored.order_code,/^PSPKG-/);
 
   await billing.submitPaid(buyer,{orderId:popular.id});
   await approve(popular);
@@ -273,6 +279,63 @@ test('admin revenue metrics count approved package revenue, credits, buyers and 
   assert.equal(response.statusCode,200);
   assert.equal(response.data.metrics.currentMonth.revenueVnd,55000);
   assert.equal((await request(adminApi,{identity:buyer,query:{resource:'metrics'}})).statusCode,403);
+});
+
+test('admin can tune packages and new orders snapshot the exact configured commercial terms',async () => {
+  const saved=await billing.saveAdminPackage(admin,{
+    id:'popular',name:'Phổ biến Plus',badge:'Khuyên dùng',credits:120,
+    priceVnd:47000,listPriceVnd:60000,featured:true,enabled:true,sortOrder:15
+  });
+  assert.equal(saved.name,'Phổ biến Plus');
+  assert.equal(saved.credits,120);
+  assert.equal(saved.priceVnd,47000);
+  assert.equal(saved.discountPercent,22);
+  const commerce=await billing.listAdminCommerce(admin);
+  assert.equal(commerce.packages.find(item=>item.id==='popular').badge,'Khuyên dùng');
+  await assert.rejects(billing.listAdminCommerce(buyer),{code:'BILLING_ADMIN_REQUIRED'});
+
+  const order=await billing.createOrder(buyer,{packageId:'popular',quantity:120,idempotencyKey:key('configured-package')});
+  assert.equal(order.quantity,120);
+  assert.equal(order.amountVnd,47000);
+  assert.equal(order.listPriceVnd,60000);
+  assert.equal(order.package.name,'Phổ biến Plus');
+
+  await billing.saveAdminPackage(admin,{
+    id:'popular',name:'Phổ biến Mới',badge:'Mới',credits:130,
+    priceVnd:48000,listPriceVnd:65000,featured:true,enabled:true,sortOrder:15
+  });
+  const oldOrder=await billing.getOrder(buyer,order.id);
+  assert.equal(oldOrder.quantity,120);
+  assert.equal(oldOrder.amountVnd,47000);
+  assert.equal(oldOrder.package.name,'Phổ biến Plus');
+});
+
+test('scheduled login promotion grants once, records ledger and is manageable by admin',async () => {
+  const now=Date.now(),start=new Date(now-60000).toISOString(),end=new Date(now+3600000).toISOString();
+  const promotion=await billing.saveAdminPromotion(admin,{
+    code:'TEST_WELCOME',name:'Test welcome 10',description:'QA only',
+    credits:10,startsAt:start,endsAt:end,enabled:true
+  });
+  assert.equal(promotion.credits,10);
+
+  const first=await billing.getProfile(buyer);
+  assert.equal(first.availableCredits,10);
+  assert.ok(first.activePromotions.some(item=>item.code==='TEST_WELCOME'));
+  assert.ok(first.promotionGrants.some(item=>item.code==='TEST_WELCOME'));
+
+  const second=await billing.getProfile(buyer);
+  assert.equal(second.availableCredits,10);
+  const grants=await db.query('SELECT * FROM ps_billing_promotion_grants WHERE customer_id=$1',[(await billing.ensureCustomer(buyer)).id]);
+  assert.equal(grants.rowCount,1);
+  const promoLedger=await db.query("SELECT available_delta FROM ps_billing_ledger WHERE kind='promotion'");
+  assert.equal(promoLedger.rowCount,1);
+  assert.equal(Number(promoLedger.rows[0].available_delta),10);
+
+  const commerce=await billing.listAdminCommerce(admin);
+  assert.equal(commerce.promotions.find(item=>item.id===promotion.id).grantedCount,1);
+  await billing.saveAdminPromotion(admin,{...promotion,startsAt:start,endsAt:end,enabled:false});
+  const otherProfile=await billing.getProfile(other);
+  assert.equal(otherProfile.availableCredits,0);
 });
 
 test('admin may approve with checkbox only; amount and bank reference are optional audit details',async () => {
