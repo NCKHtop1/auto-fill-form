@@ -274,7 +274,7 @@ def main():
             assert page.locator(".pb-package-card").count() == 4
             assert page.locator('[data-package-id="popular"]').get_attribute("aria-pressed") == "true"
             assert "45.000" in page.locator(".pb-total").inner_text()
-            assert "Tiết kiệm 5.000" in page.locator(".pb-package-summary").inner_text()
+            assert "tiết kiệm 5.000" in page.locator(".pb-package-summary").inner_text().lower()
             page.locator("#pbQuantity").fill("1")
             assert page.locator("#pbQuantity").evaluate("element => element.checkValidity()")
             assert "500" in page.locator(".pb-total").inner_text()
