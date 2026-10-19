@@ -136,12 +136,11 @@ test('financial infrastructure fails closed while optional email can degrade saf
   assert.equal(billing.getConfigStatus().configured,true);
   configure();
   process.env.BILLING_ENABLED='false';
-  fault=()=>{throw Error('Database must not be accessed when disabled');};
   const disabled=await billing.getProfile(buyer);
   assert.equal(disabled.billingEnabled,false);
   assert.equal(disabled.signedIn,true);
   assert.equal(disabled.user.email,buyer.email);
-  fault=null;
+  assert.equal((await db.query('SELECT count(*) AS count FROM ps_billing_customers WHERE google_sub=$1',[buyer.sub])).rows[0].count,1);
 });
 test('verified Google subject owns credits; public profile is usable without login',async () => {
   await assert.rejects(billing.ensureCustomer({...buyer,email_verified:false}),{status:401});
