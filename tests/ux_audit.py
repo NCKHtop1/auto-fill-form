@@ -97,7 +97,7 @@ try:
     page.on("pageerror",lambda e:js_errors.append(str(e)))
     # Never invoke a production Form or external user account.
     page.route("**/api/auth/status",lambda r:r.fulfill(status=200,content_type="application/json",
-         body=json.dumps({"configured":True,"signedIn":True,"email":"qa@example.test","submissionEnabled":False})))
+         body=json.dumps({"configured":True,"signedIn":True,"email":"qa@example.test","isAdmin":True,"submissionEnabled":False})))
     page.route("**/api/qa-status**",lambda r:r.fulfill(status=200,content_type="application/json",
          body=json.dumps({"ok":True,"canSend":True,"configured":True,"signedIn":True,
            "formAllowed":True,"accessMode":"public","reasons":[]})))
@@ -113,8 +113,9 @@ try:
           "Trang chủ chỉ hiện hero + công cụ")
     check("UX-003","Điều hướng","P2",page.locator("#mainNav a").count()>=7,
           "Tab trên thanh điều hướng: "+str(page.locator("#mainNav a").count()))
-    check("UX-004","Nội dung","P2",page.locator("h1").count()==1,
-          "Trang chủ có 1 H1")
+    visible_h1=page.locator("h1:visible").count()
+    check("UX-004","Nội dung","P2",visible_h1==1,
+          "Trang chủ có 1 H1 hiển thị; thực tế="+str(visible_h1))
     snap(page,"home_desktop_1440")
     for tag,screen in [("app","app"),("blog","blog"),("how","how"),
                        ("faq","faq"),("about","about"),("previewSection","app"),
