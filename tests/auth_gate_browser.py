@@ -151,13 +151,13 @@ def main():
             print("PASS blog role: signed-in non-admin cannot see or route into the article editor")
 
             state["is_admin"] = True
-            page.reload(wait_until="domcontentloaded")
+            page.goto(base + "/#blog", wait_until="domcontentloaded")
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
+            page.locator("#blog").wait_for(state="visible")
             page.wait_for_function("!document.getElementById('blogWriteBtn').hidden")
             assert page.locator("#blogWriteBtn").is_visible()
-            page.evaluate("location.hash='#blog-viet-bai'")
-            page.wait_for_timeout(100)
-            assert page.locator("#blogEditor").is_visible()
+            page.locator("#blogWriteBtn").click()
+            page.locator("#blogEditor").wait_for(state="visible")
             print("PASS blog role: authenticated PandaStudy admin can open the article editor")
             page.wait_for_function(
                 "document.getElementById('pandaBillingRoot').textContent.includes('12 phiếu')"
