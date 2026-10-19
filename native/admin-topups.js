@@ -2,8 +2,8 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const state = { profile: null, orders: [], operations: [], users: [], metrics: null, selected: null,
-    loading: false, usersLoading: false, metricsLoading: false, busy: false,
+  const state = { profile: null, orders: [], operations: [], users: [], metrics: null, commerce: null, selected: null,
+    loading: false, usersLoading: false, metricsLoading: false, commerceLoading: false, busy: false,
     initialOrder: new URLSearchParams(location.search).get('orderId'), keys: new Map() };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Đã từ chối' };
   const number = value => Number(value || 0).toLocaleString('vi-VN');
@@ -53,10 +53,11 @@
       const allowed = profile.billingEnabled && profile.configured && profile.signedIn && profile.user?.isAdmin;
       $('paWorkspace').hidden = !allowed;
       if (!allowed) {
-        state.orders = []; state.operations = []; state.users = []; state.metrics = null; state.selected = null;
+        state.orders = []; state.operations = []; state.users = []; state.metrics = null; state.commerce = null; state.selected = null;
         $('paOrders').replaceChildren(); $('paOperations').replaceChildren(); $('paDetail').replaceChildren();
         $('paUsers')?.replaceChildren(); if ($('paUsersSummary')) $('paUsersSummary').textContent = '';
         $('paRevenueSummary')?.replaceChildren(); $('paRevenueMonthly')?.replaceChildren(); $('paRevenuePackages')?.replaceChildren();
+        $('paPackages')?.replaceChildren(); $('paPromotions')?.replaceChildren();
       }
       if (!profile.billingEnabled) {
         session.append(node('strong', '', 'Tính năng mua phiếu đang tắt.'), node('p', 'pb-small', 'Luồng công cụ hiện tại vẫn được giữ nguyên.'));
@@ -192,6 +193,142 @@
       tbody.append(tr);
     }
     table.append(tbody); monthly.append(table);
+  }
+
+  function dateTimeLocal(value) {
+    if (!value) return '';
+    const d=new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000);
+    return local.toISOString().slice(0,16);
+  }
+  function labeledInput(labelText,type,value,opts={}) {
+    const label=node('label','pb-field',labelText);
+    const input=node('input'); input.type=type; input.value=value ?? '';
+    if (opts.min !== undefined) input.min=String(opts.min);
+    if (opts.max !== undefined) input.max=String(opts.max);
+    if (opts.step !== undefined) input.step=String(opts.step);
+    if (opts.maxLength) input.maxLength=opts.maxLength;
+    if (opts.placeholder) input.placeholder=opts.placeholder;
+    label.append(input); return {label,input};
+  }
+  function labeledCheck(labelText,checked) {
+    const label=node('label','pb-check');
+    const input=node('input'); input.type='checkbox'; input.checked=!!checked;
+    label.append(input,node('span','',labelText)); return {label,input};
+  }
+  async function loadCommerce(options={}) {
+    if (state.commerceLoading || !state.profile?.user?.isAdmin || !$('paPackages')) return;
+    state.commerceLoading=true;
+    if (!options.quiet) $('paPackages').replaceChildren(node('p','pb-muted','Đang tải cấu hình gói…'));
+    try {
+      const result=await request('/api/admin-topups?resource=commerce');
+      state.commerce=result.commerce || {packages:[],promotions:[]};
+      renderCommerce();
+    } catch (error) {
+      $('paPackages').replaceChildren(node('p','pb-notice pb-notice-error',error.message));
+      $('paPromotions').replaceChildren();
+      if (error.status===401 || error.status===403) await checkSession();
+    } finally { state.commerceLoading=false; }
+  }
+  function renderCommerce() {
+    const data=state.commerce || {packages:[],promotions:[]};
+    const packagesBox=$('paPackages'),promotionsBox=$('paPromotions');
+    packagesBox.replaceChildren(); promotionsBox.replaceChildren();
+
+    const packages=Array.isArray(data.packages)?data.packages:[];
+    if (!packages.length) packagesBox.append(node('p','pb-admin-empty','Chưa có gói nạp.'));
+    for (const pkg of packages) {
+      const form=node('form','pb-commerce-card');
+      const head=node('div','pb-commerce-card-head');
+      head.append(node('strong','',pkg.name || pkg.id),
+        node('span','pb-badge '+(pkg.enabled?'pb-badge-approved':''),pkg.enabled?'Đang bán':'Đã ẩn'));
+      form.append(head);
+      const grid=node('div','pb-commerce-form-grid');
+      const name=labeledInput('Tên gói','text',pkg.name,{maxLength:80});
+      const badge=labeledInput('Nhãn nổi bật','text',pkg.badge || '',{maxLength:80,placeholder:'Ví dụ: Phổ biến nhất'});
+      const credits=labeledInput('Số phiếu','number',pkg.credits,{min:1,max:100000,step:1});
+      const price=labeledInput('Giá bán (đồng)','number',pkg.priceVnd,{min:1,step:1});
+      const list=labeledInput('Giá niêm yết (đồng)','number',pkg.listPriceVnd,{min:1,step:1});
+      const order=labeledInput('Thứ tự hiển thị','number',pkg.sortOrder,{min:0,max:10000,step:1});
+      grid.append(name.label,badge.label,credits.label,price.label,list.label,order.label);
+      const enabled=labeledCheck('Hiển thị gói cho người dùng',pkg.enabled);
+      const featured=labeledCheck('Đánh dấu là gói nổi bật mặc định',pkg.featured || pkg.popular);
+      const status=node('p','pb-small pb-muted');
+      const save=node('button','pb-button pb-button-primary','Lưu gói'); save.type='submit';
+      form.append(grid,enabled.label,featured.label,save,status);
+      form.addEventListener('submit',async event=>{
+        event.preventDefault(); if(state.busy)return;
+        const payload={
+          action:'savePackage',id:pkg.id,name:name.input.value.trim(),badge:badge.input.value.trim(),
+          credits:Number(credits.input.value),priceVnd:Number(price.input.value),listPriceVnd:Number(list.input.value),
+          sortOrder:Number(order.input.value),enabled:enabled.input.checked,featured:featured.input.checked
+        };
+        state.busy=true; save.disabled=true; status.textContent='Đang lưu…';
+        try {
+          await request('/api/admin-topups',payload);
+          status.textContent='Đã lưu cấu hình gói.';
+          await Promise.all([loadCommerce({quiet:true}),loadMetrics({quiet:true})]);
+        } catch(error){status.textContent=error.message;}
+        finally{state.busy=false;save.disabled=false;}
+      });
+      packagesBox.append(form);
+    }
+
+    const promotions=Array.isArray(data.promotions)?data.promotions:[];
+    if (!promotions.length) promotionsBox.append(node('p','pb-admin-empty','Chưa có chương trình ưu đãi.'));
+    for (const promo of promotions) promotionsBox.append(promotionForm(promo));
+  }
+  function promotionForm(promo={}) {
+    const form=node('form','pb-commerce-card');
+    const head=node('div','pb-commerce-card-head');
+    head.append(node('strong','',promo.name || 'Ưu đãi mới'),
+      node('span','pb-badge '+(promo.enabled?'pb-badge-approved':''),promo.enabled?'Đang bật':'Đã tắt'));
+    form.append(head);
+    const grid=node('div','pb-commerce-form-grid');
+    const code=labeledInput('Mã ưu đãi','text',promo.code || '',{maxLength:48,placeholder:'WELCOME_2026'});
+    const name=labeledInput('Tên ưu đãi','text',promo.name || '',{maxLength:120});
+    const credits=labeledInput('Phiếu tặng','number',promo.credits || 10,{min:1,max:100000,step:1});
+    const start=labeledInput('Bắt đầu','datetime-local',dateTimeLocal(promo.startsAt));
+    const end=labeledInput('Kết thúc','datetime-local',dateTimeLocal(promo.endsAt));
+    grid.append(code.label,name.label,credits.label,start.label,end.label);
+    const descLabel=node('label','pb-field','Mô tả');
+    const desc=node('textarea'); desc.maxLength=500; desc.value=promo.description || ''; descLabel.append(desc);
+    const enabled=labeledCheck('Bật chương trình ưu đãi',promo.enabled !== false);
+    const stats=node('p','pb-small pb-muted',
+      promo.id ? ('Đã cấp cho '+number(promo.grantedCount)+' tài khoản. Mỗi tài khoản chỉ nhận một lần.') :
+      'Chương trình mới chưa được lưu.');
+    const status=node('p','pb-small pb-muted');
+    const save=node('button','pb-button pb-button-primary',promo.id?'Lưu ưu đãi':'Tạo ưu đãi'); save.type='submit';
+    form.append(grid,descLabel,enabled.label,stats,save,status);
+    form.addEventListener('submit',async event=>{
+      event.preventDefault(); if(state.busy)return;
+      const starts=new Date(start.input.value),ends=new Date(end.input.value);
+      if(Number.isNaN(starts.getTime())||Number.isNaN(ends.getTime())){status.textContent='Chọn đầy đủ thời gian bắt đầu và kết thúc.';return;}
+      const payload={
+        action:'savePromotion',...(promo.id?{id:promo.id}:{}),code:code.input.value.trim(),
+        name:name.input.value.trim(),description:desc.value.trim(),credits:Number(credits.input.value),
+        startsAt:starts.toISOString(),endsAt:ends.toISOString(),enabled:enabled.input.checked
+      };
+      state.busy=true;save.disabled=true;status.textContent='Đang lưu…';
+      try{
+        await request('/api/admin-topups',payload);
+        status.textContent='Đã lưu ưu đãi.';
+        await loadCommerce({quiet:true});
+      }catch(error){status.textContent=error.message;}
+      finally{state.busy=false;save.disabled=false;}
+    });
+    return form;
+  }
+  function newPromotion() {
+    const box=$('paPromotions');
+    const now=new Date(),end=new Date(now.getTime()+7*86400000);
+    const form=promotionForm({
+      code:'',name:'',description:'',credits:10,enabled:true,
+      startsAt:now.toISOString(),endsAt:end.toISOString(),grantedCount:0
+    });
+    box.prepend(form);
+    form.querySelector('input')?.focus();
   }
 
   function renderUsers() {
@@ -425,14 +562,16 @@
   }
 
   async function init() {
-    if (await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics()]);
+    if (await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics(), loadCommerce()]);
   }
   $('paFilter').addEventListener('change', () => { if (!state.busy) { state.selected = null; loadOrders(); } });
   $('paRefresh').addEventListener('click', async () => {
-    if (!state.busy && await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics()]);
+    if (!state.busy && await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics(), loadCommerce()]);
   });
   $('paRefreshMetrics')?.addEventListener('click', () => { if (!state.busy) loadMetrics(); });
   $('paExportRevenue')?.addEventListener('click', exportRevenueCsv);
+  $('paRefreshCommerce')?.addEventListener('click', () => { if (!state.busy) loadCommerce(); });
+  $('paNewPromotion')?.addEventListener('click', () => { if (!state.busy) newPromotion(); });
   $('paRetryEmail').addEventListener('click', retryEmail);
   $('paUserSearchForm')?.addEventListener('submit', event => {
     event.preventDefault();
@@ -446,11 +585,11 @@
   window.addEventListener('focus', () => {
     if (state.busy || $('paDetail').querySelector('form')) return;
     if (!state.profile?.user?.isAdmin) init();
-    else Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true}), loadMetrics({quiet:true})]);
+    else Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true}), loadMetrics({quiet:true}), loadCommerce({quiet:true})]);
   });
   setInterval(() => {
     if (!document.hidden && !state.busy && state.profile?.user?.isAdmin && !$('paDetail').querySelector('form'))
-      Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true}), loadMetrics({quiet:true})]);
+      Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true}), loadMetrics({quiet:true}), loadCommerce({quiet:true})]);
   }, 30000);
   init();
 })();
