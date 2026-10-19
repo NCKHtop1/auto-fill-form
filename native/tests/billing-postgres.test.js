@@ -123,7 +123,7 @@ test('Real PostgreSQL billing: concurrency, ownership and atomic recovery', {
       const customer = identity('migration');
       const order = await fund(customer, 4);
       await runMigration();
-      const versions = await pool.query('SELECT version,count(*) AS n FROM ps_billing_schema_migrations GROUP BY version');
+      const versions = await pool.query('SELECT version,count(*) AS n FROM ps_billing_schema_migrations GROUP BY version ORDER BY version');
       assert.deepEqual(versions.rows, [{version: 1, n: '1'},{version: 2, n: '1'}]);
       assert.equal((await billing.getOrder(customer, order.id)).status, 'approved');
       assert.equal((await account(customer)).available_credits, 4);
