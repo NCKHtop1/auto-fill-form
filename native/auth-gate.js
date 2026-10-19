@@ -72,6 +72,9 @@
   function init() {
     const {retry} = elements();
     if (retry) retry.addEventListener('click', refresh);
+    document.addEventListener('pandastudy:billing-profile', event => {
+      if (event.detail && event.detail.signedIn === false && document.body.dataset.authenticated === 'true') refresh();
+    });
     refresh();
   }
 
