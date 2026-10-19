@@ -657,6 +657,7 @@ async function listAdminMetrics(identity) {
       AND date_trunc('month',o.reviewed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')=m.month
     GROUP BY m.month ORDER BY m.month`);
   const packages = await db.query(`SELECT ${ORDER_PACKAGE_SQL} AS package_id,
+      COALESCE(max(NULLIF(o.package_name,'')),CASE WHEN ${ORDER_PACKAGE_SQL}='custom' THEN 'Số lượng khác' ELSE ${ORDER_PACKAGE_SQL} END) AS package_name,
       count(*) AS approved_orders,COALESCE(sum(o.amount_vnd),0) AS revenue_vnd,
       COALESCE(sum(${ORDER_CREDITS_SQL}),0) AS credits_sold
     FROM ps_billing_orders o WHERE o.status='approved'
@@ -679,7 +680,7 @@ async function listAdminMetrics(identity) {
     monthly:monthly.rows.map(item=>({month:item.month,revenueVnd:number(item.revenue_vnd),
       approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold),buyers:number(item.buyers)})),
     packages:packages.rows.map(item=>({
-      id:item.package_id,name:item.package_id==='custom' ? 'Số lượng khác' : item.package_id,
+      id:item.package_id,name:item.package_name || (item.package_id==='custom' ? 'Số lượng khác' : item.package_id),
       revenueVnd:number(item.revenue_vnd),approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold)
     }))
   };
