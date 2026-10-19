@@ -207,6 +207,7 @@
     if (order.submittedAt) detail(data, 'Báo đã chuyển', date(order.submittedAt));
     if (order.reviewedAt) detail(data, 'Xử lý lúc', date(order.reviewedAt));
     if (order.reviewedBy) detail(data, 'Người xử lý', typeof order.reviewedBy === 'object' ? order.reviewedBy.email : order.reviewedBy);
+    if (order.manualBankConfirmation) detail(data, 'Đối soát', 'Admin xác nhận thủ công bằng ô tick; không nhập số tiền/mã giao dịch.');
     if (order.bankReference) detail(data, 'Mã giao dịch ngân hàng', order.bankReference);
     if (order.receivedAmountVnd != null) detail(data, 'Tiền đã xác nhận', money(order.receivedAmountVnd));
     if (order.adminNote) detail(data, 'Ghi chú', order.adminNote);
