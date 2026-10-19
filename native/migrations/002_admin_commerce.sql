@@ -115,6 +115,29 @@ CREATE TABLE IF NOT EXISTS ps_billing_promotion_grants (
 CREATE INDEX IF NOT EXISTS ps_billing_promotion_grants_customer
   ON ps_billing_promotion_grants(customer_id,granted_at DESC);
 
+DO $
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname='ps_billing_ledger_check'
+  ) THEN
+    ALTER TABLE ps_billing_ledger DROP CONSTRAINT ps_billing_ledger_check;
+  END IF;
+END $;
+
+ALTER TABLE ps_billing_ledger DROP CONSTRAINT IF EXISTS ps_billing_ledger_kind_check;
+ALTER TABLE ps_billing_ledger
+  ADD CONSTRAINT ps_billing_ledger_kind_check
+  CHECK (kind IN ('topup','promotion','reserve','consume','release'));
+
+ALTER TABLE ps_billing_ledger DROP CONSTRAINT IF EXISTS ps_billing_ledger_delta_check;
+ALTER TABLE ps_billing_ledger
+  ADD CONSTRAINT ps_billing_ledger_delta_check CHECK (
+    (kind IN ('topup','promotion') AND available_delta > 0 AND reserved_delta = 0) OR
+    (kind = 'reserve' AND available_delta = -1 AND reserved_delta = 1) OR
+    (kind = 'consume' AND available_delta = 0 AND reserved_delta = -1) OR
+    (kind = 'release' AND available_delta = 1 AND reserved_delta = -1)
+  );
+
 CREATE TABLE IF NOT EXISTS ps_billing_config_audit (
   id uuid PRIMARY KEY,
   actor_id uuid NOT NULL REFERENCES ps_billing_customers(id),
