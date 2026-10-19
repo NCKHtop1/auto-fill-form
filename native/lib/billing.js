@@ -12,18 +12,8 @@ const TOPUP_PACKAGES = Object.freeze([
   Object.freeze({id:'research',code:'RESEARCH',name:'Nghiên cứu',credits:250,priceVnd:110000,listPriceVnd:125000,discountPercent:12,popular:false}),
   Object.freeze({id:'pro',code:'PRO',name:'Chuyên sâu',credits:500,priceVnd:200000,listPriceVnd:250000,discountPercent:20,popular:false})
 ]);
-const ORDER_CREDITS_SQL = `CASE
-  WHEN o.order_code LIKE 'PSSTART-%' THEN 20
-  WHEN o.order_code LIKE 'PSPOPULAR-%' THEN 100
-  WHEN o.order_code LIKE 'PSRESEARCH-%' THEN 250
-  WHEN o.order_code LIKE 'PSPRO-%' THEN 500
-  ELSE o.quantity END`;
-const ORDER_PACKAGE_SQL = `CASE
-  WHEN o.order_code LIKE 'PSSTART-%' THEN 'starter'
-  WHEN o.order_code LIKE 'PSPOPULAR-%' THEN 'popular'
-  WHEN o.order_code LIKE 'PSRESEARCH-%' THEN 'research'
-  WHEN o.order_code LIKE 'PSPRO-%' THEN 'pro'
-  ELSE 'custom' END`;
+const ORDER_CREDITS_SQL = `COALESCE(o.credited_quantity,o.quantity)`;
+const ORDER_PACKAGE_SQL = `COALESCE(NULLIF(o.package_id,''),'custom')`;
 
 class BillingError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -146,35 +136,85 @@ function canonical(value) {
 }
 function hash(value) { return crypto.createHash('sha256').update(canonical(value)).digest('hex'); }
 function number(value) { return Number(value || 0); }
-function publicPackage(pkg) {
-  return {id:pkg.id,name:pkg.name,credits:pkg.credits,priceVnd:pkg.priceVnd,listPriceVnd:pkg.listPriceVnd,
-    discountPercent:pkg.discountPercent,popular:pkg.popular,effectiveUnitPriceVnd:Math.round(pkg.priceVnd/pkg.credits)};
+function packageDiscount(priceVnd,listPriceVnd) {
+  const price=number(priceVnd),list=number(listPriceVnd);
+  return list>price && list>0 ? Math.round((1-price/list)*100) : 0;
 }
-function packageById(id) {
+function publicPackage(pkg) {
+  const priceVnd=number(pkg.priceVnd ?? pkg.price_vnd);
+  const listPriceVnd=number(pkg.listPriceVnd ?? pkg.list_price_vnd ?? priceVnd);
+  const credits=number(pkg.credits);
+  const badge=String(pkg.badge || '');
+  const featured=Boolean(pkg.popular ?? pkg.featured);
+  return {
+    id:String(pkg.id),name:String(pkg.name),badge,credits,priceVnd,listPriceVnd,
+    discountPercent:packageDiscount(priceVnd,listPriceVnd),popular:featured,featured,
+    enabled:pkg.enabled === undefined ? true : Boolean(pkg.enabled),
+    sortOrder:number(pkg.sortOrder ?? pkg.sort_order),
+    effectiveUnitPriceVnd:credits>0 ? Math.round(priceVnd/credits) : 0
+  };
+}
+function fallbackPackageById(id) {
   return TOPUP_PACKAGES.find(item => item.id === id) || null;
+}
+async function loadPackages(includeDisabled=false) {
+  try {
+    const result=await db.query(`SELECT id,name,badge,credits,price_vnd,list_price_vnd,featured,enabled,sort_order
+      FROM ps_billing_packages WHERE ($1::boolean OR enabled=true)
+      ORDER BY sort_order,id`,[includeDisabled]);
+    if (result.rowCount) return result.rows.map(publicPackage);
+  } catch (error) {
+    if (!['42P01','42703'].includes(error.code)) throw error;
+  }
+  return TOPUP_PACKAGES.map(publicPackage).filter(item=>includeDisabled || item.enabled);
+}
+async function loadPackageById(id) {
+  const packageId=String(id || '').trim();
+  if (!packageId) return null;
+  try {
+    const result=await db.query(`SELECT id,name,badge,credits,price_vnd,list_price_vnd,featured,enabled,sort_order
+      FROM ps_billing_packages WHERE id=$1`,[packageId]);
+    return result.rowCount ? publicPackage(result.rows[0]) : null;
+  } catch (error) {
+    if (!['42P01','42703'].includes(error.code)) throw error;
+    const fallback=fallbackPackageById(packageId);
+    return fallback ? publicPackage(fallback) : null;
+  }
 }
 function packageFromOrderCode(code) {
   const value = String(code || '');
-  return TOPUP_PACKAGES.find(item => value.startsWith('PS' + item.code + '-')) || null;
+  const pkg=TOPUP_PACKAGES.find(item => value.startsWith('PS' + item.code + '-'));
+  return pkg ? publicPackage(pkg) : null;
+}
+function packageSnapshot(row) {
+  if (row?.package_id) {
+    const price=number(row.amount_vnd),list=number(row.list_price_vnd || row.amount_vnd);
+    return publicPackage({
+      id:row.package_id,name:row.package_name || row.package_id,badge:row.package_badge || '',
+      credits:number(row.credited_quantity || row.quantity),priceVnd:price,listPriceVnd:list,
+      featured:String(row.package_badge || '').toLowerCase().includes('phổ biến')
+    });
+  }
+  return packageFromOrderCode(row?.order_code);
 }
 function creditsForOrderRow(row) {
-  return packageFromOrderCode(row?.order_code)?.credits || number(row?.quantity);
+  return number(row?.credited_quantity) || packageFromOrderCode(row?.order_code)?.credits || number(row?.quantity);
 }
-function offerForInput(input) {
+async function offerForInput(input) {
   const packageId = typeof input?.packageId === 'string' ? input.packageId.trim() : '';
   if (packageId) {
-    const pkg = packageById(packageId);
-    if (!pkg) fail(400,'INVALID_PACKAGE','Gói nạp không hợp lệ.');
+    const pkg = await loadPackageById(packageId);
+    if (!pkg || !pkg.enabled) fail(400,'INVALID_PACKAGE','Gói nạp không hợp lệ hoặc đang tạm ẩn.');
     if (input?.quantity !== undefined && input.quantity !== null && input.quantity !== pkg.credits)
       fail(400,'PACKAGE_QUANTITY_MISMATCH','Số phiếu không khớp gói đã chọn.');
-    if (pkg.priceVnd % UNIT_PRICE_VND !== 0) fail(500,'PACKAGE_CONFIG_INVALID','Cấu hình gói nạp chưa hợp lệ.');
-    return {package:pkg,credits:pkg.credits,storageQuantity:pkg.priceVnd/UNIT_PRICE_VND,amountVnd:pkg.priceVnd};
+    return {package:pkg,credits:pkg.credits,amountVnd:pkg.priceVnd,listPriceVnd:pkg.listPriceVnd};
   }
   const quantity = input?.quantity;
   if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_TOPUP_CREDITS)
     fail(400, 'INVALID_QUANTITY', 'Số lượt cần mua phải là số nguyên từ 1 đến 100.000.');
-  return {package:null,credits:quantity,storageQuantity:quantity,amountVnd:quantity*UNIT_PRICE_VND};
+  return {package:null,credits:quantity,amountVnd:quantity*UNIT_PRICE_VND,listPriceVnd:quantity*UNIT_PRICE_VND};
 }
+
 function asDate(value) { return value ? new Date(value).toISOString() : null; }
 function customerView(row, identity) { return {id: row.id, email: row.email, isAdmin: isAdmin(identity)}; }
 function identityView(identity) {
@@ -189,14 +229,14 @@ function orderView(row) {
   const bank = accountBank(row);
   const currentBank = bankConfig();
   const sameBank = Object.keys(bank).every(key => bank[key] === currentBank[key]);
-  const pkg = packageFromOrderCode(row.order_code);
+  const pkg = packageSnapshot(row);
   const credits = creditsForOrderRow(row);
   const manualConfirmation = typeof row.reference_original === 'string' && row.reference_original.startsWith('MANUAL_CONFIRMATION:');
   return {
     id: row.id, orderCode: row.order_code, quantity: credits, paidUnits: number(row.quantity),
-    unitPriceVnd: pkg ? Math.round(pkg.priceVnd/pkg.credits) : number(row.unit_price_vnd), amountVnd: number(row.amount_vnd),
-    listPriceVnd: pkg ? pkg.listPriceVnd : credits*UNIT_PRICE_VND,
-    discountPercent: pkg ? pkg.discountPercent : 0,
+    unitPriceVnd: credits>0 ? Math.round(number(row.amount_vnd)/credits) : number(row.unit_price_vnd), amountVnd: number(row.amount_vnd),
+    listPriceVnd: number(row.list_price_vnd || (pkg ? pkg.listPriceVnd : credits*UNIT_PRICE_VND)),
+    discountPercent: packageDiscount(number(row.amount_vnd),number(row.list_price_vnd || row.amount_vnd)),
     package: pkg ? publicPackage(pkg) : null,
     status: row.status, paymentMemo: row.payment_memo, bank,
     qrImageUrl: purchasesEnabled() && sameBank && ['pending_payment','pending_review'].includes(row.status)
@@ -222,6 +262,53 @@ async function ensureCustomer(identity) {
   return ensureAccount(identity);
 }
 
+function promotionView(row) {
+  return {
+    id:row.id,code:row.code,name:row.name,description:row.description || '',credits:number(row.credits),
+    startsAt:asDate(row.starts_at),endsAt:asDate(row.ends_at),enabled:Boolean(row.enabled),
+    grantedCount:number(row.granted_count),createdAt:asDate(row.created_at),updatedAt:asDate(row.updated_at)
+  };
+}
+async function applyActivePromotions(customer) {
+  try {
+    return await db.transaction(async client => {
+      await client.query('SELECT id FROM ps_billing_customers WHERE id=$1 FOR UPDATE',[customer.id]);
+      const active=await client.query(`SELECT * FROM ps_billing_promotions
+        WHERE enabled=true AND starts_at<=now() AND ends_at>now()
+        ORDER BY starts_at,id FOR SHARE`);
+      const granted=[];
+      for (const promotion of active.rows) {
+        const grantId=crypto.randomUUID();
+        const inserted=await client.query(`INSERT INTO ps_billing_promotion_grants(id,promotion_id,customer_id,credits)
+          VALUES($1,$2,$3,$4) ON CONFLICT(promotion_id,customer_id) DO NOTHING RETURNING id`,
+        [grantId,promotion.id,customer.id,promotion.credits]);
+        if (!inserted.rowCount) continue;
+        await client.query(`UPDATE ps_billing_customers
+          SET available_credits=available_credits+$2,updated_at=now() WHERE id=$1`,
+        [customer.id,promotion.credits]);
+        await ledger(client,customer.id,'promotion',grantId,number(promotion.credits),0);
+        granted.push(promotionView(promotion));
+      }
+      const refreshed=await client.query('SELECT * FROM ps_billing_customers WHERE id=$1',[customer.id]);
+      return {customer:refreshed.rows[0] || customer,active:active.rows.map(promotionView),granted};
+    });
+  } catch (error) {
+    if (['42P01','42703','23514'].includes(error.code)) return {customer,active:[],granted:[]};
+    throw error;
+  }
+}
+async function listMyPromotionGrants(customerId) {
+  try {
+    const result=await db.query(`SELECT p.*,g.granted_at FROM ps_billing_promotion_grants g
+      JOIN ps_billing_promotions p ON p.id=g.promotion_id
+      WHERE g.customer_id=$1 ORDER BY g.granted_at DESC LIMIT 20`,[customerId]);
+    return result.rows.map(row=>({...promotionView(row),grantedAt:asDate(row.granted_at)}));
+  } catch (error) {
+    if (['42P01','42703'].includes(error.code)) return [];
+    throw error;
+  }
+}
+
 async function getProfile(identity = null) {
   const config = getConfigStatus();
   let account = null;
@@ -229,14 +316,24 @@ async function getProfile(identity = null) {
   catch (error) {
     if (!(error instanceof BillingError) || error.status !== 401) throw error;
   }
-  let persisted = null;
+  let persisted = null, activePromotions=[], promotionGrants=[], packageCatalog=TOPUP_PACKAGES.map(publicPackage);
   if (account && process.env.DATABASE_URL) {
     try {
-      const readiness = await db.query('SELECT version FROM ps_billing_schema_migrations WHERE version=1');
-      if (readiness.rowCount) persisted = await ensureAccount(account);
+      const readiness = await db.query('SELECT version FROM ps_billing_schema_migrations WHERE version IN (1,2)');
+      if (readiness.rows.some(row=>number(row.version)===1)) {
+        persisted = await ensureAccount(account);
+        if (readiness.rows.some(row=>number(row.version)===2)) {
+          const promo=await applyActivePromotions(persisted);
+          persisted=promo.customer; activePromotions=promo.active;
+          promotionGrants=await listMyPromotionGrants(persisted.id);
+          packageCatalog=await loadPackages(false);
+        }
+      }
     } catch (error) {
       console.error('[PandaStudy account persistence]', error.code || 'UNAVAILABLE');
     }
+  } else if (process.env.DATABASE_URL) {
+    try { packageCatalog=await loadPackages(false); } catch (_) {}
   }
   const base = {
     billingEnabled: config.billingEnabled, configured: config.configured,
@@ -245,7 +342,8 @@ async function getProfile(identity = null) {
     availableCredits: persisted ? number(persisted.available_credits) : 0,
     reservedCredits: persisted ? number(persisted.reserved_credits) : 0,
     unitPriceVnd: UNIT_PRICE_VND, minTopupCredits: 1, maxTopupCredits: MAX_TOPUP_CREDITS,
-    topupPackages: TOPUP_PACKAGES.map(publicPackage),
+    topupPackages: packageCatalog,
+    activePromotions, promotionGrants,
     bank: null, warnings: config.warnings || []
   };
   if (!config.billingEnabled) return base;
@@ -267,7 +365,7 @@ async function getProfile(identity = null) {
 async function createOrder(identity, input) {
   assertReady();
   if (!purchasesEnabled()) fail(503,'TOPUPS_PAUSED','Mua thêm lượt đang tạm dừng. Các lượt đã mua vẫn được giữ nguyên.');
-  const offer = offerForInput(input);
+  const offer = await offerForInput(input);
   const key = requestKey(input.idempotencyKey);
   const customer = await ensureCustomer(identity);
   const bank = bankConfig();
@@ -287,14 +385,16 @@ async function createOrder(identity, input) {
       WHERE customer_id=$1 AND created_at > now()-interval '1 day'`, [customer.id]);
     if (number(recent.rows[0].count) >= 20) fail(429, 'TOPUP_RATE_LIMIT', 'Bạn đã tạo nhiều yêu cầu. Hãy dùng hoặc kiểm tra yêu cầu hiện có.');
     const id = crypto.randomUUID();
-    const prefix = offer.package ? 'PS' + offer.package.code + '-' : 'PS';
-    const code = prefix + crypto.randomBytes(8).toString('hex').toUpperCase();
+    const code = (offer.package ? 'PSPKG-' : 'PS') + crypto.randomBytes(8).toString('hex').toUpperCase();
+    const pkg=offer.package;
     const result = await client.query(`INSERT INTO ps_billing_orders(
       id,customer_id,order_code,request_key,quantity,unit_price_vnd,amount_vnd,
-      bank_id,bank_name,account_number,account_name,payment_memo)
-      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-    [id,customer.id,code,key,offer.storageQuantity,UNIT_PRICE_VND,offer.amountVnd,
-      bank.bankId,bank.bankName,bank.accountNumber,bank.accountName,code]);
+      bank_id,bank_name,account_number,account_name,payment_memo,
+      package_id,package_name,package_badge,credited_quantity,list_price_vnd)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17) RETURNING *`,
+    [id,customer.id,code,key,offer.credits,Math.max(1,Math.round(offer.amountVnd/offer.credits)),offer.amountVnd,
+      bank.bankId,bank.bankName,bank.accountNumber,bank.accountName,code,
+      pkg?.id || null,pkg?.name || null,pkg?.badge || '',offer.credits,offer.listPriceVnd]);
     return orderView(result.rows[0]);
   });
 }
@@ -578,12 +678,86 @@ async function listAdminMetrics(identity) {
     },
     monthly:monthly.rows.map(item=>({month:item.month,revenueVnd:number(item.revenue_vnd),
       approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold),buyers:number(item.buyers)})),
-    packages:packages.rows.map(item=>{
-      const pkg=packageById(item.package_id);
-      return {id:item.package_id,name:pkg?.name || 'Số lượng khác',revenueVnd:number(item.revenue_vnd),
-        approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold)};
-    })
+    packages:packages.rows.map(item=>({
+      id:item.package_id,name:item.package_id==='custom' ? 'Số lượng khác' : item.package_id,
+      revenueVnd:number(item.revenue_vnd),approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold)
+    }))
   };
+}
+
+function adminPackageInput(input) {
+  const id=String(input?.id || '').trim().toLowerCase();
+  const name=String(input?.name || '').trim(),badge=String(input?.badge || '').trim();
+  const credits=Number(input?.credits),priceVnd=Number(input?.priceVnd),listPriceVnd=Number(input?.listPriceVnd);
+  const sortOrder=Number(input?.sortOrder ?? 100);
+  if (!/^[a-z0-9][a-z0-9-]{1,31}$/.test(id)) fail(400,'INVALID_PACKAGE_ID','Mã gói chỉ dùng chữ thường, số và dấu gạch ngang.');
+  if (name.length<2 || name.length>80 || badge.length>80) fail(400,'INVALID_PACKAGE_NAME','Tên hoặc nhãn gói không hợp lệ.');
+  if (!Number.isSafeInteger(credits)||credits<1||credits>MAX_TOPUP_CREDITS) fail(400,'INVALID_PACKAGE_CREDITS','Số phiếu gói không hợp lệ.');
+  if (!Number.isSafeInteger(priceVnd)||priceVnd<1||!Number.isSafeInteger(listPriceVnd)||listPriceVnd<priceVnd)
+    fail(400,'INVALID_PACKAGE_PRICE','Giá bán phải dương và giá niêm yết không được thấp hơn giá bán.');
+  if (!Number.isSafeInteger(sortOrder)||sortOrder<0||sortOrder>10000) fail(400,'INVALID_PACKAGE_ORDER','Thứ tự gói không hợp lệ.');
+  return {id,name,badge,credits,priceVnd,listPriceVnd,featured:input?.featured===true,enabled:input?.enabled!==false,sortOrder};
+}
+function adminPromotionInput(input) {
+  const id=input?.id ? uuid(input.id) : crypto.randomUUID();
+  const code=String(input?.code || '').trim().toUpperCase();
+  const name=String(input?.name || '').trim(),description=String(input?.description || '').trim();
+  const credits=Number(input?.credits),startsAt=new Date(input?.startsAt),endsAt=new Date(input?.endsAt);
+  if (!/^[A-Z0-9_]{3,48}$/.test(code)) fail(400,'INVALID_PROMOTION_CODE','Mã ưu đãi chỉ dùng A-Z, số và dấu gạch dưới.');
+  if (name.length<3||name.length>120||description.length>500) fail(400,'INVALID_PROMOTION_TEXT','Tên hoặc mô tả ưu đãi không hợp lệ.');
+  if (!Number.isSafeInteger(credits)||credits<1||credits>MAX_TOPUP_CREDITS) fail(400,'INVALID_PROMOTION_CREDITS','Số phiếu ưu đãi không hợp lệ.');
+  if (Number.isNaN(startsAt.getTime())||Number.isNaN(endsAt.getTime())||endsAt<=startsAt) fail(400,'INVALID_PROMOTION_DATES','Thời gian ưu đãi không hợp lệ.');
+  return {id,code,name,description,credits,startsAt:startsAt.toISOString(),endsAt:endsAt.toISOString(),enabled:input?.enabled!==false};
+}
+async function auditCommerce(client,actor,action,entityType,entityId,payload) {
+  await client.query(`INSERT INTO ps_billing_config_audit(id,actor_id,action,entity_type,entity_id,payload_json)
+    VALUES($1,$2,$3,$4,$5,$6::jsonb)`,[crypto.randomUUID(),actor.id,action,entityType,entityId,JSON.stringify(payload)]);
+}
+async function listAdminCommerce(identity) {
+  requireAdmin(identity); assertReady();
+  const [packages,promotions]=await Promise.all([
+    loadPackages(true),
+    db.query(`SELECT p.*,COALESCE(g.granted_count,0) AS granted_count
+      FROM ps_billing_promotions p
+      LEFT JOIN LATERAL (SELECT count(*) AS granted_count FROM ps_billing_promotion_grants WHERE promotion_id=p.id) g ON true
+      ORDER BY p.starts_at DESC,p.created_at DESC LIMIT 100`)
+  ]);
+  return {packages,promotions:promotions.rows.map(promotionView)};
+}
+async function saveAdminPackage(identity,input) {
+  requireAdmin(identity); assertReady();
+  const actor=await ensureCustomer(identity),pkg=adminPackageInput(input);
+  return db.transaction(async client=>{
+    await client.query('SELECT id FROM ps_billing_customers WHERE id=$1 FOR UPDATE',[actor.id]);
+    if (pkg.featured) await client.query('UPDATE ps_billing_packages SET featured=false,updated_at=now() WHERE featured=true AND id<>$1',[pkg.id]);
+    const saved=await client.query(`INSERT INTO ps_billing_packages(id,name,badge,credits,price_vnd,list_price_vnd,featured,enabled,sort_order)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)
+      ON CONFLICT(id) DO UPDATE SET name=EXCLUDED.name,badge=EXCLUDED.badge,credits=EXCLUDED.credits,
+        price_vnd=EXCLUDED.price_vnd,list_price_vnd=EXCLUDED.list_price_vnd,featured=EXCLUDED.featured,
+        enabled=EXCLUDED.enabled,sort_order=EXCLUDED.sort_order,updated_at=now()
+      RETURNING *`,
+    [pkg.id,pkg.name,pkg.badge,pkg.credits,pkg.priceVnd,pkg.listPriceVnd,pkg.featured,pkg.enabled,pkg.sortOrder]);
+    await auditCommerce(client,actor,'package_save','package',pkg.id,pkg);
+    return publicPackage(saved.rows[0]);
+  });
+}
+async function saveAdminPromotion(identity,input) {
+  requireAdmin(identity); assertReady();
+  const actor=await ensureCustomer(identity),promotion=adminPromotionInput(input);
+  return db.transaction(async client=>{
+    await client.query('SELECT id FROM ps_billing_customers WHERE id=$1 FOR UPDATE',[actor.id]);
+    const saved=await client.query(`INSERT INTO ps_billing_promotions(
+        id,code,name,description,credits,starts_at,ends_at,enabled,created_by,updated_by)
+      VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$9)
+      ON CONFLICT(id) DO UPDATE SET code=EXCLUDED.code,name=EXCLUDED.name,description=EXCLUDED.description,
+        credits=EXCLUDED.credits,starts_at=EXCLUDED.starts_at,ends_at=EXCLUDED.ends_at,
+        enabled=EXCLUDED.enabled,updated_by=EXCLUDED.updated_by,updated_at=now()
+      RETURNING *`,
+    [promotion.id,promotion.code,promotion.name,promotion.description,promotion.credits,
+      promotion.startsAt,promotion.endsAt,promotion.enabled,actor.id]);
+    await auditCommerce(client,actor,'promotion_save','promotion',promotion.id,promotion);
+    return promotionView(saved.rows[0]);
+  });
 }
 
 // This single transaction reserves AND claims the dispatch. A crash after commit
@@ -693,4 +867,5 @@ module.exports = {BillingError,UNIT_PRICE_VND,MAX_TOPUP_CREDITS,TOPUP_PACKAGES,
   get BANK() { return bankConfig(); }, get NOTIFICATION_RECIPIENTS() { return notificationRecipients(); },
   enabled,purchasesEnabled,getConfigStatus,assertReady,verifiedIdentity,isAdmin,requireAdmin,ensureAccount,ensureCustomer,getProfile,
   createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,listAdminUsers,listAdminMetrics,
+  listAdminCommerce,saveAdminPackage,saveAdminPromotion,
   reserveSubmission,settleSubmission,resolveOperation};
