@@ -2,7 +2,8 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const state = { profile: null, orders: [], operations: [], users: [], selected: null, loading: false, usersLoading: false, busy: false,
+  const state = { profile: null, orders: [], operations: [], users: [], metrics: null, selected: null,
+    loading: false, usersLoading: false, metricsLoading: false, busy: false,
     initialOrder: new URLSearchParams(location.search).get('orderId'), keys: new Map() };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Đã từ chối' };
   const number = value => Number(value || 0).toLocaleString('vi-VN');
@@ -52,9 +53,10 @@
       const allowed = profile.billingEnabled && profile.configured && profile.signedIn && profile.user?.isAdmin;
       $('paWorkspace').hidden = !allowed;
       if (!allowed) {
-        state.orders = []; state.operations = []; state.users = []; state.selected = null;
+        state.orders = []; state.operations = []; state.users = []; state.metrics = null; state.selected = null;
         $('paOrders').replaceChildren(); $('paOperations').replaceChildren(); $('paDetail').replaceChildren();
         $('paUsers')?.replaceChildren(); if ($('paUsersSummary')) $('paUsersSummary').textContent = '';
+        $('paRevenueSummary')?.replaceChildren(); $('paRevenueMonthly')?.replaceChildren(); $('paRevenuePackages')?.replaceChildren();
       }
       if (!profile.billingEnabled) {
         session.append(node('strong', '', 'Tính năng mua phiếu đang tắt.'), node('p', 'pb-small', 'Luồng công cụ hiện tại vẫn được giữ nguyên.'));
@@ -130,6 +132,68 @@
       state.usersLoading = false;
     }
   }
+  function monthLabel(value) {
+    const match = /^(\d{4})-(\d{2})$/.exec(String(value || ''));
+    return match ? match[2] + '/' + match[1] : String(value || '—');
+  }
+  function metricCard(label, value, sub) {
+    const card = node('div','pb-metric-card');
+    card.append(node('span','pb-metric-label',label),node('strong','pb-metric-value',value));
+    if (sub) card.append(node('span','pb-metric-sub',sub));
+    return card;
+  }
+  async function loadMetrics(options = {}) {
+    if (state.metricsLoading || !state.profile?.user?.isAdmin || !$('paRevenueSummary')) return;
+    state.metricsLoading = true;
+    if (!options.quiet) $('paRevenueSummary').replaceChildren(metricCard('Doanh thu','Đang tải…',''));
+    try {
+      const result = await request('/api/admin-topups?resource=metrics');
+      state.metrics = result.metrics || null;
+      renderMetrics();
+    } catch (error) {
+      $('paRevenueSummary').replaceChildren(node('p','pb-notice pb-notice-error',error.message));
+      $('paRevenueMonthly').replaceChildren(); $('paRevenuePackages').replaceChildren();
+      if (error.status === 401 || error.status === 403) await checkSession();
+    } finally { state.metricsLoading = false; }
+  }
+  function renderMetrics() {
+    const metrics = state.metrics;
+    const summary = $('paRevenueSummary'), monthly = $('paRevenueMonthly'), packagesBox = $('paRevenuePackages');
+    summary.replaceChildren(); monthly.replaceChildren(); packagesBox.replaceChildren();
+    if (!metrics) { summary.append(node('p','pb-admin-empty','Chưa có dữ liệu doanh thu.')); return; }
+    const current = metrics.currentMonth || {}, pending = metrics.pending || {}, all = metrics.allTime || {};
+    summary.append(
+      metricCard('Doanh thu tháng này',money(current.revenueVnd),number(current.approvedOrders)+' đơn đã duyệt · '+number(current.buyers)+' người mua'),
+      metricCard('Phiếu bán tháng này',number(current.creditsSold)+' phiếu','Chỉ tính đơn đã duyệt'),
+      metricCard('Đang chờ đối soát',money(pending.reviewAmountVnd),number(pending.reviewOrders)+' đơn chờ duyệt · '+number(pending.paymentOrders)+' đơn chờ chuyển'),
+      metricCard('Doanh thu lũy kế',money(all.revenueVnd),number(all.approvedOrders)+' đơn đã duyệt'),
+      metricCard('Phiếu bán lũy kế',number(all.creditsSold)+' phiếu',number(all.buyers)+' người mua duy nhất'),
+      metricCard('Múi giờ báo cáo','Việt Nam','Asia/Ho_Chi_Minh')
+    );
+
+    const packageRows = Array.isArray(metrics.packages) ? metrics.packages : [];
+    for (const item of packageRows) {
+      const badge = node('div','pb-revenue-package');
+      badge.append(node('strong','',item.name || item.id),node('span','', ' · '+number(item.approvedOrders)+' đơn · '+money(item.revenueVnd)+' · '+number(item.creditsSold)+' phiếu'));
+      packagesBox.append(badge);
+    }
+    if (!packageRows.length) packagesBox.append(node('span','pb-small pb-muted','Chưa có gói nào được duyệt.'));
+
+    const table = node('table','pb-revenue-table');
+    const thead = node('thead'), head = node('tr');
+    for (const title of ['Tháng','Doanh thu','Đơn duyệt','Phiếu bán','Người mua']) head.append(node('th','',title));
+    thead.append(head); table.append(thead);
+    const tbody = node('tbody');
+    const rows = Array.isArray(metrics.monthly) ? [...metrics.monthly].reverse() : [];
+    for (const item of rows) {
+      const tr = node('tr');
+      tr.append(node('td','',monthLabel(item.month)),node('td','',money(item.revenueVnd)),
+        node('td','',number(item.approvedOrders)),node('td','',number(item.creditsSold)),node('td','',number(item.buyers)));
+      tbody.append(tr);
+    }
+    table.append(tbody); monthly.append(table);
+  }
+
   function renderUsers() {
     const container = $('paUsers'); container.replaceChildren();
     if (!state.users.length) {
@@ -337,12 +401,13 @@
     finally { button.disabled = false; }
   }
   async function init() {
-    if (await checkSession()) await Promise.all([loadOrders(), loadUsers()]);
+    if (await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics()]);
   }
   $('paFilter').addEventListener('change', () => { if (!state.busy) { state.selected = null; loadOrders(); } });
   $('paRefresh').addEventListener('click', async () => {
-    if (!state.busy && await checkSession()) await Promise.all([loadOrders(), loadUsers()]);
+    if (!state.busy && await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics()]);
   });
+  $('paRefreshMetrics')?.addEventListener('click', () => { if (!state.busy) loadMetrics(); });
   $('paRetryEmail').addEventListener('click', retryEmail);
   $('paUserSearchForm')?.addEventListener('submit', event => {
     event.preventDefault();
@@ -356,11 +421,11 @@
   window.addEventListener('focus', () => {
     if (state.busy || $('paDetail').querySelector('form')) return;
     if (!state.profile?.user?.isAdmin) init();
-    else Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true})]);
+    else Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true}), loadMetrics({quiet:true})]);
   });
   setInterval(() => {
     if (!document.hidden && !state.busy && state.profile?.user?.isAdmin && !$('paDetail').querySelector('form'))
-      Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true})]);
+      Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true}), loadMetrics({quiet:true})]);
   }, 30000);
   init();
 })();
