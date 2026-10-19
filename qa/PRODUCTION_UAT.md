@@ -149,3 +149,19 @@ After GO, keep `BILLING_TOPUPS_PAUSED` as the operational kill switch for new pu
 8. Verify the 12-month table is grouped in Asia/Ho_Chi_Minh and pending-review amounts are not counted as revenue.
 
 Pass criteria: package prices are enforced server-side, credited quantities match the advertised bundle, and only approved orders contribute to revenue.
+
+
+## Manual UAT I — admin-only blog and managed campaigns
+
+1. Sign in with a normal non-admin Google account and open Blog.
+2. Confirm the “Viết bài mới” action is not visible. Manually navigating to `#blog-viet-bai` must return to the Blog list with an admin-only message.
+3. Sign in with an email listed in `BILLING_ADMIN_EMAILS`; confirm “Viết bài mới” is visible and the editor opens. GitHub remains the final publication confirmation layer.
+4. During the active `WELCOME_OCT_2026` window (19/10/2026 23:40 through 27/10/2026 23:59:59, Asia/Ho_Chi_Minh), sign in with an account that has not received the campaign.
+5. Confirm exactly 10 credits are added once and the user sees the experience-credit message. Refresh/sign in again and confirm the balance does not gain another 10.
+6. Open the admin page and confirm the user card reports promotional credits separately from paid credits.
+7. In “Gói nạp & ưu đãi”, edit a package name/badge/credits/price/list price/order/featured flag, save it, and verify the user top-up dialog reflects the new catalog.
+8. Create an order from that package, then edit the package again. Confirm the existing order retains the original package name, credits, amount and list price snapshot.
+9. Create or edit a timed promotion, including start/end, credit amount and enabled state. Confirm the granted-account count changes only when eligible users receive it.
+10. Confirm the commerce audit table records the admin email, target and timestamp of package/promotion changes.
+
+Pass criteria: non-admins cannot enter the writer UI; package and promotion controls are admin-only; bonuses are granted at most once per account per campaign; existing paid orders never change when catalog pricing changes.
