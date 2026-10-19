@@ -101,6 +101,23 @@ for required in [
 assert params.get("state") and params.get("client_id"), "OAuth state/client missing"
 print("POST_DEPLOY_PASS OAuth callback and Forms scopes", flush=True)
 
+# Read-only billing infrastructure readiness. No secrets or rows are exposed.
+request = Request(
+    BASE + "/api/billing-health",
+    headers={
+        "User-Agent": "PandaStudy-readonly-postdeploy-smoke",
+        "Cache-Control": "no-cache",
+    },
+)
+with urlopen(request, timeout=15) as response:
+    health = json.loads(response.read().decode("utf-8"))
+assert health.get("ok") is True, health
+assert health.get("financialConfigReady") is True, health
+assert health.get("databaseReachable") is True, health
+assert health.get("schemaReady") is True, health
+assert health.get("schemaVersion") == 1, health
+print("POST_DEPLOY_PASS billing database schema and financial config ready", flush=True)
+
 # Read-only billing readiness. Never create an order here.
 request = Request(
     BASE + "/api/billing?action=profile",
