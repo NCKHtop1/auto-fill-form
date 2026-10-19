@@ -97,26 +97,35 @@ async function request(handler,{method='GET',query={},body,identity=buyer,header
   try { await handler(req,res); return res; } finally { auth.billingIdentity=previous; }
 }
 
-test('billing is fail-closed when enabled without infrastructure, and flag off does not touch the database',async () => {
+test('financial infrastructure fails closed while optional email can degrade safely',async () => {
   delete process.env.RESEND_API_KEY;
   const profile=await billing.getProfile(buyer);
-  assert.equal(profile.configured,false);
-  assert.equal(profile.purchasesEnabled,false);
-  assert.equal(profile.bank,null);
-  await assert.rejects(billing.createOrder(buyer,{quantity:1,idempotencyKey:key('request')}),{code:'BILLING_UNAVAILABLE'});
+  assert.equal(profile.configured,true);
+  assert.equal(profile.purchasesEnabled,true);
+  assert.ok(profile.warnings.includes('email_notifications'));
+  assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[]);
+  const noEmailOrder=await billing.createOrder(buyer,{quantity:1,idempotencyKey:key('request')});
+  assert.equal(noEmailOrder.amountVnd,500);
+
   configure();
   for (const setting of ['BILLING_BANK_ID','BILLING_BANK_NAME','BILLING_BANK_ACCOUNT_NUMBER',
-    'BILLING_BANK_ACCOUNT_NAME','BILLING_QR_IMAGE_URL','BILLING_NOTIFICATION_EMAILS']) {
+    'BILLING_BANK_ACCOUNT_NAME','BILLING_QR_IMAGE_URL']) {
     const saved = process.env[setting];
     delete process.env[setting];
     assert.equal(billing.getConfigStatus().configured,false,setting);
     assert.equal((await billing.getProfile(buyer)).bank,null,setting);
     process.env[setting] = saved;
   }
+  const notificationSetting = process.env.BILLING_NOTIFICATION_EMAILS;
+  delete process.env.BILLING_NOTIFICATION_EMAILS;
+  assert.equal(billing.getConfigStatus().configured,true);
+  assert.ok(billing.getConfigStatus().warnings.includes('notification_recipients'));
   process.env.BILLING_NOTIFICATION_EMAILS = `${admin.email},invalid-address`;
-  assert.equal(billing.getConfigStatus().configured,false);
-  process.env.BILLING_NOTIFICATION_EMAILS = `${admin.email},${admin2.email},${admin.email}`;
+  assert.equal(billing.getConfigStatus().configured,true);
+  assert.ok(billing.getConfigStatus().warnings.includes('notification_recipients'));
+  process.env.BILLING_NOTIFICATION_EMAILS = notificationSetting;
   assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[admin.email,admin2.email]);
+
   for (const value of ['//elsewhere.example.test/qr.svg','https://elsewhere.example.test/qr.svg',
     'javascript:alert(1)','data:image/png;base64,AA','/\\elsewhere.example.test/qr.svg']) {
     process.env.BILLING_QR_IMAGE_URL = value;
@@ -127,10 +136,12 @@ test('billing is fail-closed when enabled without infrastructure, and flag off d
   configure();
   process.env.BILLING_ENABLED='false';
   fault=()=>{throw Error('Database must not be accessed when disabled');};
-  assert.equal((await billing.getProfile()).billingEnabled,false);
+  const disabled=await billing.getProfile(buyer);
+  assert.equal(disabled.billingEnabled,false);
+  assert.equal(disabled.signedIn,true);
+  assert.equal(disabled.user.email,buyer.email);
   fault=null;
 });
-
 test('verified Google subject owns credits; public profile is usable without login',async () => {
   await assert.rejects(billing.ensureCustomer({...buyer,email_verified:false}),{status:401});
   await assert.rejects(billing.ensureCustomer({...buyer,sub:''}),{status:401});
