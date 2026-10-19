@@ -2,7 +2,8 @@
 (function () {
   'use strict';
   const state = { profile: null, order: null, orders: [], busy: false, open: false,
-    intent: null, poll: null, refreshPromise: null, ordersLoaded: false, previousFocus: null };
+    intent: null, poll: null, refreshPromise: null, ordersLoaded: false, previousFocus: null,
+    adminPending: null };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Cần xử lý' };
   let host, overlay, content, message, oldOverflow;
   const number = value => Number(value || 0).toLocaleString('vi-VN');
@@ -62,6 +63,19 @@
       location.assign('/');
     }
   }
+  async function refreshAdminPending(profile) {
+    if (!profile?.user?.isAdmin) { state.adminPending = null; return; }
+    try {
+      const response = await fetch('/api/admin-topups?status=pending_review', {
+        credentials:'same-origin', cache:'no-store', headers:{'Accept':'application/json'}
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || data.ok !== true) throw new Error(data.error || 'admin');
+      state.adminPending = Array.isArray(data.orders) ? data.orders.length : 0;
+    } catch (_) {
+      state.adminPending = null;
+    }
+  }
   function renderBar() {
     if (!host) return;
     const profile = state.profile;
@@ -90,7 +104,10 @@
     }
 
     if (profile.user?.isAdmin) {
-      const admin = node('a', 'pb-button', 'Quản trị nạp');
+      copy.append(node('span', 'pb-account-email pb-small pb-muted', 'Quyền: quản trị viên PandaStudy'));
+      const pending = Number.isInteger(state.adminPending) ? state.adminPending : null;
+      const label = pending === null ? 'Quản trị nạp' : (pending > 0 ? 'Quản trị nạp · ' + pending + ' chờ duyệt' : 'Quản trị nạp · không có đơn chờ');
+      const admin = node('a', 'pb-button', label);
       admin.href = '/admin-topups.html'; admin.target = '_blank'; admin.rel = 'noopener';
       actions.append(admin);
     }
@@ -106,7 +123,8 @@
         const profile = await request('profile');
         const changedUser = previous !== profile.user?.id;
         state.profile = profile;
-        if (changedUser) { state.order = null; state.orders = []; state.ordersLoaded = false; state.intent = null; stopPoll(); }
+        if (changedUser) { state.order = null; state.orders = []; state.ordersLoaded = false; state.intent = null; state.adminPending = null; stopPoll(); }
+        await refreshAdminPending(profile);
         renderBar();
         if (!profile.billingEnabled && state.open) close();
         else if (state.open && (changedUser || !profile.configured || previousPurchases !== profile.purchasesEnabled)) renderModal();
