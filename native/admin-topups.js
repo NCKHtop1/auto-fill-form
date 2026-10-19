@@ -99,6 +99,8 @@
         }
       }
       renderOrders(); renderDetail(); renderOperations();
+      const pendingVisible = filter === 'pending_review' ? state.orders.length : 0;
+      document.title = (pendingVisible > 0 ? '(' + pendingVisible + ') ' : '') + 'Duyệt nạp phiếu · PandaStudy';
       if (!options.quiet) say('Đã tải ' + state.orders.length + ' đơn' + (state.orders.length >= 100 ? ' gần nhất. Dùng liên kết mã đơn để mở đơn cũ hơn.' : '.'));
     } catch (error) {
       say(error.message, 'error');
@@ -279,6 +281,13 @@
   $('paFilter').addEventListener('change', () => { if (!state.busy) { state.selected = null; loadOrders(); } });
   $('paRefresh').addEventListener('click', async () => { if (!state.busy && await checkSession()) await loadOrders(); });
   $('paRetryEmail').addEventListener('click', retryEmail);
-  window.addEventListener('focus', () => { if (!state.busy && !$('paDetail').querySelector('form') && !state.profile?.user?.isAdmin) init(); });
+  window.addEventListener('focus', () => {
+    if (state.busy || $('paDetail').querySelector('form')) return;
+    if (!state.profile?.user?.isAdmin) init();
+    else loadOrders({quiet:true});
+  });
+  setInterval(() => {
+    if (!document.hidden && !state.busy && state.profile?.user?.isAdmin && !$('paDetail').querySelector('form')) loadOrders({quiet:true});
+  }, 30000);
   init();
 })();
