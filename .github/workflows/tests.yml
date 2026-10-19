@@ -43,6 +43,8 @@ jobs:
         run: .venv/bin/python tests/auth_gate_browser.py
       - name: Billing and admin browser UAT (mocked; no payments or emails)
         run: .venv/bin/python tests/billing_browser.py
+      - name: Premium motion UI browser UAT (mocked; presentation only)
+        run: .venv/bin/python tests/motion_ui_browser.py
       - name: Comprehensive UX, responsive and accessibility audit
         run: .venv/bin/python tests/ux_audit.py
       - name: Post-merge production browser smoke (read-only)
