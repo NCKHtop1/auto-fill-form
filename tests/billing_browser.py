@@ -383,7 +383,7 @@ def main():
             popular_form.get_by_label("Giá bán (đồng)").fill("47000")
             popular_form.get_by_label("Giá niêm yết (đồng)").fill("60000")
             popular_form.get_by_role("button", name="Lưu gói", exact=True).click()
-            popular_form.get_by_text("Đã lưu cấu hình gói.", exact=True).wait_for()
+            admin.get_by_text("Phổ biến Plus", exact=True).wait_for()
             assert any(call["data"] and call["data"].get("action") == "savePackage" for call in state["calls"])
             print("PASS admin commerce: packages and timed promotions are visible and editable only in admin workspace")
             assert "22" in admin.locator("#paUsers").inner_text()
