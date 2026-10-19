@@ -189,9 +189,20 @@
 .pb-admin-operation:first-child { border-top: 0; }
 .pb-admin-operation-title { margin: 0 0 5px; font-weight: 600; overflow-wrap: anywhere; }
 .pb-admin-operation .pb-small { overflow-wrap: anywhere; }
+.pb-admin-users-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.pb-admin-user-search { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.pb-admin-user-search .pb-field { margin: 0; min-width: min(320px, 100%); }
+.pb-admin-users { margin-top: 14px; }
+.pb-user-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pb-user-card { min-width: 0; padding: 16px; border: 1px solid var(--pb-line); border-radius: 12px; background: #fbfdfa; }
+.pb-user-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 8px; }
+.pb-user-email { display: block; overflow-wrap: anywhere; }
+.pb-user-stats { margin: 0; }
+.pb-user-stats .pb-detail-row { padding: 8px 0; font-size: 13px; }
+.pb-user-stats .pb-detail-row:last-child { border-bottom: 0; }
 .pb-admin a { color: #246d3c; }
 @media (max-width: 720px) {
-  .pb-admin-grid { grid-template-columns: minmax(0, 1fr); }
+  .pb-admin-grid, .pb-user-grid { grid-template-columns: minmax(0, 1fr); }
   .pb-admin-header-inner, .pb-admin-main { padding: 18px 16px; }
   .pb-admin-toolbar .pb-actions { width: 100%; }
 }
