@@ -87,7 +87,7 @@ test('live payment QR is authenticated and binds exact order amount and memo', a
     assert.equal(res.headers['Content-Type'], 'image/png');
     assert.match(res.headers['Cache-Control'], /private/);
     assert.deepEqual([...res.body], [1,2,3,4]);
-    assert.match(requested, /^https://img.vietqr.io/image/970407-12345678901234-compact2.png?/);
+    assert.match(requested, /^https:\/\/img\.vietqr\.io\/image\/970407-12345678901234-compact2\.png\?/);
     const parsed = new URL(requested);
     assert.equal(parsed.searchParams.get('amount'),'10000');
     assert.equal(parsed.searchParams.get('addInfo'),'PSABC123');
