@@ -323,6 +323,7 @@ async function submitPaid(identity, input) {
       WHERE id=$1 RETURNING *`, [orderId]);
     const order = orderView(result.rows[0]);
     const payload = {orderId,orderCode:order.orderCode,quantity:order.quantity,amountVnd:order.amountVnd,
+      packageName:order.package?.name || '',discountPercent:order.discountPercent || 0,listPriceVnd:order.listPriceVnd || order.amountVnd,
       paymentMemo:order.paymentMemo,customerEmail:customer.email,bank:order.bank};
     for (const recipient of notificationRecipients()) {
       await client.query(`INSERT INTO ps_billing_outbox(id,order_id,dedupe_key,event_type,recipient,payload_json)
