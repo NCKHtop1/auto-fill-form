@@ -4,7 +4,7 @@
   if (!blog) return;
   var repo = 'NCKHtop1/auto-fill-form';
   var $ = function (id) { return document.getElementById(id); };
-  var allPosts = [], category = 'Tất cả';
+  var allPosts = [], category = 'Tất cả', isAdmin = false, authLoaded = false;
   var draftKey = 'pandastudy.blog.draft.v1';
   var categories = ['SPSS','Stata','Python','Dữ liệu','Phương pháp','Khác'];
   var colors = {'SPSS':'thumb-blue','Stata':'thumb-red','Python':'thumb-python','Dữ liệu':'thumb-green','Phương pháp':'thumb-brown','Khác':'thumb-green'};
@@ -119,6 +119,14 @@
     var hash = location.hash.slice(1);
     try { hash = decodeURIComponent(hash); } catch (_) { hash = ''; }
     if (hash === 'blog-viet-bai') {
+      if (!authLoaded || !isAdmin) {
+        showMode('index');
+        $('blogLoadStatus').textContent = authLoaded
+          ? 'Chỉ quản trị viên PandaStudy mới được viết và đăng bài.'
+          : 'Đang kiểm tra quyền quản trị…';
+        blog.scrollIntoView({block:'start'});
+        return;
+      }
       showMode('editor');
       blog.scrollIntoView({block:'start'});
       return;
@@ -175,6 +183,11 @@
   }
   function publishDraft(event) {
     event.preventDefault();
+    if (!isAdmin) {
+      $('blogEditorStatus').textContent = 'Chỉ quản trị viên PandaStudy mới được đăng bài.';
+      showMode('index');
+      return;
+    }
     var d = getDraft();
     var error = articleError(d);
     if (error) { $('blogEditorStatus').textContent = error; return; }
@@ -243,6 +256,19 @@
       $('blogCount').textContent = '';
     }
   }
+  async function loadAdminRole() {
+    try {
+      var res = await fetch('/api/auth/status',{credentials:'same-origin',cache:'no-store'});
+      var data = await res.json();
+      isAdmin = !!(res.ok && data && data.signedIn && data.isAdmin);
+    } catch (_) {
+      isAdmin = false;
+    }
+    authLoaded = true;
+    var write = $('blogWriteBtn');
+    if (write) write.hidden = !isAdmin;
+    route();
+  }
   function init() {
     $('blogSearch').addEventListener('input',renderCards);
     $('blogCategory').addEventListener('change',function (e) { category = e.target.value; renderCards(); });
@@ -257,6 +283,7 @@
     bindMobileNav();
     restoreDraft();
     loadBlog();
+    loadAdminRole();
     route();
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded',init);
