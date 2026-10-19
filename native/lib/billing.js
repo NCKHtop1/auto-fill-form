@@ -581,7 +581,10 @@ async function listAdminUsers(identity, input = {}) {
       COALESCE(op.total_operations,0) AS total_operations,
       COALESCE(op.consumed_operations,0) AS consumed_operations,
       COALESCE(op.unknown_operations,0) AS unknown_operations,
-      op.last_operation_at
+      op.last_operation_at,
+      COALESCE(pr.promotion_credits,0) AS promotion_credits,
+      COALESCE(pr.promotion_grants,0) AS promotion_grants,
+      pr.last_promotion_at
     FROM ps_billing_customers c
     LEFT JOIN LATERAL (
       SELECT count(*) AS total_orders,
@@ -599,6 +602,10 @@ async function listAdminUsers(identity, input = {}) {
         max(updated_at) AS last_operation_at
       FROM ps_billing_operations WHERE customer_id=c.id
     ) op ON true
+    LEFT JOIN LATERAL (
+      SELECT COALESCE(sum(credits),0) AS promotion_credits,count(*) AS promotion_grants,max(granted_at) AS last_promotion_at
+      FROM ps_billing_promotion_grants WHERE customer_id=c.id
+    ) pr ON true
     WHERE ($1='' OR lower(c.email) LIKE '%'||$1||'%' OR lower(c.id::text) LIKE '%'||$1||'%')
     ORDER BY GREATEST(c.updated_at,COALESCE(ord.last_order_at,c.updated_at),COALESCE(op.last_operation_at,c.updated_at)) DESC,
       c.created_at DESC
@@ -610,7 +617,7 @@ async function listAdminUsers(identity, input = {}) {
     availableCredits: number(row.available_credits),
     reservedCredits: number(row.reserved_credits),
     createdAt: asDate(row.created_at),
-    lastActivityAt: asDate([row.updated_at,row.last_order_at,row.last_operation_at]
+    lastActivityAt: asDate([row.updated_at,row.last_order_at,row.last_operation_at,row.last_promotion_at]
       .filter(Boolean).sort((a,b)=>new Date(b)-new Date(a))[0]),
     totalOrders: number(row.total_orders),
     pendingOrders: number(row.pending_orders),
@@ -619,7 +626,9 @@ async function listAdminUsers(identity, input = {}) {
     paidAmountVnd: number(row.paid_amount_vnd),
     totalOperations: number(row.total_operations),
     consumedOperations: number(row.consumed_operations),
-    unknownOperations: number(row.unknown_operations)
+    unknownOperations: number(row.unknown_operations),
+    promotionCredits: number(row.promotion_credits),
+    promotionGrants: number(row.promotion_grants)
   }));
 }
 
