@@ -47,6 +47,7 @@ ALTER TABLE ps_billing_orders ALTER COLUMN list_price_vnd SET NOT NULL;
 
 ALTER TABLE ps_billing_orders DROP CONSTRAINT IF EXISTS ps_billing_orders_check;
 ALTER TABLE ps_billing_orders DROP CONSTRAINT IF EXISTS ps_billing_orders_unit_price_vnd_check;
+ALTER TABLE ps_billing_orders DROP CONSTRAINT IF EXISTS ps_billing_orders_unit_price_positive_check;
 ALTER TABLE ps_billing_orders DROP CONSTRAINT IF EXISTS ps_billing_orders_amount_positive_check;
 ALTER TABLE ps_billing_orders
   ADD CONSTRAINT ps_billing_orders_amount_positive_check CHECK (amount_vnd > 0);
