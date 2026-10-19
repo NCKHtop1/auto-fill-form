@@ -71,21 +71,33 @@
   function renderPromo() {
     promo?.remove(); promo = null;
     const profile = state.profile;
-    if (!profile?.signedIn || !profile.purchasesEnabled) return;
+    if (!profile?.signedIn) return;
     try { if (sessionStorage.getItem('pandastudy-topup-promo-dismissed') === '1') return; } catch (_) {}
-    const offer = popularPackage(); if (!offer) return;
+    const activePromotion = Array.isArray(profile.activePromotions) ? profile.activePromotions[0] : null;
+    const granted = activePromotion && Array.isArray(profile.promotionGrants)
+      ? profile.promotionGrants.find(item => item.id === activePromotion.id)
+      : null;
+    const offer = profile.purchasesEnabled ? popularPackage() : null;
+    if (!activePromotion && !offer) return;
     promo = node('aside', 'pb-promo-strip');
-    promo.setAttribute('aria-label', 'Ưu đãi nạp phiếu');
+    promo.setAttribute('aria-label', activePromotion ? 'Ưu đãi trải nghiệm PandaStudy' : 'Ưu đãi nạp phiếu');
     const copy = node('div', 'pb-promo-copy');
-    copy.append(node('strong', '', '⭐ Gói ' + offer.name + ': ' + number(offer.credits) + ' phiếu · ' + money(offer.priceVnd)),
-      node('span', '', offer.discountPercent ? 'Tiết kiệm ' + offer.discountPercent + '% so với mua lẻ.' : 'Nạp trước để không gián đoạn khi gửi dữ liệu.'));
+    if (activePromotion) {
+      copy.append(
+        node('strong','',granted ? '🎁 Đã nhận +' + number(activePromotion.credits) + ' phiếu trải nghiệm' : '🎁 ' + activePromotion.name),
+        node('span','',granted ? 'Ưu đãi đã được cộng một lần vào tài khoản của bạn.' : (activePromotion.description || 'Đăng nhập trong thời gian ưu đãi để nhận phiếu.'))
+      );
+    } else {
+      copy.append(node('strong', '', '⭐ Gói ' + offer.name + ': ' + number(offer.credits) + ' phiếu · ' + money(offer.priceVnd)),
+        node('span', '', offer.discountPercent ? 'Tiết kiệm ' + offer.discountPercent + '% so với mua lẻ.' : 'Nạp trước để không gián đoạn khi gửi dữ liệu.'));
+    }
     const actions = node('div', 'pb-promo-actions');
-    actions.append(button('Xem các gói', () => openPurchase({packageId:offer.id}), true));
+    if (offer) actions.append(button('Xem các gói', () => openPurchase({packageId:offer.id}), true));
     const dismiss = button('×', () => {
       try { sessionStorage.setItem('pandastudy-topup-promo-dismissed','1'); } catch (_) {}
       promo?.remove(); promo = null;
     });
-    dismiss.classList.add('pb-promo-dismiss'); dismiss.setAttribute('aria-label','Ẩn ưu đãi nạp phiếu');
+    dismiss.classList.add('pb-promo-dismiss'); dismiss.setAttribute('aria-label','Ẩn thông báo ưu đãi');
     actions.append(dismiss); promo.append(copy,actions);
     (document.querySelector('.topbar') || host)?.insertAdjacentElement('afterend',promo);
   }
@@ -125,6 +137,9 @@
     } else {
       copy.prepend(node('span', 'pb-account-title', number(profile.availableCredits) + ' phiếu khả dụng'));
       if (Number(profile.reservedCredits) > 0) copy.append(node('span', 'pb-small pb-muted', ' · ' + number(profile.reservedCredits) + ' phiếu đang chờ đối chiếu'));
+      const activePromo = Array.isArray(profile.activePromotions) ? profile.activePromotions[0] : null;
+      if (activePromo && Array.isArray(profile.promotionGrants) && profile.promotionGrants.some(item => item.id === activePromo.id))
+        copy.append(node('span','pb-account-email pb-small pb-muted','🎁 Đã nhận +' + number(activePromo.credits) + ' phiếu · ' + activePromo.name));
       if (profile.purchasesEnabled === false) copy.append(node('span', 'pb-account-email pb-small pb-muted', 'Mua phiếu mới đang tạm dừng. Số phiếu hiện có được giữ nguyên.'));
       else actions.append(button('Nạp phiếu', openPurchase, true));
       actions.append(button('Lịch sử nạp', () => openPurchase({ showOrders: true })));
