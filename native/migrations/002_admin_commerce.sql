@@ -131,6 +131,11 @@ BEGIN
   ) THEN
     ALTER TABLE ps_billing_ledger DROP CONSTRAINT ps_billing_ledger_check;
   END IF;
+  IF EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname='ps_billing_ledger_check1'
+  ) THEN
+    ALTER TABLE ps_billing_ledger DROP CONSTRAINT ps_billing_ledger_check1;
+  END IF;
 END $$;
 
 ALTER TABLE ps_billing_ledger DROP CONSTRAINT IF EXISTS ps_billing_ledger_kind_check;
