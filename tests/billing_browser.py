@@ -71,6 +71,13 @@ def main():
                     "unitPriceVnd": 500, "minTopupCredits": 1, "maxTopupCredits": 100000,
                     "topupPackages": PACKAGES, "bank": None},
         "orders": [], "operations": [], "users": [], "calls": [], "fail_create_once": False,
+        "commerce": {"packages": [dict(item, badge=("Phổ biến nhất" if item["id"] == "popular" else ""),
+                                         featured=item["popular"], enabled=True, sortOrder=(idx + 1) * 10)
+                                  for idx, item in enumerate(PACKAGES)],
+                     "promotions": [{"id": "promo-uat-1", "code": "WELCOME_UAT", "name": "10 phiếu trải nghiệm",
+                                     "description": "Ưu đãi QA", "credits": 10,
+                                     "startsAt": "2026-10-19T16:40:00.000Z", "endsAt": "2026-10-27T17:00:00.000Z",
+                                     "enabled": True, "grantedCount": 2}]},
         "can_send": False, "delay_submit": False, "pending_submit": None,
     }
     errors = []
@@ -132,6 +139,8 @@ def main():
                     users = [item for item in state["users"]
                              if not search or search in item["email"].lower() or search in item["id"].lower()]
                     response = {"ok": True, "users": users}
+                elif query.get("resource") == "commerce":
+                    response = {"ok": True, "commerce": state["commerce"]}
                 elif query.get("resource") == "metrics":
                     response = {"ok": True, "metrics": {
                         "timezone": "Asia/Ho_Chi_Minh",
@@ -169,6 +178,24 @@ def main():
                 assert data["confirmedReview"] is True
                 assert len(data["evidence"].strip()) >= 20
                 state["operations"] = [item for item in state["operations"] if item["id"] != data["operationId"]]
+            elif data["action"] == "savePackage":
+                package = next(item for item in state["commerce"]["packages"] if item["id"] == data["id"])
+                package.update(name=data["name"], badge=data["badge"], credits=data["credits"],
+                               priceVnd=data["priceVnd"], listPriceVnd=data["listPriceVnd"],
+                               featured=data["featured"], popular=data["featured"],
+                               enabled=data["enabled"], sortOrder=data["sortOrder"])
+                response = {"ok": True, "package": package}
+            elif data["action"] == "savePromotion":
+                if data.get("id"):
+                    promotion = next(item for item in state["commerce"]["promotions"] if item["id"] == data["id"])
+                    promotion.update(code=data["code"], name=data["name"], description=data["description"],
+                                     credits=data["credits"], startsAt=data["startsAt"], endsAt=data["endsAt"],
+                                     enabled=data["enabled"])
+                else:
+                    promotion = {"id": "promo-new", "grantedCount": 0, **{key: value for key, value in data.items()
+                                                                        if key not in ("action",)}}
+                    state["commerce"]["promotions"].insert(0, promotion)
+                response = {"ok": True, "promotion": promotion}
         elif parsed.path == "/api/auth/status":
             response = {"configured": True, "signedIn": True, "email": "shell@example.test", "submissionEnabled": False}
         elif parsed.path == "/api/qa-status":
@@ -346,6 +373,18 @@ def main():
             assert "255.000" in admin.locator("#paRevenueSummary").inner_text()
             assert "10/2026" in admin.locator("#paRevenueMonthly").inner_text()
             assert "Phổ biến" in admin.locator("#paRevenuePackages").inner_text()
+            admin.get_by_text("10 phiếu trải nghiệm", exact=True).wait_for()
+            assert admin.locator("#paPackages .pb-commerce-card").count() == 4
+            assert "Đã cấp cho 2 tài khoản" in admin.locator("#paPromotions").inner_text()
+            popular_form = admin.locator("#paPackages .pb-commerce-card").filter(has_text="Phổ biến").first
+            popular_form.get_by_label("Tên gói").fill("Phổ biến Plus")
+            popular_form.get_by_label("Số phiếu").fill("120")
+            popular_form.get_by_label("Giá bán (đồng)").fill("47000")
+            popular_form.get_by_label("Giá niêm yết (đồng)").fill("60000")
+            popular_form.get_by_role("button", name="Lưu gói", exact=True).click()
+            popular_form.get_by_text("Đã lưu cấu hình gói.", exact=True).wait_for()
+            assert any(call["data"] and call["data"].get("action") == "savePackage" for call in state["calls"])
+            print("PASS admin commerce: packages and timed promotions are visible and editable only in admin workspace")
             assert "22" in admin.locator("#paUsers").inner_text()
             assert "Admin" in admin.locator("#paUsers").inner_text()
             admin.locator("#paUserSearch").fill("user@example.test")
