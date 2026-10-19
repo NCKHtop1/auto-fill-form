@@ -1026,7 +1026,7 @@
   <div id="blogIndex">
     <div class="blog-head">
       <div><h2>Bài viết</h2></div>
-      <div class="blog-head-actions"><a class="blog-write-btn" href="#blog-viet-bai">Viết bài mới ↗</a></div>
+      <div class="blog-head-actions"><a class="blog-write-btn" id="blogWriteBtn" href="#blog-viet-bai" hidden>Viết bài mới ↗</a></div>
     </div>
     <div class="blog-toolbar">
       <input class="blog-search" id="blogSearch" type="search" placeholder="Tìm bài viết..." aria-label="Tìm bài viết">
@@ -1057,7 +1057,7 @@
   <section class="blog-panel blog-editor" id="blogEditor" hidden>
     <a href="#blog" class="blog-back">← Quay lại Blog</a>
     <h2>Viết bài mới</h2>
-    <p>Soạn bài, xem trước rồi gửi lên GitHub để xác nhận xuất bản.</p>
+    <p>Chỉ tài khoản quản trị viên PandaStudy mới được mở trình soạn bài. Sau khi soạn, GitHub vẫn là bước xác nhận xuất bản cuối cùng.</p>
     <form id="postEditorForm">
       <div class="blog-editor-fields">
         <label>Tiêu đề <input id="postTitle" type="text" maxlength="130" minlength="8" required placeholder="Tiêu đề bài viết"></label>
@@ -1074,7 +1074,7 @@
     </form>
     <div class="blog-github-note">
       <strong>Ai được đăng?</strong>
-      <p>Chỉ tài khoản GitHub <strong>NCKHtop1</strong> được duyệt đăng bài. Khi bấm đăng, hãy xác nhận trên GitHub. Bài viết sẽ tự cập nhật lên PandaStudy sau khi hệ thống xử lý.</p>
+      <p>Chỉ email Google có quyền quản trị PandaStudy mới nhìn thấy và mở trình soạn bài. Khi bấm đăng, GitHub <strong>NCKHtop1</strong> tiếp tục là lớp xác nhận xuất bản cuối cùng.</p>
       <p><a href="https://github.com/NCKHtop1/auto-fill-form/issues" target="_blank" rel="noopener noreferrer">Kiểm tra bài đã gửi trên GitHub ↗</a></p>
     </div>
     <div id="issueCopyBox" hidden class="blog-github-note">
