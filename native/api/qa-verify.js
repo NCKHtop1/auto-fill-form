@@ -23,7 +23,7 @@ module.exports=async function handler(req,res){
   if(auth.configured()){
    let s;
    try{s=await auth.session(req,res);}catch{}
-   if(s){
+   if(s&&auth.hasScope(s,'https://www.googleapis.com/auth/forms.responses.readonly')){
     try{
      const count=await forms.responseCount(id,s.access_token);
      return res.status(200).json({ok:true,count,source:'google-forms-api',
