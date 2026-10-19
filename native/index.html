@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>PandaStudy</title>
   <meta name="theme-color" content="#245936">
-  <meta name="pandastudy-ui-revision" content="2026-10-13-uxfix1">
+  <meta name="pandastudy-ui-revision" content="2026-10-19-authbilling1">
   <meta name="description" content="PandaStudy: công cụ Google Form, Excel/CSV và blog về phân tích dữ liệu.">
   <link rel="icon" type="image/svg+xml" href="/panda.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -16,7 +16,7 @@
   <script src="/ui-navigation.js?v=20261013c" defer></script>
   <script src="/blog.js" defer></script>
   <script src="/qa-run.js?v=20261013d" defer></script>
-  <script src="/billing-ui.js?v=20261017a" defer></script>
+  <script src="/auth-gate.js?v=20261019a" defer></script>\n  <script src="/billing-ui.js?v=20261019a" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -728,9 +728,9 @@
   #blog,#how,#faq,#about{scroll-margin-top:86px}
 </style>
 <link rel="stylesheet" href="/blog.css?v=20261013d">
-<link rel="stylesheet" href="/billing.css?v=20261017a">
+<link rel="stylesheet" href="/billing.css?v=20261019a">\n<link rel="stylesheet" href="/auth-gate.css?v=20261019a">
 </head>
-<body>
+<body class="ps-auth-pending">\n  <section id="psAuthGate" aria-labelledby="psAuthGateTitle">\n    <div class="ps-auth-card">\n      <img class="ps-auth-logo" src="/panda.svg" alt="">\n      <h1 id="psAuthGateTitle">Đăng nhập để vào PandaStudy</h1>\n      <p>Tài khoản Google dùng để xác định tài khoản PandaStudy, số phiếu, lịch sử nạp và quyền quản trị. Sau khi đăng nhập bạn sẽ vào màn hình chính.</p>\n      <a class="ps-auth-google" href="/api/auth/start">Đăng nhập với Google →</a>\n      <p class="ps-auth-note">PandaStudy chỉ sử dụng quyền Google đã được bạn cấp cho quy trình Google Form hiện có.</p>\n      <div id="psAuthGateStatus" class="ps-auth-status" role="status" aria-live="polite">Đang kiểm tra phiên đăng nhập…</div>\n      <button id="psAuthRetry" class="ps-auth-retry" type="button" hidden>Kiểm tra lại</button>\n    </div>\n  </section>
   <header class="topbar" id="top"><div class="nav-wrap">
    <a class="brand" href="#home" aria-label="PandaStudy - Trang chủ"><img class="brand-mark" src="/panda.svg" width="38" height="38" alt="" aria-hidden="true"><span>Panda<span class="brand-green">Study</span></span></a>
    <button type="button" class="mobile-toggle" id="mobileMenu" aria-controls="mainNav" aria-expanded="false" aria-label="Mở menu">☰</button>
