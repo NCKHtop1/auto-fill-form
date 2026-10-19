@@ -83,9 +83,11 @@
     promo.setAttribute('aria-label', activePromotion ? 'Ưu đãi trải nghiệm PandaStudy' : 'Ưu đãi nạp phiếu');
     const copy = node('div', 'pb-promo-copy');
     if (activePromotion) {
+      const ends = activePromotion.endsAt ? new Date(activePromotion.endsAt) : null;
+      const until = ends && !Number.isNaN(ends.getTime()) ? ' · đến hết ' + ends.toLocaleDateString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : '';
       copy.append(
         node('strong','',granted ? '🎁 Đã nhận +' + number(activePromotion.credits) + ' phiếu trải nghiệm' : '🎁 ' + activePromotion.name),
-        node('span','',granted ? 'Ưu đãi đã được cộng một lần vào tài khoản của bạn.' : (activePromotion.description || 'Đăng nhập trong thời gian ưu đãi để nhận phiếu.'))
+        node('span','',(granted ? 'Ưu đãi đã được cộng một lần vào tài khoản của bạn.' : (activePromotion.description || 'Đăng nhập trong thời gian ưu đãi để nhận phiếu.')) + until)
       );
     } else {
       copy.append(node('strong', '', '⭐ Gói ' + offer.name + ': ' + number(offer.credits) + ' phiếu · ' + money(offer.priceVnd)),
