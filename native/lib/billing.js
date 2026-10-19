@@ -12,6 +12,18 @@ const TOPUP_PACKAGES = Object.freeze([
   Object.freeze({id:'research',code:'RESEARCH',name:'Nghiên cứu',credits:250,priceVnd:110000,listPriceVnd:125000,discountPercent:12,popular:false}),
   Object.freeze({id:'pro',code:'PRO',name:'Chuyên sâu',credits:500,priceVnd:200000,listPriceVnd:250000,discountPercent:20,popular:false})
 ]);
+const ORDER_CREDITS_SQL = `CASE
+  WHEN o.order_code LIKE 'PSSTART-%' THEN 20
+  WHEN o.order_code LIKE 'PSPOPULAR-%' THEN 100
+  WHEN o.order_code LIKE 'PSRESEARCH-%' THEN 250
+  WHEN o.order_code LIKE 'PSPRO-%' THEN 500
+  ELSE o.quantity END`;
+const ORDER_PACKAGE_SQL = `CASE
+  WHEN o.order_code LIKE 'PSSTART-%' THEN 'starter'
+  WHEN o.order_code LIKE 'PSPOPULAR-%' THEN 'popular'
+  WHEN o.order_code LIKE 'PSRESEARCH-%' THEN 'research'
+  WHEN o.order_code LIKE 'PSPRO-%' THEN 'pro'
+  ELSE 'custom' END`;
 
 class BillingError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -474,7 +486,7 @@ async function listAdminUsers(identity, input = {}) {
       SELECT count(*) AS total_orders,
         count(*) FILTER (WHERE status IN ('pending_payment','pending_review')) AS pending_orders,
         count(*) FILTER (WHERE status='approved') AS approved_orders,
-        COALESCE(sum(quantity) FILTER (WHERE status='approved'),0) AS purchased_credits,
+        COALESCE(sum(${ORDER_CREDITS_SQL}) FILTER (WHERE status='approved'),0) AS purchased_credits,
         COALESCE(sum(amount_vnd) FILTER (WHERE status='approved'),0) AS paid_amount_vnd,
         max(created_at) AS last_order_at
       FROM ps_billing_orders WHERE customer_id=c.id
@@ -508,6 +520,69 @@ async function listAdminUsers(identity, input = {}) {
     consumedOperations: number(row.consumed_operations),
     unknownOperations: number(row.unknown_operations)
   }));
+}
+
+async function listAdminMetrics(identity) {
+  requireAdmin(identity); assertReady();
+  const monthStart = `(date_trunc('month', now() AT TIME ZONE 'Asia/Ho_Chi_Minh') AT TIME ZONE 'Asia/Ho_Chi_Minh')`;
+  const summary = await db.query(`SELECT
+      COALESCE(sum(o.amount_vnd) FILTER (WHERE o.status='approved'),0) AS all_revenue_vnd,
+      count(*) FILTER (WHERE o.status='approved') AS all_approved_orders,
+      COALESCE(sum(${ORDER_CREDITS_SQL}) FILTER (WHERE o.status='approved'),0) AS all_credits_sold,
+      count(DISTINCT o.customer_id) FILTER (WHERE o.status='approved') AS all_buyers,
+      COALESCE(sum(o.amount_vnd) FILTER (WHERE o.status='approved' AND o.reviewed_at >= ${monthStart}),0) AS month_revenue_vnd,
+      count(*) FILTER (WHERE o.status='approved' AND o.reviewed_at >= ${monthStart}) AS month_approved_orders,
+      COALESCE(sum(${ORDER_CREDITS_SQL}) FILTER (WHERE o.status='approved' AND o.reviewed_at >= ${monthStart}),0) AS month_credits_sold,
+      count(DISTINCT o.customer_id) FILTER (WHERE o.status='approved' AND o.reviewed_at >= ${monthStart}) AS month_buyers,
+      COALESCE(sum(o.amount_vnd) FILTER (WHERE o.status='pending_review'),0) AS pending_review_vnd,
+      count(*) FILTER (WHERE o.status='pending_review') AS pending_review_orders,
+      count(*) FILTER (WHERE o.status='pending_payment') AS pending_payment_orders
+    FROM ps_billing_orders o`);
+  const monthly = await db.query(`WITH months AS (
+      SELECT generate_series(
+        date_trunc('month', now() AT TIME ZONE 'Asia/Ho_Chi_Minh') - interval '11 months',
+        date_trunc('month', now() AT TIME ZONE 'Asia/Ho_Chi_Minh'),
+        interval '1 month'
+      ) AS month
+    )
+    SELECT to_char(m.month,'YYYY-MM') AS month,
+      COALESCE(count(o.id),0) AS approved_orders,
+      COALESCE(sum(o.amount_vnd),0) AS revenue_vnd,
+      COALESCE(sum(${ORDER_CREDITS_SQL}),0) AS credits_sold,
+      COALESCE(count(DISTINCT o.customer_id),0) AS buyers
+    FROM months m
+    LEFT JOIN ps_billing_orders o
+      ON o.status='approved'
+      AND date_trunc('month',o.reviewed_at AT TIME ZONE 'Asia/Ho_Chi_Minh')=m.month
+    GROUP BY m.month ORDER BY m.month`);
+  const packages = await db.query(`SELECT ${ORDER_PACKAGE_SQL} AS package_id,
+      count(*) AS approved_orders,COALESCE(sum(o.amount_vnd),0) AS revenue_vnd,
+      COALESCE(sum(${ORDER_CREDITS_SQL}),0) AS credits_sold
+    FROM ps_billing_orders o WHERE o.status='approved'
+    GROUP BY 1 ORDER BY revenue_vnd DESC, approved_orders DESC`);
+  const row = summary.rows[0] || {};
+  return {
+    timezone:'Asia/Ho_Chi_Minh',
+    currentMonth:{
+      revenueVnd:number(row.month_revenue_vnd),approvedOrders:number(row.month_approved_orders),
+      creditsSold:number(row.month_credits_sold),buyers:number(row.month_buyers)
+    },
+    pending:{
+      reviewAmountVnd:number(row.pending_review_vnd),reviewOrders:number(row.pending_review_orders),
+      paymentOrders:number(row.pending_payment_orders)
+    },
+    allTime:{
+      revenueVnd:number(row.all_revenue_vnd),approvedOrders:number(row.all_approved_orders),
+      creditsSold:number(row.all_credits_sold),buyers:number(row.all_buyers)
+    },
+    monthly:monthly.rows.map(item=>({month:item.month,revenueVnd:number(item.revenue_vnd),
+      approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold),buyers:number(item.buyers)})),
+    packages:packages.rows.map(item=>{
+      const pkg=packageById(item.package_id);
+      return {id:item.package_id,name:pkg?.name || 'Số lượng khác',revenueVnd:number(item.revenue_vnd),
+        approvedOrders:number(item.approved_orders),creditsSold:number(item.credits_sold)};
+    })
+  };
 }
 
 // This single transaction reserves AND claims the dispatch. A crash after commit
@@ -616,5 +691,5 @@ async function resolveOperation(identity, input) {
 module.exports = {BillingError,UNIT_PRICE_VND,MAX_TOPUP_CREDITS,TOPUP_PACKAGES,
   get BANK() { return bankConfig(); }, get NOTIFICATION_RECIPIENTS() { return notificationRecipients(); },
   enabled,purchasesEnabled,getConfigStatus,assertReady,verifiedIdentity,isAdmin,requireAdmin,ensureAccount,ensureCustomer,getProfile,
-  createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,listAdminUsers,
+  createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,listAdminUsers,listAdminMetrics,
   reserveSubmission,settleSubmission,resolveOperation};
