@@ -18,6 +18,7 @@
   <script src="/qa-run.js?v=20261013d" defer></script>
   <script src="/auth-gate.js?v=20261019a" defer></script>
   <script src="/billing-ui.js?v=20261019-commerce5" defer></script>
+  <script src="/motion-ui.js?v=20261020a" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -731,6 +732,7 @@
 <link rel="stylesheet" href="/blog.css?v=20261019-admin2">
 <link rel="stylesheet" href="/billing.css?v=20261019-commerce5">
 <link rel="stylesheet" href="/auth-gate.css?v=20261019a">
+<link rel="stylesheet" href="/motion-ui.css?v=20261020a">
 </head>
 <body class="ps-auth-pending">
   <section id="psAuthGate" aria-labelledby="psAuthGateTitle">
@@ -758,7 +760,14 @@
  <p>Nhập Form, ghép dữ liệu và gửi phản hồi.</p>
  <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay ↗</a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
 </div>
- <div class="hero-art" role="img" aria-label="Gấu trúc PandaStudy, bảng Excel và Google Form"><img src="/assets/hero.png" alt="PandaStudy" loading="eager"></div></div></section>
+ <div class="hero-art" role="img" aria-label="Gấu trúc PandaStudy, bảng Excel và Google Form chuyển động nhẹ">
+   <span class="motion-orbit" aria-hidden="true"></span>
+   <span class="hero-flow" aria-hidden="true"></span>
+   <span class="hero-motion-chip hero-motion-chip--csv" aria-hidden="true"><b>XL</b><span>Excel / CSV</span></span>
+   <span class="hero-motion-chip hero-motion-chip--map" aria-hidden="true"><b>↔</b><span>Ghép dữ liệu</span></span>
+   <span class="hero-motion-chip hero-motion-chip--form" aria-hidden="true"><b>GF</b><span>Google Form</span></span>
+   <img src="/assets/hero.png" alt="PandaStudy" loading="eager" fetchpriority="high">
+ </div></div></section>
  <div class="steps-strip" aria-label="6 bước sử dụng"><a href="#dropZone"><b>1</b><span><strong>Chọn file</strong><small>Có thể bỏ qua</small></span></a><a href="#formSetupStep"><b>2</b><span><strong>Nhập Google Form</strong><small>Dán link /edit</small></span></a><a href="#mappingStep"><b>3</b><span><strong>Ghép dữ liệu</strong><small>Chọn cột câu hỏi</small></span></a><a href="#planStep"><b>4</b><span><strong>Tạo &amp; kiểm tra</strong><small>50, 100 dòng...</small></span></a><a href="#previewSection"><b>5</b><span><strong>Tải dữ liệu</strong><small>CSV cho Sheets</small></span></a><a href="#qaRunStep"><b>6</b><span><strong>Gửi &amp; đối chiếu</strong><small>Kiểm tra tổng</small></span></a></div>
 
   <main>
