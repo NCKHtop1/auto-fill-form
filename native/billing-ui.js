@@ -283,7 +283,9 @@
               const figure = node('figure', 'pb-qr');
               const image = node('img'); image.src = url.href; image.alt = 'QR chuyển khoản ' + (bank.bankName || 'Techcombank') + ', tài khoản ' + bank.accountNumber;
               image.addEventListener('error', () => { image.hidden = true; });
-              figure.append(image, node('figcaption', '', 'QR chưa có sẵn số tiền và nội dung chuyển khoản. Sau khi quét, nhập đúng số tiền và nội dung của đơn ở trên.'));
+              figure.append(image, node('figcaption', '', order.qrHasAmountAndMemo
+                 ? 'QR đã gồm đúng số tiền và nội dung chuyển khoản của đơn này. Vẫn kiểm tra người thụ hưởng trước khi xác nhận trong ứng dụng ngân hàng.'
+                 : 'QR chưa có sẵn số tiền và nội dung chuyển khoản. Sau khi quét, nhập đúng số tiền và nội dung của đơn ở trên.'));
               const openQr = node('a', 'pb-button', 'Mở QR để lưu');
               openQr.href = url.href; openQr.target = '_blank'; openQr.rel = 'noopener'; openQr.style.marginTop = '10px';
               openQr.setAttribute('aria-label', 'Mở ảnh QR trong thẻ mới để lưu'); figure.append(openQr);
