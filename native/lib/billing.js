@@ -36,10 +36,10 @@ function validBank(bank) {
     name(bank.bankName,80) && name(bank.accountName,120);
 }
 function notificationRecipients() {
-  if (!notificationTransportConfigured()) return Object.freeze([]);
   const recipients = String(process.env.BILLING_NOTIFICATION_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
-  // Email is operationally optional. When enabled, never silently drop a
-  // mistyped recipient or fall back to the RBAC list.
+  // Recipients are persisted to the durable outbox even when the mail
+  // provider is temporarily unconfigured. This keeps top-up alerts recoverable
+  // and lets an admin retry delivery after the transport is restored.
   if (!recipients.length || recipients.length > 10 || !recipients.every(validEmail)) return Object.freeze([]);
   return Object.freeze([...new Set(recipients)]);
 }
