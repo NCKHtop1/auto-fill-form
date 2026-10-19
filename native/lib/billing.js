@@ -293,7 +293,7 @@ async function applyActivePromotions(customer) {
       return {customer:refreshed.rows[0] || customer,active:active.rows.map(promotionView),granted};
     });
   } catch (error) {
-    if (['42P01','42703','23514'].includes(error.code)) return {customer,active:[],granted:[]};
+    if (['42P01','42703'].includes(error.code)) return {customer,active:[],granted:[]};
     throw error;
   }
 }
