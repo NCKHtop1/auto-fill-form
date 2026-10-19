@@ -210,6 +210,14 @@ test('two administrators can approve one order only once, with amount matching a
 });
 
 test('discount packages charge exact bundle price and credit the advertised quantity',async () => {
+  await assert.rejects(
+    billing.createOrder(buyer,{packageId:'popular',quantity:99,idempotencyKey:key('spoof-package')}),
+    {code:'PACKAGE_QUANTITY_MISMATCH'}
+  );
+  await assert.rejects(
+    billing.createOrder(buyer,{packageId:'unknown',quantity:100,idempotencyKey:key('unknown-package')}),
+    {code:'INVALID_PACKAGE'}
+  );
   const popular=await billing.createOrder(buyer,{packageId:'popular',quantity:100,idempotencyKey:key('popular')});
   assert.equal(popular.package.id,'popular');
   assert.equal(popular.quantity,100);
