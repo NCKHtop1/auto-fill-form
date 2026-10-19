@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-19-authbilling1"
+EXPECTED = "2026-10-20-cinematic-v3"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -73,6 +73,22 @@ def wait_until_deployed():
 
 
 wait_until_deployed()
+
+# Presentation assets for the release must be served from the canonical domain.
+for asset_path, expected_type, marker in [
+    ("/motion-ui.css?v=20261020b", "text/css", b"hero-cinematic"),
+    ("/motion-ui.js?v=20261020b", "javascript", b"parallax"),
+]:
+    status, headers, body = no_redirect(BASE + asset_path)
+    assert status == 200, (asset_path, status)
+    assert expected_type in (headers.get("content-type", "").lower()), (asset_path, headers.get("content-type"))
+    assert marker in body, (asset_path, "release marker missing")
+hero_status, hero_headers, hero_bytes = no_redirect(BASE + "/assets/hero-cinematic-v3.webp")
+assert hero_status == 200, hero_status
+assert "image/webp" in hero_headers.get("content-type", "").lower(), hero_headers.get("content-type")
+assert 10_000 < len(hero_bytes) < 60_000, len(hero_bytes)
+assert hero_bytes[:4] == b"RIFF" and hero_bytes[8:12] == b"WEBP", hero_bytes[:12]
+print("POST_DEPLOY_PASS cinematic V3 CSS/JS/WebP assets served", flush=True)
 
 # Canonical hostname.
 status, headers, _ = no_redirect(APEX + "/")
@@ -160,7 +176,7 @@ with sync_playwright() as p:
     print("POST_DEPLOY_PASS signed-out visitor is blocked by login wall", flush=True)
 
     # Existing six-step UI must remain unchanged and responsive after authentication.
-    for width in [320, 390, 768, 1440]:
+    for width in [320, 390, 768, 1024, 1440]:
         context = browser.new_context(viewport={"width": width, "height": 860})
         page = context.new_page()
         errors = []
@@ -209,6 +225,14 @@ with sync_playwright() as p:
             == EXPECTED
         )
         assert page.locator(".steps-strip a").count() == 6
+        assert page.locator(".hero-cinematic").count() == 1
+        hero_image = page.locator(".hero-art img")
+        assert hero_image.get_attribute("src") == "/assets/hero-cinematic-v3.webp"
+        page.wait_for_function(
+            "document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0",
+            timeout=12000,
+        )
+        assert hero_image.evaluate("el => [el.naturalWidth,el.naturalHeight]") == [800, 450]
         assert page.locator("#formUrl").get_attribute("aria-label") == "Đường dẫn Google Form"
         assert page.locator("#qaRunCounters").is_hidden()
         assert page.locator("#qaRunMessage").is_hidden()
@@ -235,10 +259,10 @@ with sync_playwright() as p:
             "() => document.body.dataset.pandaPage === 'home'",
             timeout=8000,
         )
-        if width in (320, 390):
+        if width in (320, 390, 1440):
             page.screenshot(
-                path=str(OUT / ("production-mobile-" + str(width) + ".png")),
-                full_page=True,
+                path=str(OUT / ("production-cinematic-" + str(width) + ".png")),
+                full_page=False,
             )
         assert not errors, "Uncaught JS errors: " + repr(errors)
         print(
@@ -247,6 +271,44 @@ with sync_playwright() as p:
             flush=True,
         )
         context.close()
+
+    # Live reduced-motion rendering must remain static and usable.
+    reduced = browser.new_context(viewport={"width": 1440, "height": 900}, reduced_motion="reduce")
+    reduced_page = reduced.new_page()
+    reduced_errors = []
+    reduced_page.on("pageerror", lambda error: reduced_errors.append(str(error)))
+    reduced_page.route(
+        "**/api/auth/status",
+        lambda route: route.fulfill(
+            status=200,
+            content_type="application/json",
+            body=json.dumps({
+                "configured": True, "signedIn": True, "email": "qa@example.test",
+                "isAdmin": False, "submissionEnabled": False,
+            }),
+        ),
+    )
+    reduced_page.route(
+        "**/api/qa-status**",
+        lambda route: route.fulfill(
+            status=200, content_type="application/json",
+            body=json.dumps({
+                "ok": True, "configured": True, "signedIn": True,
+                "canSend": False, "formAllowed": False,
+                "reasons": ["Hãy nhập Google Form ở Bước 2."],
+            }),
+        ),
+    )
+    reduced_page.route("https://cdn.jsdelivr.net/**", lambda route: route.abort())
+    reduced_page.goto(BASE + "/index.html?qa_revision=" + EXPECTED + "#home", wait_until="domcontentloaded", timeout=30000)
+    reduced_page.wait_for_function("document.body.dataset.authenticated === 'true'")
+    assert reduced_page.locator(".hero-art img").evaluate("el => getComputedStyle(el).animationName") == "none"
+    assert reduced_page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform") == "none"
+    assert not reduced_errors, reduced_errors
+    reduced_page.screenshot(path=str(OUT / "production-cinematic-reduced.png"), full_page=False)
+    reduced.close()
+    print("POST_DEPLOY_PASS production reduced-motion rendering", flush=True)
+
     browser.close()
 
 print(
