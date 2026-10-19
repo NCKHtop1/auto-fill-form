@@ -301,7 +301,7 @@ def main():
             state["orders"][0]["status"] = "approved"
             state["profile"].update(availableCredits=103, purchasesEnabled=True)
             page.get_by_role("button", name="Kiểm tra trạng thái", exact=True).click()
-            page.get_by_text("Đã cộng 20 phiếu vào tài khoản.", exact=False).wait_for()
+            page.get_by_text("Đã cộng 100 phiếu vào tài khoản.", exact=False).wait_for()
             assert "103 phiếu" in page.locator("#pandaBillingRoot").inner_text()
             page.keyboard.press("Escape")
             assert page.locator("#formUrl").input_value() == FORM_URL
