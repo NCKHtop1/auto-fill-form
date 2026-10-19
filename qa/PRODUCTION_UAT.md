@@ -9,8 +9,7 @@ This UAT is designed to validate the production cutover without changing the exi
 - Canonical site: `https://www.pandastudy.info.vn`
 - Apex: `https://pandastudy.info.vn` redirects to the canonical host.
 - Google OAuth callback: `https://www.pandastudy.info.vn/api/auth/callback`
-- `BILLING_ENABLED=false`
-- `BILLING_TOPUPS_PAUSED=true`
+- Main application shell is hidden until Google sign-in succeeds.\n- `BILLING_ENABLED=false` during the first production cutover.\n- `BILLING_TOPUPS_PAUSED=true` until database and real-money UAT pass.
 - Do not use a live research Form for write testing.
 - Do not approve a top-up unless the money is visible in the real receiving bank account.
 
@@ -42,16 +41,8 @@ The production smoke creates no order, sends no Google response, approves no pay
 
 Use a Google test account allowed by the OAuth consent screen.
 
-1. Open `https://www.pandastudy.info.vn`.
-2. Start Google connection.
-3. Confirm the browser goes to Google Accounts.
-4. Complete consent.
-5. Confirm return host is exactly `www.pandastudy.info.vn`.
-6. Confirm the application shows the signed-in email.
-7. Refresh the page; session must survive.
-8. Sign out; refresh; protected actions must require login again.
-9. Repeat in a private/incognito window.
-10. Verify the legacy `.vercel.app` URL still works as rollback access, but the normal user journey stays on the custom domain.
+1. Open `https://www.pandastudy.info.vn`.\n2. Confirm only the PandaStudy login screen is visible; the main navigation/workspace must be hidden.\n3. Start Google connection.
+4. Confirm the browser goes to Google Accounts.\n5. Complete consent.\n6. Confirm return host is exactly `www.pandastudy.info.vn`.\n7. Confirm the main application appears only after the callback succeeds.\n8. Confirm the account bar shows email, credit balance, top-up history and logout.\n9. Refresh the page; session must survive.\n10. Sign out; the login wall must return and the main shell must disappear.\n11. Repeat in a private/incognito window.\n12. Verify the legacy `.vercel.app` URL remains rollback access, but the normal user journey stays on the custom domain.
 
 Pass criteria: no `redirect_uri_mismatch`, no loop between domains, no lost session after callback.
 
@@ -128,13 +119,7 @@ Pass criteria: no duplicate dispatch and no double credit consumption.
 
 ## Manual UAT G — notification path
 
-1. Confirm `RESEND_API_KEY` and `BILLING_EMAIL_FROM` are configured with a verified sender.
-2. Buyer submits a paid order.
-3. Confirm all configured notification recipients receive the message, including spam-folder check.
-4. Force one provider failure in UAT if practical, then use retry.
-5. Confirm retry does not duplicate the order or change credit balance.
-
-Pass criteria: email is notification only; it never approves money.
+Email is optional and never part of financial authorization.\n\n1. If `RESEND_API_KEY` and `BILLING_EMAIL_FROM` are configured, verify the sender.\n2. Buyer submits a paid order.\n3. When email is enabled, confirm configured recipients receive the message, including spam-folder check.\n4. When email is disabled, confirm the order still reaches `pending_review` and is visible in the admin dashboard.\n5. If practical, force one provider failure and retry.\n6. Confirm retry does not duplicate the order or change credit balance.\n\nPass criteria: email is notification only; it never approves money and its absence never grants credits.
 
 ## Release decision
 
