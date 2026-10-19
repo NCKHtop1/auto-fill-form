@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/billing.css?v=20261019b">
-  <script src="/admin-topups.js?v=20261019b" defer></script>
+  <link rel="stylesheet" href="/billing.css?v=20261019c">
+  <script src="/admin-topups.js?v=20261019c" defer></script>
 </head>
 <body class="pb-admin">
   <header class="pb-admin-header">
@@ -43,7 +43,19 @@
           <button class="pb-button" id="paRetryEmail" type="button">Thử gửi lại email lỗi</button>
         </div>
       </div>
-      <div class="pb-admin-grid">
+      <section class="pb-card" aria-labelledby="paRevenueTitle">
+        <div class="pb-admin-users-head">
+          <div>
+            <h2 id="paRevenueTitle">Doanh thu & hiệu quả nạp</h2>
+            <p class="pb-small pb-muted">Doanh thu chỉ tính các đơn đã được admin duyệt. Múi giờ báo cáo: Việt Nam (Asia/Ho_Chi_Minh).</p>
+          </div>
+          <button class="pb-button" id="paRefreshMetrics" type="button">Cập nhật doanh thu</button>
+        </div>
+        <div id="paRevenueSummary" class="pb-metric-grid" aria-live="polite"></div>
+        <div id="paRevenuePackages" class="pb-revenue-packages" aria-label="Hiệu quả theo gói"></div>
+        <div id="paRevenueMonthly" class="pb-revenue-table-wrap" aria-live="polite"></div>
+      </section>
+      <div class="pb-admin-grid" style="margin-top:20px">
         <section class="pb-card" aria-labelledby="paOrdersTitle">
           <h2 id="paOrdersTitle">Đơn mua phiếu</h2>
           <p class="pb-small pb-muted">Đối chiếu giao dịch tiền vào ngân hàng trước khi duyệt. Thông báo của người dùng và email chưa xác nhận tiền đã về.</p>
