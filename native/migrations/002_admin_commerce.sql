@@ -124,14 +124,14 @@ CREATE TABLE IF NOT EXISTS ps_billing_promotion_grants (
 CREATE INDEX IF NOT EXISTS ps_billing_promotion_grants_customer
   ON ps_billing_promotion_grants(customer_id,granted_at DESC);
 
-DO $
+DO $$
 BEGIN
   IF EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname='ps_billing_ledger_check'
   ) THEN
     ALTER TABLE ps_billing_ledger DROP CONSTRAINT ps_billing_ledger_check;
   END IF;
-END $;
+END $$;
 
 ALTER TABLE ps_billing_ledger DROP CONSTRAINT IF EXISTS ps_billing_ledger_kind_check;
 ALTER TABLE ps_billing_ledger
