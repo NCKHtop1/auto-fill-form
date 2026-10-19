@@ -11,6 +11,8 @@ module.exports = async function handler(req,res) {
     if (req.method === 'GET') {
       if (req.query?.resource === 'users')
         return res.json({ok:true,users:await billing.listAdminUsers(current,{search:req.query?.search || ''})});
+      if (req.query?.resource === 'metrics')
+        return res.json({ok:true,metrics:await billing.listAdminMetrics(current)});
       return res.json({ok:true,...await billing.listAdminTopups(current,
         {status:req.query?.status || 'pending_review',orderId:req.query?.orderId})});
     }
