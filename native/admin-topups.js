@@ -354,6 +354,7 @@
       detail(stats, 'Đơn đã duyệt', number(user.approvedOrders) + ' / ' + number(user.totalOrders));
       detail(stats, 'Đang chờ nạp', number(user.pendingOrders));
       detail(stats, 'Đã nạp', number(user.purchasedCredits) + ' phiếu · ' + money(user.paidAmountVnd));
+      if (number(user.promotionGrants) > 0) detail(stats, 'Phiếu ưu đãi', '+' + number(user.promotionCredits) + ' phiếu · ' + number(user.promotionGrants) + ' chương trình');
       detail(stats, 'Lượt đã sử dụng', number(user.consumedOperations));
       if (number(user.unknownOperations) > 0) detail(stats, 'Lượt cần đối chiếu', number(user.unknownOperations));
       card.append(head, stats);
