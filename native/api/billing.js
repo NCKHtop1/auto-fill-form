@@ -2,6 +2,7 @@
 const billing = require('../lib/billing');
 const notifications = require('../lib/billing-notifications');
 const http = require('../lib/billing-http');
+const db = require('../lib/billing-db');
 
 module.exports = async function handler(req,res) {
   http.headers(res);
@@ -9,6 +10,22 @@ module.exports = async function handler(req,res) {
   try {
     if (req.method === 'GET') {
       const action = req.query?.action || 'profile';
+      if (action === 'health') {
+        const config = billing.getConfigStatus();
+        let databaseReachable = false, schemaReady = false;
+        if (process.env.DATABASE_URL) {
+          try {
+            const result = await db.query('SELECT version FROM ps_billing_schema_migrations WHERE version=1');
+            databaseReachable = true;
+            schemaReady = result.rowCount > 0;
+          } catch (error) {
+            console.error('[PandaStudy billing health]', error.code || 'UNAVAILABLE');
+          }
+        }
+        return res.json({ok:true,billingEnabled:config.billingEnabled,
+          financialConfigReady:config.missing.length===0,missing:config.missing,warnings:config.warnings||[],
+          databaseReachable,schemaReady,schemaVersion:schemaReady?1:null});
+      }
       if (action === 'profile') {
         // Account identity is useful even while purchasing is disabled or
         // temporarily unconfigured. Financial actions still call assertReady.
