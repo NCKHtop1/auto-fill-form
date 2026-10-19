@@ -236,7 +236,7 @@
       if (order.id === state.selected?.id) { open.classList.add('pb-admin-order-active'); open.setAttribute('aria-current', 'true'); }
       const text = node('span', '', order.orderCode || order.id);
       text.append(node('span', 'pb-order-meta', order.customer?.email || 'Tài khoản chưa hiển thị'),
-        node('span', 'pb-order-meta', number(order.quantity) + ' phiếu · ' + money(order.amountVnd)),
+        node('span', 'pb-order-meta', (order.package ? order.package.name + ' · ' : '') + number(order.quantity) + ' phiếu · ' + money(order.amountVnd)),
         node('span', 'pb-order-meta', date(order.submittedAt || order.createdAt)));
       open.append(text, node('span', 'pb-badge pb-badge-' + order.status, labels[order.status] || order.status));
       item.append(open); list.append(item);
@@ -263,7 +263,13 @@
     container.append(node('h2', '', 'Đơn ' + (order.orderCode || order.id)), node('span', 'pb-badge pb-badge-' + order.status, labels[order.status] || order.status));
     const data = node('dl', 'pb-details');
     detail(data, 'Tài khoản', order.customer?.email);
-    detail(data, 'Số phiếu', number(order.quantity)); detail(data, 'Số tiền cần nhận', money(order.amountVnd));
+    if (order.package) detail(data, 'Gói nạp', order.package.name + (order.package.popular ? ' · Phổ biến nhất' : ''));
+    detail(data, 'Số phiếu', number(order.quantity));
+    if (Number(order.discountPercent) > 0) {
+      detail(data, 'Giá niêm yết', money(order.listPriceVnd));
+      detail(data, 'Ưu đãi', 'Giảm ' + number(order.discountPercent) + '% · tiết kiệm ' + money(Number(order.listPriceVnd)-Number(order.amountVnd)));
+    }
+    detail(data, 'Số tiền cần nhận', money(order.amountVnd));
     detail(data, 'Nội dung chuyển khoản', order.paymentMemo);
     detail(data, 'Ngân hàng', order.bank?.bankName); detail(data, 'Tài khoản nhận', order.bank?.accountNumber);
     detail(data, 'Người thụ hưởng', order.bank?.accountName);
