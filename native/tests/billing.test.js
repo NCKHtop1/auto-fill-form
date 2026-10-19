@@ -167,6 +167,11 @@ test('order uses server pricing, configured same-origin QR, bounded quantity and
   assert.equal(first.qrImageUrl,'/assets/uat-payment-qr.svg');
   assert.equal(first.qrHasAmountAndMemo,false);
   assert.equal(first.paymentMemo,first.orderCode);
+  process.env.BILLING_QR_IMAGE_URL = '/api/payment-qr';
+  const exactQr = await billing.getOrder(buyer,first.id);
+  assert.equal(exactQr.qrImageUrl,'/api/payment-qr?orderId='+encodeURIComponent(first.id));
+  assert.equal(exactQr.qrHasAmountAndMemo,true);
+  process.env.BILLING_QR_IMAGE_URL = '/assets/uat-payment-qr.svg';
   process.env.BILLING_BANK_ACCOUNT_NUMBER = '11111111111111';
   const oldOrder = await billing.getOrder(buyer,first.id);
   assert.equal(oldOrder.bank.accountNumber,'00000000000000');
