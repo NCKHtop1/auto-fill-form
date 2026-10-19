@@ -300,7 +300,7 @@
   function showApprove(container, order) {
     if (state.busy) return; clearForm(container);
     const form = node('form', 'pb-admin-confirm');
-    form.append(node('h3', '', 'Xác nhận tiền vào ngân hàng'), node('p', 'pb-notice', 'Duyệt đơn này sẽ cộng ' + number(order.quantity) + ' phiếu cho ' + (order.customer?.email || 'tài khoản của đơn') + '. Số tiền phải khớp ' + money(order.amountVnd) + '.'));
+    form.append(node('h3', '', 'Xác nhận tiền vào ngân hàng'), node('p', 'pb-notice', 'Duyệt đơn này sẽ cộng ' + number(order.quantity) + ' phiếu cho ' + (order.customer?.email || 'tài khoản của đơn') + '. Nếu nhập số tiền đối soát thì phải khớp ' + money(order.amountVnd) + '; ô tick xác nhận là bắt buộc.'));
     const amount = field('Số tiền thực nhận (đồng) · không bắt buộc', 'number', 'paReceivedAmount', 'Có thể để trống');
     amount.input.required = false; amount.input.min = '1'; amount.input.step = '1'; amount.input.inputMode = 'numeric';
     const reference = field('Mã giao dịch ngân hàng · không bắt buộc', 'text', 'paBankReference', 'Có thể để trống');
