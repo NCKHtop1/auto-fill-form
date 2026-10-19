@@ -162,7 +162,7 @@ async function loadPackages(includeDisabled=false) {
     const result=await db.query(`SELECT id,name,badge,credits,price_vnd,list_price_vnd,featured,enabled,sort_order
       FROM ps_billing_packages WHERE ($1::boolean OR enabled=true)
       ORDER BY sort_order,id`,[includeDisabled]);
-    if (result.rowCount) return result.rows.map(publicPackage);
+    return result.rows.map(publicPackage);
   } catch (error) {
     if (!['42P01','42703'].includes(error.code)) throw error;
   }
