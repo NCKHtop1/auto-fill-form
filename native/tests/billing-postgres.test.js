@@ -42,6 +42,7 @@ test('Real PostgreSQL billing: concurrency, ownership and atomic recovery', {
     BILLING_BANK_ACCOUNT_NUMBER: '00000000000000',
     BILLING_BANK_ACCOUNT_NAME: 'Merchant Demo',
     BILLING_QR_IMAGE_URL: '/assets/uat-payment-qr.svg',
+    PUBLIC_SITE_URL: 'https://pandastudy-uat.invalid',
     BILLING_NOTIFICATION_EMAILS: 'admin@example.test,admin2@example.test',
     RESEND_API_KEY: 'uat-unused-no-email-delivery',
     BILLING_EMAIL_FROM: 'Merchant Demo <notifications@example.test>',
