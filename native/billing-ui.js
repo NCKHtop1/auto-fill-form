@@ -53,35 +53,48 @@
     link.setAttribute('aria-label', 'Kết nối Google, mở trong thẻ mới');
     return link;
   }
+  async function logout() {
+    if (state.busy) return;
+    state.busy = true;
+    try {
+      await fetch('/api/auth/logout', {method:'POST', credentials:'same-origin', cache:'no-store'});
+    } finally {
+      location.assign('/');
+    }
+  }
   function renderBar() {
     if (!host) return;
     const profile = state.profile;
-    host.hidden = !profile?.billingEnabled;
+    // The account bar is now part of the authenticated shell, not merely a
+    // billing advertisement. It stays visible even while top-ups are paused.
+    host.hidden = !profile?.signedIn;
     host.replaceChildren();
     if (host.hidden) return;
     const copy = node('div', 'pb-account-copy');
     const actions = node('div', 'pb-actions');
-    if (!profile.configured) {
-      copy.append(node('span', 'pb-account-title', 'Mua thêm phiếu hiện chưa sẵn sàng'),
-        node('span', 'pb-account-email pb-small pb-muted', 'Bạn vẫn có thể nhập dữ liệu, ghép cột và xem trước như bình thường.'));
+    copy.append(node('span', 'pb-account-email pb-small pb-muted', profile.user?.email || 'Đã đăng nhập Google'));
+
+    if (!profile.billingEnabled) {
+      copy.prepend(node('span', 'pb-account-title', 'Tài khoản PandaStudy'));
+      copy.append(node('span', 'pb-account-email pb-small pb-muted', 'Hệ thống phiếu đang được quản trị viên chuẩn bị.'));
+    } else if (!profile.configured) {
+      copy.prepend(node('span', 'pb-account-title', 'Tài khoản PandaStudy'));
+      copy.append(node('span', 'pb-account-email pb-small pb-muted', 'Số dư tạm thời chưa tải được. Chưa chuyển khoản lúc này.'));
       actions.append(button('Kiểm tra lại', () => refresh()));
-    } else if (!profile.signedIn) {
-      copy.append(node('span', 'pb-account-title', 'Mua thêm phiếu gửi'),
-        node('span', 'pb-account-email pb-small pb-muted', 'Kết nối Google để xem số dư và đơn mua của bạn.'));
-      actions.append(button(profile.purchasesEnabled === false ? 'Xem đơn mua' : 'Mua thêm phiếu', openPurchase, true));
     } else {
-      copy.append(node('span', 'pb-account-title', number(profile.availableCredits) + ' phiếu khả dụng'));
+      copy.prepend(node('span', 'pb-account-title', number(profile.availableCredits) + ' phiếu khả dụng'));
       if (Number(profile.reservedCredits) > 0) copy.append(node('span', 'pb-small pb-muted', ' · ' + number(profile.reservedCredits) + ' phiếu đang chờ đối chiếu'));
-      copy.append(node('span', 'pb-account-email pb-small pb-muted', profile.user?.email || 'Đã kết nối Google'));
       if (profile.purchasesEnabled === false) copy.append(node('span', 'pb-account-email pb-small pb-muted', 'Mua phiếu mới đang tạm dừng. Số phiếu hiện có được giữ nguyên.'));
-      else actions.append(button('Mua thêm phiếu', openPurchase, true));
-      actions.append(button('Đơn mua', () => openPurchase({ showOrders: true })));
-      if (profile.user?.isAdmin) {
-        const admin = node('a', 'pb-button', 'Duyệt nạp');
-        admin.href = '/admin-topups.html'; admin.target = '_blank'; admin.rel = 'noopener';
-        actions.append(admin);
-      }
+      else actions.append(button('Nạp phiếu', openPurchase, true));
+      actions.append(button('Lịch sử nạp', () => openPurchase({ showOrders: true })));
     }
+
+    if (profile.user?.isAdmin) {
+      const admin = node('a', 'pb-button', 'Quản trị nạp');
+      admin.href = '/admin-topups.html'; admin.target = '_blank'; admin.rel = 'noopener';
+      actions.append(admin);
+    }
+    actions.append(button('Đăng xuất', logout));
     host.append(copy, actions);
   }
   async function refresh() {
