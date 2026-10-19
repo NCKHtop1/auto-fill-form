@@ -13,7 +13,7 @@ test.after(()=>{global.fetch=originalFetch;process.env=originalEnv;});
 const response=()=>({headers:{},getHeader(k){return this.headers[k];},setHeader(k,v){this.headers[k]=v;}});
 const session=()=>({access_token:'server-token',refresh_token:'retained-refresh',email:'old@example.com',expires_at:Date.now()+3600000});
 
-test('Existing Google cookie upgrades to verified stable identity without changing OAuth scopes',async()=>{
+test('Existing Google cookie upgrades to verified stable identity with identity-only login scopes',async()=>{
  const req={headers:{},body:{sub:'client-spoof',email:'admin@example.com'}},res=response();
  let calls=0;
  global.fetch=async(url,options)=>{
@@ -29,8 +29,7 @@ test('Existing Google cookie upgrades to verified stable identity without changi
  assert.equal(upgraded.refresh_token,'retained-refresh');
  assert.equal(upgraded.sub,'google-sub-123');
  assert.equal(upgraded.email_verified,true);
- assert.deepEqual(auth.OAUTH_SCOPES,['openid','email','profile',
-  'https://www.googleapis.com/auth/forms.body.readonly','https://www.googleapis.com/auth/forms.responses.readonly']);
+ assert.deepEqual(auth.OAUTH_SCOPES,['openid','email','profile']);
 });
 
 test('Fresh verified claims do not add a network dependency to every billing request',async()=>{
