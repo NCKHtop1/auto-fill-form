@@ -103,7 +103,7 @@ print("POST_DEPLOY_PASS OAuth callback and Forms scopes", flush=True)
 
 # Read-only billing infrastructure readiness. No secrets or rows are exposed.
 request = Request(
-    BASE + "/api/billing-health",
+    BASE + "/api/billing?action=health",
     headers={
         "User-Agent": "PandaStudy-readonly-postdeploy-smoke",
         "Cache-Control": "no-cache",
