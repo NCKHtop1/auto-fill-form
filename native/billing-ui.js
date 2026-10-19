@@ -288,10 +288,10 @@
         card.type = 'button';
         card.dataset.packageId = pkg.id;
         card.setAttribute('aria-pressed', pkg.id === selectedId ? 'true' : 'false');
-        if (pkg.popular) card.classList.add('pb-package-popular');
+        if (pkg.featured || pkg.popular) card.classList.add('pb-package-popular');
         const top = node('div', 'pb-package-top');
         top.append(node('strong', '', pkg.name));
-        if (pkg.popular) top.append(node('span', 'pb-package-badge', 'Phổ biến nhất'));
+        if (pkg.featured || pkg.popular || pkg.badge) top.append(node('span', 'pb-package-badge', pkg.badge || 'Nổi bật'));
         card.append(top,node('div','pb-package-credits',number(pkg.credits)+' phiếu'));
         const priceRow = node('div','pb-package-price');
         priceRow.append(node('strong','',money(pkg.priceVnd)));
