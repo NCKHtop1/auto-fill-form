@@ -103,6 +103,14 @@ try:
         page.wait_for_function("document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0")
         dimensions = image.evaluate("el => [el.naturalWidth, el.naturalHeight]")
         assert dimensions == [600, 338], dimensions
+        average_luma = image.evaluate("""el => {
+          const c=document.createElement('canvas'); c.width=30; c.height=17;
+          const x=c.getContext('2d'); x.drawImage(el,0,0,c.width,c.height);
+          const d=x.getImageData(0,0,c.width,c.height).data;
+          let sum=0; for(let i=0;i<d.length;i+=4) sum += (d[i]+d[i+1]+d[i+2])/3;
+          return sum/(d.length/4);
+        }""")
+        assert average_luma > 35, ("hero appears blank/dark", average_luma)
 
         animation = image.evaluate("el => getComputedStyle(el).animationName")
         assert "psCinematicBreath" in animation, animation
