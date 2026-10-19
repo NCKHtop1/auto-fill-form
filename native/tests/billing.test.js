@@ -210,6 +210,32 @@ test('two administrators can approve one order only once, with amount matching a
   assert.equal((await billing.getProfile(buyer)).availableCredits,7);
 });
 
+test('admin user directory exposes persistent Google accounts without raw Google subject',async () => {
+  await billing.getProfile(buyer);
+  await billing.getProfile(admin);
+  await fund(2,buyer);
+  const users=await billing.listAdminUsers(admin,{search:'buyer@'});
+  assert.equal(users.length,1);
+  assert.equal(users[0].email,buyer.email);
+  assert.equal(users[0].role,'user');
+  assert.equal(users[0].purchasedCredits,2);
+  assert.equal(users[0].paidAmountVnd,1000);
+  assert.equal(users[0].availableCredits,2);
+  assert.ok(users[0].createdAt);
+  assert.ok(users[0].lastActivityAt);
+  assert.equal(Object.hasOwn(users[0],'google_sub'),false);
+  assert.equal(Object.hasOwn(users[0],'googleSub'),false);
+
+  const admins=await billing.listAdminUsers(admin,{search:'admin@example.test'});
+  assert.equal(admins.length,1);
+  assert.equal(admins[0].role,'admin');
+
+  await assert.rejects(billing.listAdminUsers(buyer),{code:'BILLING_ADMIN_REQUIRED'});
+  const response=await request(adminApi,{identity:admin,query:{resource:'users',search:'buyer@'}});
+  assert.equal(response.statusCode,200);
+  assert.equal(response.data.users[0].email,buyer.email);
+});
+
 test('a fault after updating balance rolls back approval, bank allocation and audit together',async () => {
   const order=await pending(4);
   fault=sql=>{if(sql.includes('INSERT INTO ps_billing_ledger'))throw Error('Injected mid-transaction failure');};
