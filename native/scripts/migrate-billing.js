@@ -7,12 +7,15 @@ const db = require('../lib/billing-db');
 
 async function main() {
   if (!process.env.DATABASE_URL) throw new Error('DATABASE_URL is required; no migration was applied.');
-  const sql = fs.readFileSync(path.join(__dirname, '../migrations/001_billing.sql'), 'utf8');
+  const files = ['001_billing.sql','002_admin_commerce.sql'];
   await db.transaction(async client => {
     await client.query('SELECT pg_advisory_xact_lock(730612901)');
-    await client.query(sql);
+    for (const file of files) {
+      const sql = fs.readFileSync(path.join(__dirname, '../migrations', file), 'utf8');
+      await client.query(sql);
+    }
   });
-  console.log('PandaStudy billing migration 001 applied.');
+  console.log('PandaStudy billing migrations 001-002 applied.');
 }
 
 main().catch(error => {
