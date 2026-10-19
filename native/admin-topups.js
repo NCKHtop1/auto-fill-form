@@ -406,6 +406,24 @@
     } catch (error) { say(error.message, 'error'); }
     finally { button.disabled = false; }
   }
+  function exportRevenueCsv() {
+    if (!state.metrics) { say('Chưa có dữ liệu doanh thu để xuất.', 'error'); return; }
+    const rows = [['month','revenue_vnd','approved_orders','credits_sold','buyers']];
+    for (const item of state.metrics.monthly || []) rows.push([
+      item.month,Number(item.revenueVnd||0),Number(item.approvedOrders||0),Number(item.creditsSold||0),Number(item.buyers||0)
+    ]);
+    const csv = rows.map(row => row.map(value => {
+      const text = String(value ?? '');
+      return /[",\n]/.test(text) ? '"' + text.replace(/"/g,'""') + '"' : text;
+    }).join(',')).join('\n');
+    const blob = new Blob(['\ufeff'+csv],{type:'text/csv;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url; link.download = 'pandastudy-revenue-monthly.csv';
+    document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+    say('Đã tạo CSV doanh thu theo tháng.');
+  }
+
   async function init() {
     if (await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics()]);
   }
@@ -414,6 +432,7 @@
     if (!state.busy && await checkSession()) await Promise.all([loadOrders(), loadUsers(), loadMetrics()]);
   });
   $('paRefreshMetrics')?.addEventListener('click', () => { if (!state.busy) loadMetrics(); });
+  $('paExportRevenue')?.addEventListener('click', exportRevenueCsv);
   $('paRetryEmail').addEventListener('click', retryEmail);
   $('paUserSearchForm')?.addEventListener('submit', event => {
     event.preventDefault();
