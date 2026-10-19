@@ -13,6 +13,11 @@ from threading import Thread
 from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parent.parent / "native"
+OUT = Path(__file__).resolve().parent.parent / "qa-artifacts"
+OUT.mkdir(parents=True, exist_ok=True)
+
+assert (ROOT / "motion-ui.js").stat().st_size < 12_000, "motion-ui.js exceeds 12 KB guardrail"
+assert (ROOT / "motion-ui.css").stat().st_size < 20_000, "motion-ui.css exceeds 20 KB guardrail"
 
 class Handler(SimpleHTTPRequestHandler):
     def log_message(self, *args):
@@ -112,6 +117,7 @@ try:
         assert page.locator("#app").is_visible()
 
         assert overflow(page)["delta"] <= 1, overflow(page)
+        page.screenshot(path=str(OUT / "motion_desktop_1440.png"), full_page=False)
         assert not errors, errors
         print("PASS motion desktop: hero float, pointer parallax, reveal and CTA preserved", flush=True)
         context.close()
@@ -128,6 +134,8 @@ try:
             assert geom["delta"] <= 1, (width, geom)
             assert p.locator(".hero-art").is_visible()
             assert p.locator(".hero-motion-chip--map").is_hidden() if width <= 650 else True
+            if width in (390, 320):
+                p.screenshot(path=str(OUT / f"motion_mobile_{width}.png"), full_page=False)
             print(f"PASS motion responsive: {width}px has no horizontal overflow", flush=True)
             ctx.close()
 
@@ -157,6 +165,7 @@ try:
             "getComputedStyle(el).getPropertyValue('--parallax-y').trim()]"
         )
         assert reduced_vars == ["0px", "0px"], reduced_vars
+        rp.screenshot(path=str(OUT / "motion_reduced_1440.png"), full_page=False)
         assert not reduced_errors, reduced_errors
         print("PASS motion accessibility: reduced-motion is static and fully visible", flush=True)
         reduced.close()
