@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/billing.css?v=20261017a">
-  <script src="/admin-topups.js?v=20261017a" defer></script>
+  <link rel="stylesheet" href="/billing.css?v=20261019b">
+  <script src="/admin-topups.js?v=20261019b" defer></script>
 </head>
 <body class="pb-admin">
   <header class="pb-admin-header">
@@ -57,6 +57,23 @@
         <h2 id="paOperationsTitle" tabindex="-1">Phiếu chờ đối chiếu kết quả gửi</h2>
         <p class="pb-small pb-muted">Các lượt đang giữ chưa được quyết toán. Chỉ xác nhận sau khi kiểm tra được kết quả gửi; thao tác ở đây không gửi lại Form.</p>
         <div id="paOperations"></div>
+      </section>
+      <section class="pb-card" style="margin-top:20px" aria-labelledby="paUsersTitle">
+        <div class="pb-admin-users-head">
+          <div>
+            <h2 id="paUsersTitle">Tài khoản người dùng</h2>
+            <p class="pb-small pb-muted">Mỗi Google Account đăng nhập tạo một tài khoản PandaStudy ổn định. Admin xem email, thời điểm tạo/hoạt động, số phiếu, lịch sử nạp và sử dụng. Google subject thô không hiển thị.</p>
+          </div>
+          <form id="paUserSearchForm" class="pb-admin-user-search" role="search">
+            <label class="pb-field" for="paUserSearch">Tìm tài khoản
+              <input id="paUserSearch" type="search" maxlength="120" autocomplete="off" placeholder="Email hoặc mã tài khoản">
+            </label>
+            <button class="pb-button" type="submit">Tìm</button>
+            <button class="pb-button" id="paUserSearchClear" type="button">Xóa lọc</button>
+          </form>
+        </div>
+        <div id="paUsersSummary" class="pb-small pb-muted" aria-live="polite"></div>
+        <div id="paUsers" class="pb-admin-users" aria-live="polite"></div>
       </section>
     </div>
   </main>
