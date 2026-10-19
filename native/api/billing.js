@@ -10,8 +10,9 @@ module.exports = async function handler(req,res) {
     if (req.method === 'GET') {
       const action = req.query?.action || 'profile';
       if (action === 'profile') {
-        const config = billing.getConfigStatus();
-        const current = config.billingEnabled && config.configured ? await http.identity(req,res,true) : null;
+        // Account identity is useful even while purchasing is disabled or
+        // temporarily unconfigured. Financial actions still call assertReady.
+        const current = await http.identity(req,res,true);
         return res.json({ok:true,...await billing.getProfile(current)});
       }
       const current = await http.identity(req,res);
