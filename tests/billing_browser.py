@@ -270,6 +270,7 @@ def main():
             plan_before = page.evaluate("window.PandaStudyQA.getRows()")
             page.set_viewport_size({"width": 320, "height": 800})
             page.get_by_role("button", name="Nạp phiếu", exact=True).click()
+            page.locator(".pb-package-card").first.wait_for(state="visible")
             assert page.locator(".pb-package-card").count() == 4
             assert page.locator('[data-package-id="popular"]').get_attribute("aria-pressed") == "true"
             assert "45.000" in page.locator(".pb-total").inner_text()
