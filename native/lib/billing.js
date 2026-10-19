@@ -489,7 +489,7 @@ async function listAdminUsers(identity, input = {}) {
         COALESCE(sum(${ORDER_CREDITS_SQL}) FILTER (WHERE status='approved'),0) AS purchased_credits,
         COALESCE(sum(amount_vnd) FILTER (WHERE status='approved'),0) AS paid_amount_vnd,
         max(created_at) AS last_order_at
-      FROM ps_billing_orders WHERE customer_id=c.id
+      FROM ps_billing_orders o WHERE o.customer_id=c.id
     ) ord ON true
     LEFT JOIN LATERAL (
       SELECT count(*) AS total_operations,
