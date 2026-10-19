@@ -209,6 +209,64 @@ test('two administrators can approve one order only once, with amount matching a
   assert.equal((await billing.getProfile(buyer)).availableCredits,7);
 });
 
+test('discount packages charge exact bundle price and credit the advertised quantity',async () => {
+  const popular=await billing.createOrder(buyer,{packageId:'popular',quantity:100,idempotencyKey:key('popular')});
+  assert.equal(popular.package.id,'popular');
+  assert.equal(popular.quantity,100);
+  assert.equal(popular.amountVnd,45000);
+  assert.equal(popular.listPriceVnd,50000);
+  assert.equal(popular.discountPercent,10);
+  const stored=(await db.query('SELECT quantity,unit_price_vnd,amount_vnd,order_code FROM ps_billing_orders WHERE id=$1',[popular.id])).rows[0];
+  assert.equal(Number(stored.quantity),90);
+  assert.equal(Number(stored.unit_price_vnd),500);
+  assert.equal(Number(stored.amount_vnd),45000);
+  assert.match(stored.order_code,/^PSPOPULAR-/);
+
+  await billing.submitPaid(buyer,{orderId:popular.id});
+  await approve(popular);
+  assert.equal((await billing.getProfile(buyer)).availableCredits,100);
+  const ledger=(await db.query("SELECT available_delta FROM ps_billing_ledger WHERE kind='topup' AND source_id=$1",[popular.id])).rows[0];
+  assert.equal(Number(ledger.available_delta),100);
+
+  const custom=await billing.createOrder(buyer,{quantity:100,idempotencyKey:key('custom-100')});
+  assert.equal(custom.package,null);
+  assert.equal(custom.quantity,100);
+  assert.equal(custom.amountVnd,50000);
+});
+
+test('admin revenue metrics count approved package revenue, credits, buyers and pending value by month',async () => {
+  const starter=await billing.createOrder(other,{packageId:'starter',quantity:20,idempotencyKey:key('starter')});
+  await billing.submitPaid(other,{orderId:starter.id});
+  await approve(starter,admin,'METRIC-STARTER');
+
+  const popular=await billing.createOrder(buyer,{packageId:'popular',quantity:100,idempotencyKey:key('metric-popular')});
+  await billing.submitPaid(buyer,{orderId:popular.id});
+  await approve(popular,admin,'METRIC-POPULAR');
+
+  const research=await billing.createOrder(buyer,{packageId:'research',quantity:250,idempotencyKey:key('metric-research')});
+  await billing.submitPaid(buyer,{orderId:research.id});
+
+  const metrics=await billing.listAdminMetrics(admin);
+  assert.equal(metrics.currentMonth.revenueVnd,55000);
+  assert.equal(metrics.currentMonth.approvedOrders,2);
+  assert.equal(metrics.currentMonth.creditsSold,120);
+  assert.equal(metrics.currentMonth.buyers,2);
+  assert.equal(metrics.pending.reviewAmountVnd,110000);
+  assert.equal(metrics.pending.reviewOrders,1);
+  assert.equal(metrics.allTime.revenueVnd,55000);
+  assert.equal(metrics.allTime.creditsSold,120);
+  assert.equal(metrics.monthly.length,12);
+  assert.equal(metrics.monthly.at(-1).revenueVnd,55000);
+  const popularMetric=metrics.packages.find(item=>item.id==='popular');
+  assert.equal(popularMetric.approvedOrders,1);
+  assert.equal(popularMetric.revenueVnd,45000);
+
+  const response=await request(adminApi,{identity:admin,query:{resource:'metrics'}});
+  assert.equal(response.statusCode,200);
+  assert.equal(response.data.metrics.currentMonth.revenueVnd,55000);
+  assert.equal((await request(adminApi,{identity:buyer,query:{resource:'metrics'}})).statusCode,403);
+});
+
 test('admin may approve with checkbox only; amount and bank reference are optional audit details',async () => {
   const order=await pending(5);
   await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'',receivedAmountVnd:null,
