@@ -103,7 +103,7 @@ test('financial infrastructure fails closed while optional email can degrade saf
   assert.equal(profile.configured,true);
   assert.equal(profile.purchasesEnabled,true);
   assert.ok(profile.warnings.includes('email_notifications'));
-  assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[]);
+  assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[admin.email,admin2.email]);
   const noEmailOrder=await billing.createOrder(buyer,{quantity:1,idempotencyKey:key('request')});
   assert.equal(noEmailOrder.amountVnd,500);
 
