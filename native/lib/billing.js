@@ -6,6 +6,12 @@ const db = require('./billing-db');
 const UNIT_PRICE_VND = 500;
 const MAX_TOPUP_CREDITS = 100000;
 const ADMIN_REVIEW_DELAY_MS = 5 * 60 * 1000;
+const TOPUP_PACKAGES = Object.freeze([
+  Object.freeze({id:'starter',code:'START',name:'Bắt đầu',credits:20,priceVnd:10000,listPriceVnd:10000,discountPercent:0,popular:false}),
+  Object.freeze({id:'popular',code:'POPULAR',name:'Phổ biến',credits:100,priceVnd:45000,listPriceVnd:50000,discountPercent:10,popular:true}),
+  Object.freeze({id:'research',code:'RESEARCH',name:'Nghiên cứu',credits:250,priceVnd:110000,listPriceVnd:125000,discountPercent:12,popular:false}),
+  Object.freeze({id:'pro',code:'PRO',name:'Chuyên sâu',credits:500,priceVnd:200000,listPriceVnd:250000,discountPercent:20,popular:false})
+]);
 
 class BillingError extends Error {
   constructor(status, code, message) { super(message); this.status = status; this.code = code; }
@@ -128,6 +134,35 @@ function canonical(value) {
 }
 function hash(value) { return crypto.createHash('sha256').update(canonical(value)).digest('hex'); }
 function number(value) { return Number(value || 0); }
+function publicPackage(pkg) {
+  return {id:pkg.id,name:pkg.name,credits:pkg.credits,priceVnd:pkg.priceVnd,listPriceVnd:pkg.listPriceVnd,
+    discountPercent:pkg.discountPercent,popular:pkg.popular,effectiveUnitPriceVnd:Math.round(pkg.priceVnd/pkg.credits)};
+}
+function packageById(id) {
+  return TOPUP_PACKAGES.find(item => item.id === id) || null;
+}
+function packageFromOrderCode(code) {
+  const value = String(code || '');
+  return TOPUP_PACKAGES.find(item => value.startsWith('PS' + item.code + '-')) || null;
+}
+function creditsForOrderRow(row) {
+  return packageFromOrderCode(row?.order_code)?.credits || number(row?.quantity);
+}
+function offerForInput(input) {
+  const packageId = typeof input?.packageId === 'string' ? input.packageId.trim() : '';
+  if (packageId) {
+    const pkg = packageById(packageId);
+    if (!pkg) fail(400,'INVALID_PACKAGE','Gói nạp không hợp lệ.');
+    if (input?.quantity !== undefined && input.quantity !== null && input.quantity !== pkg.credits)
+      fail(400,'PACKAGE_QUANTITY_MISMATCH','Số phiếu không khớp gói đã chọn.');
+    if (pkg.priceVnd % UNIT_PRICE_VND !== 0) fail(500,'PACKAGE_CONFIG_INVALID','Cấu hình gói nạp chưa hợp lệ.');
+    return {package:pkg,credits:pkg.credits,storageQuantity:pkg.priceVnd/UNIT_PRICE_VND,amountVnd:pkg.priceVnd};
+  }
+  const quantity = input?.quantity;
+  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_TOPUP_CREDITS)
+    fail(400, 'INVALID_QUANTITY', 'Số lượt cần mua phải là số nguyên từ 1 đến 100.000.');
+  return {package:null,credits:quantity,storageQuantity:quantity,amountVnd:quantity*UNIT_PRICE_VND};
+}
 function asDate(value) { return value ? new Date(value).toISOString() : null; }
 function customerView(row, identity) { return {id: row.id, email: row.email, isAdmin: isAdmin(identity)}; }
 function identityView(identity) {
@@ -142,10 +177,15 @@ function orderView(row) {
   const bank = accountBank(row);
   const currentBank = bankConfig();
   const sameBank = Object.keys(bank).every(key => bank[key] === currentBank[key]);
+  const pkg = packageFromOrderCode(row.order_code);
+  const credits = creditsForOrderRow(row);
   const manualConfirmation = typeof row.reference_original === 'string' && row.reference_original.startsWith('MANUAL_CONFIRMATION:');
   return {
-    id: row.id, orderCode: row.order_code, quantity: row.quantity,
-    unitPriceVnd: row.unit_price_vnd, amountVnd: number(row.amount_vnd),
+    id: row.id, orderCode: row.order_code, quantity: credits, paidUnits: number(row.quantity),
+    unitPriceVnd: pkg ? Math.round(pkg.priceVnd/pkg.credits) : number(row.unit_price_vnd), amountVnd: number(row.amount_vnd),
+    listPriceVnd: pkg ? pkg.listPriceVnd : credits*UNIT_PRICE_VND,
+    discountPercent: pkg ? pkg.discountPercent : 0,
+    package: pkg ? publicPackage(pkg) : null,
     status: row.status, paymentMemo: row.payment_memo, bank,
     qrImageUrl: purchasesEnabled() && sameBank && ['pending_payment','pending_review'].includes(row.status)
       ? (qrImageUrl() === '/api/payment-qr' ? '/api/payment-qr?orderId=' + encodeURIComponent(row.id) : qrImageUrl()) : null,
@@ -193,6 +233,7 @@ async function getProfile(identity = null) {
     availableCredits: persisted ? number(persisted.available_credits) : 0,
     reservedCredits: persisted ? number(persisted.reserved_credits) : 0,
     unitPriceVnd: UNIT_PRICE_VND, minTopupCredits: 1, maxTopupCredits: MAX_TOPUP_CREDITS,
+    topupPackages: TOPUP_PACKAGES.map(publicPackage),
     bank: null, warnings: config.warnings || []
   };
   if (!config.billingEnabled) return base;
@@ -214,9 +255,7 @@ async function getProfile(identity = null) {
 async function createOrder(identity, input) {
   assertReady();
   if (!purchasesEnabled()) fail(503,'TOPUPS_PAUSED','Mua thêm lượt đang tạm dừng. Các lượt đã mua vẫn được giữ nguyên.');
-  const quantity = input?.quantity;
-  if (!Number.isSafeInteger(quantity) || quantity < 1 || quantity > MAX_TOPUP_CREDITS)
-    fail(400, 'INVALID_QUANTITY', 'Số lượt cần mua phải là số nguyên từ 1 đến 100.000.');
+  const offer = offerForInput(input);
   const key = requestKey(input.idempotencyKey);
   const customer = await ensureCustomer(identity);
   const bank = bankConfig();
@@ -224,8 +263,10 @@ async function createOrder(identity, input) {
     await client.query('SELECT id FROM ps_billing_customers WHERE id=$1 FOR UPDATE', [customer.id]);
     const previous = await client.query('SELECT * FROM ps_billing_orders WHERE customer_id=$1 AND request_key=$2', [customer.id, key]);
     if (previous.rowCount) {
-      if (previous.rows[0].quantity !== quantity) fail(409, 'IDEMPOTENCY_CONFLICT', 'Mã thao tác đã dùng cho số lượt khác.');
-      return orderView(previous.rows[0]);
+      const previousOffer = orderView(previous.rows[0]);
+      if (previousOffer.quantity !== offer.credits || (previousOffer.package?.id || null) !== (offer.package?.id || null))
+        fail(409, 'IDEMPOTENCY_CONFLICT', 'Mã thao tác đã dùng cho gói hoặc số phiếu khác.');
+      return previousOffer;
     }
     const active = await client.query(`SELECT count(*) AS count FROM ps_billing_orders
       WHERE customer_id=$1 AND status IN ('pending_payment','pending_review')`,[customer.id]);
@@ -234,12 +275,13 @@ async function createOrder(identity, input) {
       WHERE customer_id=$1 AND created_at > now()-interval '1 day'`, [customer.id]);
     if (number(recent.rows[0].count) >= 20) fail(429, 'TOPUP_RATE_LIMIT', 'Bạn đã tạo nhiều yêu cầu. Hãy dùng hoặc kiểm tra yêu cầu hiện có.');
     const id = crypto.randomUUID();
-    const code = 'PS' + crypto.randomBytes(8).toString('hex').toUpperCase();
+    const prefix = offer.package ? 'PS' + offer.package.code + '-' : 'PS';
+    const code = prefix + crypto.randomBytes(8).toString('hex').toUpperCase();
     const result = await client.query(`INSERT INTO ps_billing_orders(
       id,customer_id,order_code,request_key,quantity,unit_price_vnd,amount_vnd,
       bank_id,bank_name,account_number,account_name,payment_memo)
       VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
-    [id,customer.id,code,key,quantity,UNIT_PRICE_VND,quantity*UNIT_PRICE_VND,
+    [id,customer.id,code,key,offer.storageQuantity,UNIT_PRICE_VND,offer.amountVnd,
       bank.bankId,bank.bankName,bank.accountNumber,bank.accountName,code]);
     return orderView(result.rows[0]);
   });
@@ -346,8 +388,9 @@ async function approveOrder(identity, input) {
         VALUES($1,$2,$3,$4,$5,$6,$7,$8)`,
       [crypto.randomUUID(),orderId,order.bank_id,order.account_number,referenceNorm,reference,effectiveAmount,actor.id]);
 
-      await client.query(`UPDATE ps_billing_customers SET available_credits=available_credits+$2,updated_at=now() WHERE id=$1`,[order.customer_id,order.quantity]);
-      await ledger(client,order.customer_id,'topup',orderId,order.quantity,0);
+      const credits = creditsForOrderRow(order);
+      await client.query(`UPDATE ps_billing_customers SET available_credits=available_credits+$2,updated_at=now() WHERE id=$1`,[order.customer_id,credits]);
+      await ledger(client,order.customer_id,'topup',orderId,credits,0);
       const updated = await client.query(`UPDATE ps_billing_orders SET status='approved',reviewed_at=now(),reviewed_by=$2,review_note=$3,updated_at=now()
         WHERE id=$1 RETURNING *`,[orderId,actor.id,note]);
       return orderView(updated.rows[0]);
@@ -570,7 +613,7 @@ async function resolveOperation(identity, input) {
   });
 }
 
-module.exports = {BillingError,UNIT_PRICE_VND,MAX_TOPUP_CREDITS,
+module.exports = {BillingError,UNIT_PRICE_VND,MAX_TOPUP_CREDITS,TOPUP_PACKAGES,
   get BANK() { return bankConfig(); }, get NOTIFICATION_RECIPIENTS() { return notificationRecipients(); },
   enabled,purchasesEnabled,getConfigStatus,assertReady,verifiedIdentity,isAdmin,requireAdmin,ensureAccount,ensureCustomer,getProfile,
   createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,listAdminUsers,
