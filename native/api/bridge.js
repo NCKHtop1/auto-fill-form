@@ -9,9 +9,10 @@ async function accessibleForm(url,req,res,{withCount=false}={}){
  if(auth.configured()){
   try{
    const current=await auth.session(req,res);
-   return await form.loadOwnedForm(url,current.access_token,{withCount});
+   if(auth.hasScope(current,'https://www.googleapis.com/auth/forms.body.readonly'))
+    return await form.loadOwnedForm(url,current.access_token,{withCount});
   }catch(e){
-   // If not signed in or not the editor of this form, published questions can still be read.
+   // Published questions can still be read without sensitive Google Forms scopes.
    // Never use this fallback to send responses or obtain private response counts.
    console.info('[PandaStudy] Official Form API unavailable; trying public respondent page:',id);
   }
