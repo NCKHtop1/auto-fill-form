@@ -146,8 +146,9 @@ function orderView(row) {
     id: row.id, orderCode: row.order_code, quantity: row.quantity,
     unitPriceVnd: row.unit_price_vnd, amountVnd: number(row.amount_vnd),
     status: row.status, paymentMemo: row.payment_memo, bank,
-    qrImageUrl: purchasesEnabled() && sameBank && ['pending_payment','pending_review'].includes(row.status) ? qrImageUrl() : null,
-    qrHasAmountAndMemo: false,
+    qrImageUrl: purchasesEnabled() && sameBank && ['pending_payment','pending_review'].includes(row.status)
+      ? (qrImageUrl() === '/api/payment-qr' ? '/api/payment-qr?orderId=' + encodeURIComponent(row.id) : qrImageUrl()) : null,
+    qrHasAmountAndMemo: qrImageUrl() === '/api/payment-qr',
     createdAt: asDate(row.created_at), submittedAt: asDate(row.submitted_at),
     reviewedAt: asDate(row.reviewed_at), adminNote: row.review_note || '',
     ...(row.customer_email ? {customer: {id: row.customer_id, email: row.customer_email}} : {}),
