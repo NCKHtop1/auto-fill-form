@@ -49,8 +49,8 @@ Mobile <= 650px:
 
 Production asset:
 - /assets/hero-cinematic-v3.webp
-- 800 x 450 WebP
-- Target payload below 60 KB.
+- 600 x 338 WebP
+- Target payload below 20 KB for the production hero; hard gate remains below 60 KB.
 - Explicit width/height attributes to reserve layout space.
 - eager + fetchpriority=high because it is the LCP visual.
 - Existing /assets/hero.png remains in the repository as rollback/fallback only.

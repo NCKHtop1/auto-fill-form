@@ -102,7 +102,7 @@ try:
         assert image.get_attribute("height") == "450"
         page.wait_for_function("document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0")
         dimensions = image.evaluate("el => [el.naturalWidth, el.naturalHeight]")
-        assert dimensions == [800, 450], dimensions
+        assert dimensions == [600, 338], dimensions
 
         animation = image.evaluate("el => getComputedStyle(el).animationName")
         assert "psCinematicBreath" in animation, animation

@@ -232,7 +232,7 @@ with sync_playwright() as p:
             "document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0",
             timeout=12000,
         )
-        assert hero_image.evaluate("el => [el.naturalWidth,el.naturalHeight]") == [800, 450]
+        assert hero_image.evaluate("el => [el.naturalWidth,el.naturalHeight]") == [600, 338]
         assert page.locator("#formUrl").get_attribute("aria-label") == "Đường dẫn Google Form"
         assert page.locator("#qaRunCounters").is_hidden()
         assert page.locator("#qaRunMessage").is_hidden()
