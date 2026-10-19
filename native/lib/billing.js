@@ -378,6 +378,62 @@ async function listAdminTopups(identity, input = {}) {
   pendingOperations:pending.rows.map(operationView)};
 }
 
+async function listAdminUsers(identity, input = {}) {
+  requireAdmin(identity); assertReady();
+  const search = typeof input.search === 'string' ? input.search.trim().toLowerCase() : '';
+  if (search.length > 120) fail(400,'INVALID_SEARCH','Từ khóa tìm kiếm quá dài.');
+  const result = await db.query(`SELECT c.id,c.email,c.available_credits,c.reserved_credits,c.created_at,c.updated_at,
+      COALESCE(ord.total_orders,0) AS total_orders,
+      COALESCE(ord.pending_orders,0) AS pending_orders,
+      COALESCE(ord.approved_orders,0) AS approved_orders,
+      COALESCE(ord.purchased_credits,0) AS purchased_credits,
+      COALESCE(ord.paid_amount_vnd,0) AS paid_amount_vnd,
+      ord.last_order_at,
+      COALESCE(op.total_operations,0) AS total_operations,
+      COALESCE(op.consumed_operations,0) AS consumed_operations,
+      COALESCE(op.unknown_operations,0) AS unknown_operations,
+      op.last_operation_at
+    FROM ps_billing_customers c
+    LEFT JOIN LATERAL (
+      SELECT count(*) AS total_orders,
+        count(*) FILTER (WHERE status IN ('pending_payment','pending_review')) AS pending_orders,
+        count(*) FILTER (WHERE status='approved') AS approved_orders,
+        COALESCE(sum(quantity) FILTER (WHERE status='approved'),0) AS purchased_credits,
+        COALESCE(sum(amount_vnd) FILTER (WHERE status='approved'),0) AS paid_amount_vnd,
+        max(created_at) AS last_order_at
+      FROM ps_billing_orders WHERE customer_id=c.id
+    ) ord ON true
+    LEFT JOIN LATERAL (
+      SELECT count(*) AS total_operations,
+        count(*) FILTER (WHERE status='consumed') AS consumed_operations,
+        count(*) FILTER (WHERE status IN ('unknown','dispatching')) AS unknown_operations,
+        max(updated_at) AS last_operation_at
+      FROM ps_billing_operations WHERE customer_id=c.id
+    ) op ON true
+    WHERE ($1='' OR lower(c.email) LIKE '%'||$1||'%' OR lower(c.id::text) LIKE '%'||$1||'%')
+    ORDER BY GREATEST(c.updated_at,COALESCE(ord.last_order_at,c.updated_at),COALESCE(op.last_operation_at,c.updated_at)) DESC,
+      c.created_at DESC
+    LIMIT 200`,[search]);
+  return result.rows.map(row => ({
+    id: row.id,
+    email: row.email,
+    role: adminEmails().includes(String(row.email || '').toLowerCase()) ? 'admin' : 'user',
+    availableCredits: number(row.available_credits),
+    reservedCredits: number(row.reserved_credits),
+    createdAt: asDate(row.created_at),
+    lastActivityAt: asDate([row.updated_at,row.last_order_at,row.last_operation_at]
+      .filter(Boolean).sort((a,b)=>new Date(b)-new Date(a))[0]),
+    totalOrders: number(row.total_orders),
+    pendingOrders: number(row.pending_orders),
+    approvedOrders: number(row.approved_orders),
+    purchasedCredits: number(row.purchased_credits),
+    paidAmountVnd: number(row.paid_amount_vnd),
+    totalOperations: number(row.total_operations),
+    consumedOperations: number(row.consumed_operations),
+    unknownOperations: number(row.unknown_operations)
+  }));
+}
+
 // This single transaction reserves AND claims the dispatch. A crash after commit
 // leaves a durable hold. No retry can obtain permission to dispatch the same key.
 async function reserveSubmission(identity, input) {
@@ -484,5 +540,5 @@ async function resolveOperation(identity, input) {
 module.exports = {BillingError,UNIT_PRICE_VND,MAX_TOPUP_CREDITS,
   get BANK() { return bankConfig(); }, get NOTIFICATION_RECIPIENTS() { return notificationRecipients(); },
   enabled,purchasesEnabled,getConfigStatus,assertReady,verifiedIdentity,isAdmin,requireAdmin,ensureCustomer,getProfile,
-  createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,
+  createOrder,getOrder,listMyOrders,submitPaid,approveOrder,rejectOrder,listAdminTopups,listAdminUsers,
   reserveSubmission,settleSubmission,resolveOperation};
