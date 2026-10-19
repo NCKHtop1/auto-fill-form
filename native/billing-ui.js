@@ -3,9 +3,9 @@
   'use strict';
   const state = { profile: null, order: null, orders: [], busy: false, open: false,
     intent: null, poll: null, refreshPromise: null, ordersLoaded: false, previousFocus: null,
-    adminPending: null };
+    adminPending: null, selectedPackageId: 'popular' };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Cần xử lý' };
-  let host, overlay, content, message, oldOverflow;
+  let host, overlay, content, message, oldOverflow, promo;
   const number = value => Number(value || 0).toLocaleString('vi-VN');
   const money = value => number(value) + ' đ';
   const node = (tag, klass, text) => {
@@ -63,6 +63,33 @@
       location.assign('/');
     }
   }
+  function packages() {
+    return Array.isArray(state.profile?.topupPackages) ? state.profile.topupPackages : [];
+  }
+  function packageById(id) { return packages().find(item => item.id === id) || null; }
+  function popularPackage() { return packages().find(item => item.popular) || packages()[0] || null; }
+  function renderPromo() {
+    promo?.remove(); promo = null;
+    const profile = state.profile;
+    if (!profile?.signedIn || !profile.purchasesEnabled) return;
+    try { if (sessionStorage.getItem('pandastudy-topup-promo-dismissed') === '1') return; } catch (_) {}
+    const offer = popularPackage(); if (!offer) return;
+    promo = node('aside', 'pb-promo-strip');
+    promo.setAttribute('aria-label', 'Ưu đãi nạp phiếu');
+    const copy = node('div', 'pb-promo-copy');
+    copy.append(node('strong', '', '⭐ Gói ' + offer.name + ': ' + number(offer.credits) + ' phiếu · ' + money(offer.priceVnd)),
+      node('span', '', offer.discountPercent ? 'Tiết kiệm ' + offer.discountPercent + '% so với mua lẻ.' : 'Nạp trước để không gián đoạn khi gửi dữ liệu.'));
+    const actions = node('div', 'pb-promo-actions');
+    actions.append(button('Xem các gói', () => openPurchase({packageId:offer.id}), true));
+    const dismiss = button('×', () => {
+      try { sessionStorage.setItem('pandastudy-topup-promo-dismissed','1'); } catch (_) {}
+      promo?.remove(); promo = null;
+    });
+    dismiss.classList.add('pb-promo-dismiss'); dismiss.setAttribute('aria-label','Ẩn ưu đãi nạp phiếu');
+    actions.append(dismiss); promo.append(copy,actions);
+    (document.querySelector('.topbar') || host)?.insertAdjacentElement('afterend',promo);
+  }
+
   async function refreshAdminPending(profile) {
     if (!profile?.user?.isAdmin) { state.adminPending = null; return; }
     try {
@@ -113,6 +140,18 @@
     }
     actions.append(button('Đăng xuất', logout));
     host.append(copy, actions);
+    if (profile.purchasesEnabled) {
+      const offer = popularPackage();
+      if (offer) {
+        const hint = node('div', 'pb-account-offer');
+        const low = Number(profile.availableCredits) <= 10;
+        hint.append(node('strong', '', low ? 'Sắp hết phiếu?' : 'Gợi ý tiết kiệm'),
+          node('span', '', number(offer.credits) + ' phiếu · ' + money(offer.priceVnd) + (offer.discountPercent ? ' · giảm ' + offer.discountPercent + '%' : '')));
+        const cta = button(low ? 'Nạp trước' : 'Xem gói', () => openPurchase({packageId:offer.id}), true);
+        hint.append(cta); host.append(hint);
+      }
+    }
+    renderPromo();
   }
   async function refresh() {
     if (state.refreshPromise) return state.refreshPromise;
@@ -172,6 +211,11 @@
     if (!state.open) { oldOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; }
     state.open = true; overlay.hidden = false;
     if (options?.showOrders) state.order = null;
+    if (options?.packageId && packageById(options.packageId)) {
+      state.selectedPackageId = options.packageId;
+      state.intent = null;
+      state.order = null;
+    }
     renderModal();
     overlay.querySelector('.pb-close').focus();
     if (profile.configured && profile.signedIn) {
@@ -216,39 +260,115 @@
   }
   function renderCreate(parent) {
     const section = node('section', 'pb-section');
+    section.append(node('h3', '', 'Chọn gói phiếu phù hợp'),
+      node('p', 'pb-small pb-muted', 'Gói lớn có giá tốt hơn. Bạn vẫn có thể nhập số lượng khác ở bên dưới.'));
+
+    const catalog = packages();
+    let selectedId = packageById(state.selectedPackageId)?.id || popularPackage()?.id || null;
+    const cardMap = new Map();
+    if (catalog.length) {
+      const grid = node('div', 'pb-package-grid');
+      for (const pkg of catalog) {
+        const card = node('button', 'pb-package-card');
+        card.type = 'button';
+        card.dataset.packageId = pkg.id;
+        card.setAttribute('aria-pressed', pkg.id === selectedId ? 'true' : 'false');
+        if (pkg.popular) card.classList.add('pb-package-popular');
+        const top = node('div', 'pb-package-top');
+        top.append(node('strong', '', pkg.name));
+        if (pkg.popular) top.append(node('span', 'pb-package-badge', 'Phổ biến nhất'));
+        card.append(top,node('div','pb-package-credits',number(pkg.credits)+' phiếu'));
+        const priceRow = node('div','pb-package-price');
+        priceRow.append(node('strong','',money(pkg.priceVnd)));
+        if (pkg.listPriceVnd > pkg.priceVnd) priceRow.append(node('s','',money(pkg.listPriceVnd)));
+        card.append(priceRow);
+        if (pkg.discountPercent) card.append(node('span','pb-package-save','Tiết kiệm '+pkg.discountPercent+'%'));
+        else card.append(node('span','pb-package-save','Giá tiêu chuẩn'));
+        grid.append(card); cardMap.set(pkg.id,card);
+      }
+      section.append(grid);
+    }
+
     const form = node('form');
-    const field = node('label', 'pb-field', 'Số phiếu cần mua');
+    const field = node('label', 'pb-field', 'Hoặc nhập số phiếu khác');
     const input = node('input'); input.type = 'number'; input.inputMode = 'numeric'; input.id = 'pbQuantity';
     input.min = String(state.profile.minTopupCredits || 1); input.max = String(state.profile.maxTopupCredits || 100000); input.step = '1';
-    input.value = String(state.intent?.quantity || 20); input.required = true;
-    field.htmlFor = input.id; field.append(input);
-    const price = Number(state.profile.unitPriceVnd);
-    const note = node('p', 'pb-small pb-muted', money(price) + ' / phiếu. Một phiếu tương ứng một phản hồi gửi thành công.');
+    input.value = selectedId ? '' : String(state.intent?.quantity || 20);
+    input.placeholder = 'Ví dụ: 50'; field.htmlFor = input.id; field.append(input);
+
+    const note = node('p', 'pb-small pb-muted', money(Number(state.profile.unitPriceVnd)) + ' / phiếu nếu mua số lượng tùy chọn.');
     const total = node('div', 'pb-total'); total.append(node('span', '', 'Tổng chuyển khoản'));
     const amount = node('strong'); total.append(amount);
-    function update() { const quantity = Number(input.value); amount.textContent = Number.isSafeInteger(quantity) && quantity > 0 ? money(quantity * price) : '—'; }
-    input.addEventListener('input', update); update();
-    const submit = node('button', 'pb-button pb-button-primary', 'Tạo yêu cầu mua phiếu'); submit.type = 'submit'; submit.disabled = state.busy;
-    form.append(field, note, total, submit);
+    const saving = node('p','pb-package-summary pb-small');
+    const submit = node('button', 'pb-button pb-button-primary', 'Tạo yêu cầu nạp'); submit.type = 'submit'; submit.disabled = state.busy;
+
+    function update() {
+      for (const [id,card] of cardMap) {
+        const active = id === selectedId;
+        card.classList.toggle('is-selected',active);
+        card.setAttribute('aria-pressed',active ? 'true' : 'false');
+      }
+      const pkg = selectedId ? packageById(selectedId) : null;
+      if (pkg) {
+        amount.textContent = money(pkg.priceVnd);
+        saving.textContent = pkg.discountPercent
+          ? 'Bạn nhận ' + number(pkg.credits) + ' phiếu · tiết kiệm ' + money(pkg.listPriceVnd-pkg.priceVnd) + ' (' + pkg.discountPercent + '%).'
+          : 'Bạn nhận ' + number(pkg.credits) + ' phiếu.';
+        submit.textContent = 'Chọn gói ' + pkg.name + ' · ' + money(pkg.priceVnd);
+      } else {
+        const quantity = Number(input.value);
+        const valid = Number.isSafeInteger(quantity) && quantity >= Number(input.min) && quantity <= Number(input.max);
+        amount.textContent = valid ? money(quantity * Number(state.profile.unitPriceVnd)) : '—';
+        saving.textContent = valid ? number(quantity) + ' phiếu theo giá tiêu chuẩn.' : 'Nhập số phiếu để xem tổng tiền.';
+        submit.textContent = 'Tạo yêu cầu nạp';
+      }
+    }
+    for (const [id,card] of cardMap) card.addEventListener('click', () => {
+      selectedId = id; state.selectedPackageId = id; state.intent = null; input.value = ''; update();
+    });
+    input.addEventListener('input', () => {
+      selectedId = null; state.selectedPackageId = null; state.intent = null; update();
+    });
+    update();
+
+    form.append(field,note,total,saving,submit);
     form.addEventListener('submit', async event => {
       event.preventDefault(); if (state.busy || !form.reportValidity()) return;
-      const quantity = Number(input.value);
-      if (!Number.isSafeInteger(quantity) || quantity < Number(input.min) || quantity > Number(input.max)) return say('Nhập số phiếu nguyên trong khoảng ' + number(input.min) + '–' + number(input.max) + '.', 'error');
-      if (!state.intent || state.intent.quantity !== quantity) state.intent = { quantity, idempotencyKey: key() };
+      const pkg = selectedId ? packageById(selectedId) : null;
+      let offerKey, payload;
+      if (pkg) {
+        offerKey = 'package:' + pkg.id;
+        payload = {packageId:pkg.id,quantity:pkg.credits};
+      } else {
+        const quantity = Number(input.value);
+        if (!Number.isSafeInteger(quantity) || quantity < Number(input.min) || quantity > Number(input.max))
+          return say('Nhập số phiếu nguyên trong khoảng ' + number(input.min) + '–' + number(input.max) + '.', 'error');
+        offerKey = 'custom:' + quantity;
+        payload = {quantity};
+      }
+      if (!state.intent || state.intent.offerKey !== offerKey)
+        state.intent = {...payload,offerKey,idempotencyKey:key()};
       const requestUser = state.profile.user?.id;
       state.busy = true; submit.disabled = true; input.disabled = true; submit.textContent = 'Đang tạo yêu cầu…'; say('');
+      for (const card of cardMap.values()) card.disabled = true;
       document.getElementById('pbPurchaseTitle')?.focus({ preventScroll: true });
       try {
-        const result = await request('create', state.intent);
+        const {offerKey:_,...requestPayload} = state.intent;
+        const result = await request('create', requestPayload);
         if (requestUser !== state.profile.user?.id) return;
         if (!result.order) throw new Error('Chưa nhận được thông tin đơn. Vui lòng kiểm tra lại trước khi chuyển khoản.');
         state.order = result.order; state.intent = null; state.ordersLoaded = false; state.busy = false;
         renderModal(); await loadOrders();
       } catch (error) { say(error.message, 'error'); }
-      finally { state.busy = false; submit.disabled = false; input.disabled = false; submit.textContent = 'Tạo yêu cầu mua phiếu'; }
+      finally {
+        state.busy = false; submit.disabled = false; input.disabled = false;
+        for (const card of cardMap.values()) card.disabled = false;
+        update();
+      }
     });
     section.append(form); parent.append(section);
   }
+
   async function copy(text) {
     try {
       if (navigator.clipboard?.writeText) await navigator.clipboard.writeText(String(text));
@@ -278,7 +398,9 @@
       if (order.adminNote) section.append(node('p', '', 'Ghi chú: ' + order.adminNote));
     }
     const summary = node('dl', 'pb-details');
+    if (order.package) detail(summary, 'Gói', order.package.name + (order.package.popular ? ' · Phổ biến nhất' : ''));
     detail(summary, 'Số phiếu', number(order.quantity) + ' phiếu');
+    if (Number(order.discountPercent) > 0) detail(summary, 'Ưu đãi', 'Giảm ' + number(order.discountPercent) + '% · tiết kiệm ' + money(Number(order.listPriceVnd)-Number(order.amountVnd)));
     detail(summary, 'Số tiền', money(order.amountVnd), order.status === 'pending_payment' && state.profile.purchasesEnabled !== false);
     detail(summary, 'Tài khoản nhận phiếu', state.profile.user?.email || '');
     if (order.createdAt) detail(summary, 'Tạo lúc', stamp(order.createdAt));
@@ -341,7 +463,7 @@
       for (const order of state.orders) {
         const item = node('li');
         const open = button('', () => { state.order = order; renderModal(); content.scrollTop = 0; checkOrder(false); }); open.classList.add('pb-order-button');
-        const text = node('span', '', number(order.quantity) + ' phiếu · ' + money(order.amountVnd));
+        const text = node('span', '', (order.package ? order.package.name + ' · ' : '') + number(order.quantity) + ' phiếu · ' + money(order.amountVnd));
         text.append(node('span', 'pb-order-meta', (order.orderCode || order.id) + (order.createdAt ? ' · ' + stamp(order.createdAt) : '')));
         open.append(text, node('span', 'pb-badge pb-badge-' + order.status, labels[order.status] || 'Đang xử lý')); item.append(open); list.append(item);
       }
