@@ -2,11 +2,11 @@
 const crypto = require('node:crypto');
 const COOKIE_NAME='ps_session';
 const STATE_NAME='ps_auth_state';
-const OAUTH_SCOPES=[
- 'openid','email','profile',
- 'https://www.googleapis.com/auth/forms.body.readonly',
- 'https://www.googleapis.com/auth/forms.responses.readonly'
-];
+// Main sign-in is identity-only. The current production workflow reads published
+// Google Forms/respondent pages without requiring sensitive Forms API scopes.
+// Keeping login to OpenID profile scopes avoids Google's unverified-app warning
+// for ordinary users and follows least-privilege OAuth.
+const OAUTH_SCOPES=['openid','email','profile'];
 function configured(){return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.APP_SESSION_SECRET && process.env.APP_SESSION_SECRET.length>=32)}
 function sessionKey(){if(!configured())throw new Error('Chưa cấu hình đăng nhập Google trên Vercel.');return crypto.createHash('sha256').update('PandaStudy:v1:'+process.env.APP_SESSION_SECRET).digest()}
 function seal(value){const iv=crypto.randomBytes(12),c=crypto.createCipheriv('aes-256-gcm',sessionKey(),iv);const buf=Buffer.concat([c.update(JSON.stringify(value),'utf8'),c.final()]);return Buffer.concat([iv,c.getAuthTag(),buf]).toString('base64url')}
