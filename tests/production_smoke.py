@@ -233,6 +233,14 @@ with sync_playwright() as p:
             timeout=12000,
         )
         assert hero_image.evaluate("el => [el.naturalWidth,el.naturalHeight]") == [600, 338]
+        live_luma = hero_image.evaluate("""el => {
+          const c=document.createElement('canvas'); c.width=30; c.height=17;
+          const x=c.getContext('2d'); x.drawImage(el,0,0,c.width,c.height);
+          const d=x.getImageData(0,0,c.width,c.height).data;
+          let sum=0; for(let i=0;i<d.length;i+=4) sum += (d[i]+d[i+1]+d[i+2])/3;
+          return sum/(d.length/4);
+        }""")
+        assert live_luma > 35, ("Production hero appears blank/dark", live_luma)
         assert page.locator("#formUrl").get_attribute("aria-label") == "Đường dẫn Google Form"
         assert page.locator("#qaRunCounters").is_hidden()
         assert page.locator("#qaRunMessage").is_hidden()
