@@ -73,7 +73,13 @@ test.before(async () => {
 test.beforeEach(async () => {
   configure(); fault = null; afterFault = null; db.setTestAdapter(adapter);
   await db.query('TRUNCATE ps_billing_customers CASCADE');
-  await db.query("UPDATE ps_billing_promotions SET enabled=false");
+  await db.query('DELETE FROM ps_billing_promotions');
+  await db.query('DELETE FROM ps_billing_packages');
+  await db.query(`INSERT INTO ps_billing_packages(id,name,badge,credits,price_vnd,list_price_vnd,featured,enabled,sort_order) VALUES
+    ('starter','Bắt đầu','',20,10000,10000,false,true,10),
+    ('popular','Phổ biến','Phổ biến nhất',100,45000,50000,true,true,20),
+    ('research','Nghiên cứu','',250,110000,125000,false,true,30),
+    ('pro','Chuyên sâu','',500,200000,250000,false,true,40)`);
 });
 test.after(async () => { db.setTestAdapter(null); await engine.close(); });
 
