@@ -63,7 +63,7 @@ def main():
         "profile": {"ok": True, "billingEnabled": False, "configured": False, "purchasesEnabled": False,
                     "signedIn": True, "user": USER, "availableCredits": 0, "reservedCredits": 0,
                     "unitPriceVnd": 500, "minTopupCredits": 1, "maxTopupCredits": 100000, "bank": None},
-        "orders": [], "operations": [], "calls": [], "fail_create_once": False,
+        "orders": [], "operations": [], "users": [], "calls": [], "fail_create_once": False,
         "can_send": False, "delay_submit": False, "pending_submit": None,
     }
     errors = []
@@ -112,10 +112,16 @@ def main():
             if not (state["profile"].get("user") or {}).get("isAdmin"):
                 status, response = 403, {"ok": False, "error": "Không có quyền."}
             elif not data:
-                orders = [item for item in state["orders"] if
-                          (item["id"] == query["orderId"] if "orderId" in query else
-                           query.get("status") == "all" or item["status"] == query.get("status"))]
-                response = {"ok": True, "orders": orders, "pendingOperations": state["operations"]}
+                if query.get("resource") == "users":
+                    search = query.get("search", "").lower()
+                    users = [item for item in state["users"]
+                             if not search or search in item["email"].lower() or search in item["id"].lower()]
+                    response = {"ok": True, "users": users}
+                else:
+                    orders = [item for item in state["orders"] if
+                              (item["id"] == query["orderId"] if "orderId" in query else
+                               query.get("status") == "all" or item["status"] == query.get("status"))]
+                    response = {"ok": True, "orders": orders, "pendingOperations": state["operations"]}
             elif data["action"] == "approve":
                 assert data["confirmedBankTransfer"] is True
                 order = next(item for item in state["orders"] if item["id"] == data["orderId"])
@@ -288,6 +294,16 @@ def main():
 
             state["profile"]["user"] = ADMIN
             state["orders"] = [make_order("admin-one", "pending_review"), make_order("admin-two", "pending_review"), make_order("admin-unpaid")]
+            state["users"] = [
+                {"id": "uat-user", "email": USER["email"], "role": "user", "availableCredits": 22,
+                 "reservedCredits": 1, "createdAt": "2026-10-17T01:00:00Z", "lastActivityAt": "2026-10-19T03:00:00Z",
+                 "totalOrders": 3, "pendingOrders": 2, "approvedOrders": 1, "purchasedCredits": 20,
+                 "paidAmountVnd": 10000, "totalOperations": 4, "consumedOperations": 3, "unknownOperations": 1},
+                {"id": "uat-admin", "email": ADMIN["email"], "role": "admin", "availableCredits": 0,
+                 "reservedCredits": 0, "createdAt": "2026-10-16T01:00:00Z", "lastActivityAt": "2026-10-19T04:00:00Z",
+                 "totalOrders": 0, "pendingOrders": 0, "approvedOrders": 0, "purchasedCredits": 0,
+                 "paidAmountVnd": 0, "totalOperations": 0, "consumedOperations": 0, "unknownOperations": 0},
+            ]
             state["operations"] = [
                 {"id": "op-db-1", "operationId": "row-op-1", "customer": USER, "credits": 1,
                  "status": "unknown", "formId": "UAT-FORM", "createdAt": "2026-10-18T02:00:00Z", "canResolve": True},
@@ -295,6 +311,17 @@ def main():
                  "status": "dispatching", "createdAt": "2026-10-18T03:00:00Z", "canResolve": False},
             ]
             admin.goto(base + "/admin-topups.html?orderId=admin-one")
+            admin.get_by_text(USER["email"], exact=True).first.wait_for()
+            assert "22" in admin.locator("#paUsers").inner_text()
+            assert "Admin" in admin.locator("#paUsers").inner_text()
+            admin.locator("#paUserSearch").fill("user@example.test")
+            admin.get_by_role("button", name="Tìm", exact=True).click()
+            admin.get_by_text("Kết quả tìm kiếm: 1 tài khoản", exact=False).wait_for()
+            assert USER["email"] in admin.locator("#paUsers").inner_text()
+            assert ADMIN["email"] not in admin.locator("#paUsers").inner_text()
+            admin.get_by_role("button", name="Xóa lọc", exact=True).click()
+            admin.get_by_text("Danh sách gần nhất: 2 tài khoản", exact=False).wait_for()
+            print("PASS admin accounts: persistent Google users, balances, roles and search visible only to admin")
             admin.get_by_role("button", name="Kiểm tra và duyệt", exact=True).click()
             admin.locator("#paReceivedAmount").fill("9000")
             admin.locator("#paBankReference").fill("TX-UAT-1")
