@@ -25,12 +25,15 @@ function renderMessage(row) {
   adminUrl.searchParams.set('orderId',row.order_id);
   const amount = Number(payload.amountVnd).toLocaleString('vi-VN') + ' VND';
   const subject = `[PandaStudy] Yêu cầu nạp ${payload.orderCode} chờ đối soát`;
+  const packageLine = payload.packageName
+    ? `Gói: ${payload.packageName} · ${payload.quantity} phiếu${Number(payload.discountPercent)>0 ? ' · giảm '+payload.discountPercent+'%' : ''}`
+    : `Số lượt sẽ cộng khi được duyệt: ${payload.quantity}`;
   const lines = [
     'Người dùng báo đã chuyển khoản. Hãy kiểm tra khoản tiền thực nhận tại ngân hàng trước khi duyệt.',
     `Mã yêu cầu: ${payload.orderCode}`,
     `Tài khoản PandaStudy: ${payload.customerEmail}`,
     `Số tiền cần đối soát: ${amount}`,
-    `Số lượt sẽ cộng khi được duyệt: ${payload.quantity}`,
+    packageLine,
     `Nội dung chuyển khoản: ${payload.paymentMemo}`,
     `Tài khoản nhận: ${payload.bank.bankName} ${payload.bank.accountNumber} - ${payload.bank.accountName}`,
     `Mở trang quản trị: ${adminUrl.toString()}`,
