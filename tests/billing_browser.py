@@ -19,6 +19,12 @@ ARTIFACTS = ROOT / "qa-artifacts"
 BANK = {"bankName": "PandaStudy UAT Bank", "bankId": "000000", "accountNumber": "00000000000000", "accountName": "PANDASTUDY UAT MERCHANT"}
 USER = {"id": "uat-user", "email": "user@example.test", "isAdmin": False}
 ADMIN = {"id": "uat-admin", "email": "admin@example.test", "isAdmin": True}
+PACKAGES = [
+    {"id": "starter", "name": "Bắt đầu", "credits": 20, "priceVnd": 10000, "listPriceVnd": 10000, "discountPercent": 0, "popular": False},
+    {"id": "popular", "name": "Phổ biến", "credits": 100, "priceVnd": 45000, "listPriceVnd": 50000, "discountPercent": 10, "popular": True},
+    {"id": "research", "name": "Nghiên cứu", "credits": 250, "priceVnd": 110000, "listPriceVnd": 125000, "discountPercent": 12, "popular": False},
+    {"id": "pro", "name": "Chuyên sâu", "credits": 500, "priceVnd": 200000, "listPriceVnd": 250000, "discountPercent": 20, "popular": False},
+]
 UAT_QR_PATH = "/assets/uat-payment-qr.svg"
 UAT_QR_SVG = """<svg xmlns="http://www.w3.org/2000/svg" width="320" height="360" viewBox="0 0 320 360">
 <rect width="320" height="360" rx="18" fill="#f2f7ef"/>
@@ -62,7 +68,8 @@ def main():
     state = {
         "profile": {"ok": True, "billingEnabled": False, "configured": False, "purchasesEnabled": False,
                     "signedIn": True, "user": USER, "availableCredits": 0, "reservedCredits": 0,
-                    "unitPriceVnd": 500, "minTopupCredits": 1, "maxTopupCredits": 100000, "bank": None},
+                    "unitPriceVnd": 500, "minTopupCredits": 1, "maxTopupCredits": 100000,
+                    "topupPackages": PACKAGES, "bank": None},
         "orders": [], "operations": [], "users": [], "calls": [], "fail_create_once": False,
         "can_send": False, "delay_submit": False, "pending_submit": None,
     }
@@ -101,7 +108,15 @@ def main():
                     order = next((item for item in state["orders"] if item.get("key") == data["idempotencyKey"]), None)
                     if not order:
                         order = make_order("order-" + str(len(state["orders"]) + 1))
-                        order.update(quantity=data["quantity"], amountVnd=data["quantity"] * 500, key=data["idempotencyKey"])
+                        package = next((item for item in PACKAGES if item["id"] == data.get("packageId")), None)
+                        if package:
+                            order.update(quantity=package["credits"], amountVnd=package["priceVnd"],
+                                         listPriceVnd=package["listPriceVnd"], discountPercent=package["discountPercent"],
+                                         package=package, key=data["idempotencyKey"])
+                        else:
+                            order.update(quantity=data["quantity"], amountVnd=data["quantity"] * 500,
+                                         listPriceVnd=data["quantity"] * 500, discountPercent=0,
+                                         package=None, key=data["idempotencyKey"])
                         state["orders"].insert(0, order)
                     response = {"ok": True, "order": order}
             elif action == "submitPaid":
@@ -117,6 +132,17 @@ def main():
                     users = [item for item in state["users"]
                              if not search or search in item["email"].lower() or search in item["id"].lower()]
                     response = {"ok": True, "users": users}
+                elif query.get("resource") == "metrics":
+                    response = {"ok": True, "metrics": {
+                        "timezone": "Asia/Ho_Chi_Minh",
+                        "currentMonth": {"revenueVnd": 55000, "approvedOrders": 2, "creditsSold": 120, "buyers": 2},
+                        "pending": {"reviewAmountVnd": 110000, "reviewOrders": 1, "paymentOrders": 1},
+                        "allTime": {"revenueVnd": 255000, "approvedOrders": 5, "creditsSold": 620, "buyers": 3},
+                        "monthly": [{"month": "2026-09", "revenueVnd": 200000, "approvedOrders": 3, "creditsSold": 500, "buyers": 2},
+                                    {"month": "2026-10", "revenueVnd": 55000, "approvedOrders": 2, "creditsSold": 120, "buyers": 2}],
+                        "packages": [{"id": "popular", "name": "Phổ biến", "revenueVnd": 45000, "approvedOrders": 1, "creditsSold": 100},
+                                     {"id": "starter", "name": "Bắt đầu", "revenueVnd": 10000, "approvedOrders": 1, "creditsSold": 20}]
+                    }}
                 else:
                     orders = [item for item in state["orders"] if
                               (item["id"] == query["orderId"] if "orderId" in query else
@@ -217,20 +243,19 @@ def main():
             plan_before = page.evaluate("window.PandaStudyQA.getRows()")
             page.set_viewport_size({"width": 320, "height": 800})
             page.get_by_role("button", name="Nạp phiếu", exact=True).click()
-            assert page.locator("#pbQuantity").input_value() == "20"
-            assert "10.000" in page.locator(".pb-total").inner_text()
-            page.locator("#pbQuantity").fill("0")
-            previous = len(action_calls("create"))
-            page.get_by_role("button", name="Tạo yêu cầu mua phiếu", exact=True).click()
-            assert len(action_calls("create")) == previous
+            assert page.locator(".pb-package-card").count() == 4
+            assert page.locator('[data-package-id="popular"]').get_attribute("aria-pressed") == "true"
+            assert "45.000" in page.locator(".pb-total").inner_text()
+            assert "Tiết kiệm 5.000" in page.locator(".pb-package-summary").inner_text()
             page.locator("#pbQuantity").fill("1")
             assert page.locator("#pbQuantity").evaluate("element => element.checkValidity()")
             assert "500" in page.locator(".pb-total").inner_text()
-            page.locator("#pbQuantity").fill("20")
+            page.locator('[data-package-id="popular"]').click()
+            assert "45.000" in page.locator(".pb-total").inner_text()
             state["fail_create_once"] = True
-            page.get_by_role("button", name="Tạo yêu cầu mua phiếu", exact=True).click()
+            page.locator(".pb-modal form .pb-button-primary").click()
             page.get_by_text("Thử lại yêu cầu hiện tại.", exact=True).wait_for()
-            page.get_by_role("button", name="Tạo yêu cầu mua phiếu", exact=True).click()
+            page.locator(".pb-modal form .pb-button-primary").click()
             page.get_by_role("button", name="Tôi đã chuyển khoản", exact=True).wait_for()
             assert page.get_by_role("button", name="Tôi đã chuyển khoản", exact=True).is_enabled()
             assert page.locator(".pb-modal").evaluate("element => element.contains(document.activeElement)")
@@ -274,10 +299,10 @@ def main():
             print("PASS pause: no new payment instructions; existing balance/history and paid report preserved")
 
             state["orders"][0]["status"] = "approved"
-            state["profile"].update(availableCredits=23, purchasesEnabled=True)
+            state["profile"].update(availableCredits=103, purchasesEnabled=True)
             page.get_by_role("button", name="Kiểm tra trạng thái", exact=True).click()
             page.get_by_text("Đã cộng 20 phiếu vào tài khoản.", exact=False).wait_for()
-            assert "23 phiếu" in page.locator("#pandaBillingRoot").inner_text()
+            assert "103 phiếu" in page.locator("#pandaBillingRoot").inner_text()
             page.keyboard.press("Escape")
             assert page.locator("#formUrl").input_value() == FORM_URL
             assert page.locator("#responseCount").input_value() == "7"
@@ -317,6 +342,10 @@ def main():
             ]
             admin.goto(base + "/admin-topups.html?orderId=admin-one")
             admin.get_by_text(USER["email"], exact=True).first.wait_for()
+            assert "55.000" in admin.locator("#paRevenueSummary").inner_text()
+            assert "255.000" in admin.locator("#paRevenueSummary").inner_text()
+            assert "10/2026" in admin.locator("#paRevenueMonthly").inner_text()
+            assert "Phổ biến" in admin.locator("#paRevenuePackages").inner_text()
             assert "22" in admin.locator("#paUsers").inner_text()
             assert "Admin" in admin.locator("#paUsers").inner_text()
             admin.locator("#paUserSearch").fill("user@example.test")
