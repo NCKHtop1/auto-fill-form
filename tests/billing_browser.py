@@ -61,7 +61,7 @@ def main():
     base = "http://127.0.0.1:" + str(server.server_address[1])
     state = {
         "profile": {"ok": True, "billingEnabled": False, "configured": False, "purchasesEnabled": False,
-                    "signedIn": False, "user": None, "availableCredits": 0, "reservedCredits": 0,
+                    "signedIn": True, "user": USER, "availableCredits": 0, "reservedCredits": 0,
                     "unitPriceVnd": 500, "minTopupCredits": 1, "maxTopupCredits": 100000, "bank": None},
         "orders": [], "operations": [], "calls": [], "fail_create_once": False,
         "can_send": False, "delay_submit": False, "pending_submit": None,
@@ -169,9 +169,12 @@ def main():
             page = context.new_page()
             page.goto(base + "/index.html#app")
             page.wait_for_function("window.PandaBilling?.getProfile()")
-            assert not page.locator("#pandaBillingRoot").is_visible()
+            assert page.locator("#pandaBillingRoot").is_visible()
+            assert USER["email"] in page.locator("#pandaBillingRoot").inner_text()
+            assert "Tài khoản PandaStudy" in page.locator("#pandaBillingRoot").inner_text()
+            assert page.get_by_role("button", name="Nạp phiếu", exact=True).count() == 0
             assert page.locator("#qaRunStep").count() == 1
-            print("PASS disabled: no new UI; six-step workspace preserved")
+            print("PASS disabled: authenticated account shell is visible; six-step workspace preserved")
 
             state["profile"].update(billingEnabled=True, configured=False)
             page.evaluate("window.PandaBilling.refresh()")
@@ -179,17 +182,15 @@ def main():
             assert page.locator(".pb-modal img").count() == 0
             assert page.get_by_role("button", name="Tạo yêu cầu mua phiếu", exact=True).count() == 0
             page.get_by_role("button", name="Đóng mua phiếu", exact=True).click()
-            print("PASS unconfigured: no QR, bank instructions or create action")
+            print("PASS unconfigured: account remains visible; no QR, bank instructions or create action")
 
-            state["profile"].update(configured=True, purchasesEnabled=True)
+            state["profile"].update(configured=True, purchasesEnabled=True, bank=BANK, availableCredits=3)
             page.evaluate("window.PandaBilling.refresh()")
-            page.get_by_role("button", name="Mua thêm phiếu", exact=True).click()
-            assert page.locator(".pb-modal a").get_attribute("target") == "_blank"
-            assert page.locator(".pb-modal img").count() == 0
-            page.keyboard.press("Escape")
-            print("PASS signed-out: login preserves the original tab; no payment order")
+            assert page.get_by_role("button", name="Nạp phiếu", exact=True).count() == 1
+            assert page.get_by_role("button", name="Lịch sử nạp", exact=True).count() == 1
+            assert page.get_by_role("button", name="Đăng xuất", exact=True).count() == 1
+            print("PASS account: balance, top-up, history and logout actions are available after sign-in")
 
-            state["profile"].update(signedIn=True, user=USER, bank=BANK, availableCredits=3)
             page.evaluate("window.PandaBilling.refresh()")
             page.locator("#dataFile").set_input_files({"name": "preserve-payment-uat.json", "mimeType": "application/json",
                                                        "buffer": json.dumps([{"LuaChon": "Có"}, {"LuaChon": "Không"}]).encode()})
@@ -204,7 +205,7 @@ def main():
             page.wait_for_function("window.PandaStudyQA.getRows().length === 7 && window.PandaStudyQA.getRows().every(row => row.status === 'valid')")
             plan_before = page.evaluate("window.PandaStudyQA.getRows()")
             page.set_viewport_size({"width": 320, "height": 800})
-            page.get_by_role("button", name="Mua thêm phiếu", exact=True).click()
+            page.get_by_role("button", name="Nạp phiếu", exact=True).click()
             assert page.locator("#pbQuantity").input_value() == "20"
             assert "10.000" in page.locator(".pb-total").inner_text()
             page.locator("#pbQuantity").fill("0")
