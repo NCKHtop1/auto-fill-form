@@ -126,6 +126,11 @@ assert profile.get("unitPriceVnd") == 500, profile
 assert profile.get("signedIn") is False, profile
 assert isinstance(profile.get("billingEnabled"), bool), profile
 assert isinstance(profile.get("purchasesEnabled"), bool), profile
+catalog = {item.get("id"): item for item in profile.get("topupPackages", [])}
+assert catalog.get("starter", {}).get("priceVnd") == 10000, catalog
+assert catalog.get("popular", {}).get("credits") == 100 and catalog["popular"].get("priceVnd") == 45000 and catalog["popular"].get("discountPercent") == 10, catalog
+assert catalog.get("research", {}).get("credits") == 250 and catalog["research"].get("priceVnd") == 110000, catalog
+assert catalog.get("pro", {}).get("credits") == 500 and catalog["pro"].get("priceVnd") == 200000 and catalog["pro"].get("discountPercent") == 20, catalog
 if profile.get("billingEnabled"):
     assert profile.get("configured") is True, profile
 
