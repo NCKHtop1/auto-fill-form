@@ -103,6 +103,13 @@ async function finishClaim(row, result) {
 
 async function drainOutbox(options = {}) {
   billing.assertReady();
+  const sender = String(process.env.BILLING_EMAIL_FROM || '').trim();
+  const senderAddress = sender.match(/<([^<>]+)>$/)?.[1] || sender;
+  const transportReady = !!String(process.env.RESEND_API_KEY || '').trim() &&
+    /^[^\s<>@]+@[^\s<>@]+\.[^\s<>@]+$/.test(senderAddress) && !/[\r\n]/.test(sender);
+  // Keep durable outbox rows pending until the provider is configured. This
+  // avoids converting a configuration gap into a permanent failed notification.
+  if (!options.send && !transportReady) return {claimed:0,sent:0,retry:0,failed:0,paused:true};
   const limit = Math.min(10,Math.max(1,Number.isInteger(options.limit)?options.limit:2));
   if (options.send && process.env.NODE_ENV !== 'test') throw new Error('Notification test senders are disabled outside tests.');
   const send = options.send || sendViaResend;
