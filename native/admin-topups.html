@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/billing.css?v=20261019e">
-  <script src="/admin-topups.js?v=20261019e" defer></script>
+  <link rel="stylesheet" href="/billing.css?v=20261019-commerce">
+  <script src="/admin-topups.js?v=20261019-commerce" defer></script>
 </head>
 <body class="pb-admin">
   <header class="pb-admin-header">
@@ -57,6 +57,25 @@
         <div id="paRevenueSummary" class="pb-metric-grid" aria-live="polite"></div>
         <div id="paRevenuePackages" class="pb-revenue-packages" aria-label="Hiệu quả theo gói"></div>
         <div id="paRevenueMonthly" class="pb-revenue-table-wrap" aria-live="polite"></div>
+      </section>
+      <section class="pb-card" style="margin-top:20px" aria-labelledby="paCommerceTitle">
+        <div class="pb-admin-users-head">
+          <div>
+            <h2 id="paCommerceTitle">Gói nạp & ưu đãi</h2>
+            <p class="pb-small pb-muted">Admin có thể chỉnh tên gói, số phiếu, giá bán, giá niêm yết, nhãn nổi bật và thời gian ưu đãi. Đơn đã tạo luôn giữ snapshot giá cũ.</p>
+          </div>
+          <button class="pb-button" id="paRefreshCommerce" type="button">Tải lại cấu hình</button>
+        </div>
+        <h3 style="margin-top:18px">Các gói đang bán</h3>
+        <div id="paPackages" class="pb-admin-packages" aria-live="polite"></div>
+        <div class="pb-admin-promo-head">
+          <div>
+            <h3>Ưu đãi tặng phiếu theo thời gian</h3>
+            <p class="pb-small pb-muted">Mỗi tài khoản chỉ nhận một lần cho mỗi chương trình, khi đăng nhập trong khoảng thời gian hiệu lực.</p>
+          </div>
+          <button class="pb-button pb-button-primary" id="paNewPromotion" type="button">Tạo ưu đãi</button>
+        </div>
+        <div id="paPromotions" class="pb-admin-promotions" aria-live="polite"></div>
       </section>
       <div class="pb-admin-grid" style="margin-top:20px">
         <section class="pb-card" aria-labelledby="paOrdersTitle">
