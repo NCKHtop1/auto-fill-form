@@ -232,9 +232,9 @@
     } finally { state.commerceLoading=false; }
   }
   function renderCommerce() {
-    const data=state.commerce || {packages:[],promotions:[]};
-    const packagesBox=$('paPackages'),promotionsBox=$('paPromotions');
-    packagesBox.replaceChildren(); promotionsBox.replaceChildren();
+    const data=state.commerce || {packages:[],promotions:[],audit:[]};
+    const packagesBox=$('paPackages'),promotionsBox=$('paPromotions'),auditBox=$('paCommerceAudit');
+    packagesBox.replaceChildren(); promotionsBox.replaceChildren(); auditBox?.replaceChildren();
 
     const packages=Array.isArray(data.packages)?data.packages:[];
     if (!packages.length) packagesBox.append(node('p','pb-admin-empty','Chưa có gói nạp.'));
@@ -278,6 +278,27 @@
     const promotions=Array.isArray(data.promotions)?data.promotions:[];
     if (!promotions.length) promotionsBox.append(node('p','pb-admin-empty','Chưa có chương trình ưu đãi.'));
     for (const promo of promotions) promotionsBox.append(promotionForm(promo));
+
+    if (auditBox) {
+      const audit=Array.isArray(data.audit)?data.audit:[];
+      if (!audit.length) auditBox.append(node('p','pb-admin-empty','Chưa có thay đổi cấu hình được ghi nhận.'));
+      else {
+        const table=node('table','pb-revenue-table');
+        const thead=node('thead'),hr=node('tr');
+        for (const title of ['Thời điểm','Admin','Đối tượng','Thay đổi']) hr.append(node('th','',title));
+        thead.append(hr); table.append(thead);
+        const tbody=node('tbody');
+        for (const item of audit) {
+          const tr=node('tr');
+          const action=item.action==='package_save'?'Lưu gói':item.action==='promotion_save'?'Lưu ưu đãi':item.action;
+          tr.append(node('td','',date(item.createdAt)),node('td','',item.actorEmail || '—'),
+            node('td','',(item.entityType==='package'?'Gói ':'Ưu đãi ')+(item.entityId || '')),
+            node('td','',action));
+          tbody.append(tr);
+        }
+        table.append(tbody); auditBox.append(table);
+      }
+    }
   }
   function promotionForm(promo={}) {
     const form=node('form','pb-commerce-card');
