@@ -330,7 +330,7 @@ async function approveOrder(identity, input) {
       const effectiveAmount = suppliedAmount === null ? number(order.amount_vnd) : suppliedAmount;
 
       await beginAdminAction(client,actor,'approve',orderId,key,
-        {action:'approve',orderId,bankReferenceProvided:!!suppliedReference,
+        {action:'approve',orderId,bankReference:suppliedReference || null,
           receivedAmountVnd:suppliedAmount,note,confirmedBankTransfer:true},note);
 
       if (order.status === 'approved') {
