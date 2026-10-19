@@ -29,7 +29,7 @@ The repository CI must pass all existing checks plus the read-only production sm
 10. Production custom-domain smoke:
    - apex redirect;
    - OAuth `redirect_uri`;
-   - required Google Forms scopes retained;
+   - OAuth requests only `openid email profile`; sensitive Google Forms scopes are absent from ordinary sign-in;
    - billing profile read-only response;
    - QR hidden while top-ups are gated;
    - unauthenticated admin API denied;
@@ -39,12 +39,12 @@ The production smoke creates no order, sends no Google response, approves no pay
 
 ## Manual UAT A — Google login on custom domain
 
-Use a Google test account allowed by the OAuth consent screen.
+Use a normal Google account. Ordinary PandaStudy sign-in should request only basic identity scopes and must not show the Google unverified-app warning.
 
 1. Open `https://www.pandastudy.info.vn`.\n2. Confirm only the PandaStudy login screen is visible; the main navigation/workspace must be hidden.\n3. Start Google connection.
 4. Confirm the browser goes to Google Accounts.\n5. Complete consent.\n6. Confirm return host is exactly `www.pandastudy.info.vn`.\n7. Confirm the main application appears only after the callback succeeds.\n8. Confirm the account bar shows email, credit balance, top-up history and logout.\n9. Refresh the page; session must survive.\n10. Sign out; the login wall must return and the main shell must disappear.\n11. Repeat in a private/incognito window.\n12. Verify the legacy `.vercel.app` URL remains rollback access, but the normal user journey stays on the custom domain.
 
-Pass criteria: no `redirect_uri_mismatch`, no loop between domains, no lost session after callback.
+Pass criteria: no `redirect_uri_mismatch`, no unverified-app warning for ordinary login, no loop between domains, no lost session after callback.
 
 ## Manual UAT B — existing core flow regression
 
