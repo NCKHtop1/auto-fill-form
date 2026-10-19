@@ -9,11 +9,11 @@ Production: https://www.pandastudy.info.vn
 - Download question-by-question CSV. PREVIEW CSV DOES NOT SEND RESPONSES.
 - Read a public Google Sheet's row count from a user-supplied Sheet link.
 - Authorized QA step 6: send 1 test row into a duplicate Google Form, then the remaining validated rows. Stop on any ambiguous response, compare the count before/after and export a submission report.
-- Read the real response count via official Google Forms API after administrator sign-in. The Google Forms API does NOT provide a create-response method.
+- Read response counts through the connected public response Sheet when available. Ordinary sign-in does not request sensitive Google Forms API scopes; the Google Forms API does not provide a create-response method.
 
 ## Configure Google OAuth in Vercel
 
-In Google Cloud Console, enable the Google Forms API, configure the OAuth consent screen, and create an OAuth Client ID of type Web application.
+Configure Google Auth Platform and create an OAuth Client ID of type Web application. Production sign-in intentionally requests only `openid email profile`; published Google Forms are read through the respondent/public paths so ordinary login does not request sensitive Google Forms scopes.
 
 Authorized JavaScript origin: https://www.pandastudy.info.vn
 
