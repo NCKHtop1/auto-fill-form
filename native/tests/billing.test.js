@@ -209,6 +209,26 @@ test('two administrators can approve one order only once, with amount matching a
   assert.equal((await billing.getProfile(buyer)).availableCredits,7);
 });
 
+test('admin may approve with checkbox only; amount and bank reference are optional audit details',async () => {
+  const order=await pending(5);
+  await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'',receivedAmountVnd:null,
+    confirmedBankTransfer:false,idempotencyKey:key('unchecked')}),{code:'BANK_CONFIRMATION_REQUIRED'});
+
+  const approved=await billing.approveOrder(admin,{orderId:order.id,bankReference:'',receivedAmountVnd:null,
+    confirmedBankTransfer:true,idempotencyKey:key('manual-approve')});
+  assert.equal(approved.status,'approved');
+  assert.equal((await billing.getProfile(buyer)).availableCredits,5);
+
+  const payment=(await db.query('SELECT reference_original,amount_vnd FROM ps_billing_bank_payments WHERE order_id=$1',[order.id])).rows[0];
+  assert.match(payment.reference_original,/^MANUAL_CONFIRMATION:/);
+  assert.equal(Number(payment.amount_vnd),order.amountVnd);
+
+  const listed=(await billing.listAdminTopups(admin,{status:'approved'})).orders.find(item=>item.id===order.id);
+  assert.equal(listed.manualBankConfirmation,true);
+  assert.equal(Object.hasOwn(listed,'bankReference'),false);
+  assert.equal(Object.hasOwn(listed,'receivedAmountVnd'),false);
+});
+
 test('admin user directory exposes persistent Google accounts without raw Google subject',async () => {
   await billing.getProfile(buyer);
   await billing.getProfile(admin);
