@@ -96,12 +96,12 @@ Only run after email/sender, database, admin access and bank details are verifie
 6. Transfer the exact amount with the exact memo.
 7. Click “I have transferred”.
 8. Confirm order becomes `pending_review`; credits must still be unchanged.
-9. Admin checks the real bank statement/app, enters the real bank reference and exact amount, then approves.
+9. Admin checks the real bank statement/app. Amount and bank reference are optional audit details; the confirmation checkbox is mandatory before approval.
 10. Confirm order becomes `approved` and credits increase exactly once.
 11. Repeat the approve request or refresh/re-submit the admin form; credits must not increase again.
 12. Reuse the same bank reference on a different order; approval must be rejected.
 
-Pass criteria: only a verified real transfer changes the ledger, exactly once.
+Pass criteria: only an admin who explicitly ticks the bank-confirmation checkbox can approve; optional amount/reference are validated when supplied; the ledger changes exactly once.
 
 ## Manual UAT F — usage-credit lifecycle
 
