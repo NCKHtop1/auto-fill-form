@@ -29,7 +29,7 @@ Set these Vercel environment variables for Production (and Preview as needed):
 - PUBLIC_SITE_URL: https://www.pandastudy.info.vn
 The existing Step 6 API checks Google sign-in, explicit consent and a supported public respondent Form. Legacy `PANDASTUDY_ADMIN_EMAILS`, `PANDASTUDY_TEST_FORM_IDS` and `ENABLE_QA_SUBMISSIONS` helpers are not called by the current submission route; they must not be mistaken for an enforced administrator boundary. Payment approval uses its separate verified `BILLING_ADMIN_EMAILS` role.
 
-Enter secrets directly in Vercel Settings > Environment Variables. Do not paste secrets in chat or GitHub. Redeploy after updating environment variables.
+Enter secrets directly in Vercel Settings > Environment Variables. Do not paste secrets in chat or GitHub. Redeploy after updating environment variables. Production billing activation is always picked up through a fresh deployment so release flags and code stay in sync.
 
 ## Workflow
 
