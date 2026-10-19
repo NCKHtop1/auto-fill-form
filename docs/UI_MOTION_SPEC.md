@@ -1,6 +1,6 @@
 # PandaStudy Premium Motion UI Specification
 
-Status: implementation candidate for `feat/premium-motion-ui`.
+Status: baseline motion specification. The current release direction is superseded visually by `docs/FRONTEND_CINEMATIC_V3_BRIEF.md`; functional and accessibility guardrails remain applicable.
 
 ## Product intent
 
