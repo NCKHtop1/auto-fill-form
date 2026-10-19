@@ -117,7 +117,8 @@ def main():
             assert page.locator("#app").is_hidden()
             assert page.get_by_role("link", name="Đăng nhập với Google →").get_attribute("href") == "/api/auth/start"
             assert page.evaluate("document.body.dataset.authenticated") == "false"
-            print("PASS auth wall: signed-out visitor cannot see the main PandaStudy shell")
+            assert "\\n" not in gate.inner_text(), gate.inner_text()
+            print("PASS auth wall: signed-out visitor cannot see the main PandaStudy shell and renders no escaped newline text")
 
             state["signed_in"] = True
             page.evaluate("window.PandaAuthGate.refresh()")
