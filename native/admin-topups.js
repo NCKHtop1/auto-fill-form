@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const state = { profile: null, orders: [], operations: [], selected: null, loading: false, busy: false,
+  const state = { profile: null, orders: [], operations: [], users: [], selected: null, loading: false, usersLoading: false, busy: false,
     initialOrder: new URLSearchParams(location.search).get('orderId'), keys: new Map() };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Đã từ chối' };
   const number = value => Number(value || 0).toLocaleString('vi-VN');
@@ -51,7 +51,11 @@
       const session = $('paSession'); session.replaceChildren();
       const allowed = profile.billingEnabled && profile.configured && profile.signedIn && profile.user?.isAdmin;
       $('paWorkspace').hidden = !allowed;
-      if (!allowed) { state.orders = []; state.operations = []; state.selected = null; $('paOrders').replaceChildren(); $('paOperations').replaceChildren(); $('paDetail').replaceChildren(); }
+      if (!allowed) {
+        state.orders = []; state.operations = []; state.users = []; state.selected = null;
+        $('paOrders').replaceChildren(); $('paOperations').replaceChildren(); $('paDetail').replaceChildren();
+        $('paUsers')?.replaceChildren(); if ($('paUsersSummary')) $('paUsersSummary').textContent = '';
+      }
       if (!profile.billingEnabled) {
         session.append(node('strong', '', 'Tính năng mua phiếu đang tắt.'), node('p', 'pb-small', 'Luồng công cụ hiện tại vẫn được giữ nguyên.'));
       } else if (!profile.configured) {
@@ -107,6 +111,56 @@
       if (error.status === 401 || error.status === 403) await checkSession();
     } finally { state.loading = false; $('paRefresh').disabled = false; }
   }
+  async function loadUsers(options = {}) {
+    if (state.usersLoading || !state.profile?.user?.isAdmin || !$('paUsers')) return;
+    state.usersLoading = true;
+    const search = $('paUserSearch')?.value?.trim() || '';
+    if (!options.quiet) $('paUsersSummary').textContent = 'Đang tải tài khoản…';
+    try {
+      const result = await request('/api/admin-topups?resource=users&search=' + encodeURIComponent(search));
+      state.users = Array.isArray(result.users) ? result.users : [];
+      renderUsers();
+      $('paUsersSummary').textContent = (search ? 'Kết quả tìm kiếm: ' : 'Danh sách gần nhất: ') +
+        state.users.length + ' tài khoản' + (state.users.length >= 200 ? ' (giới hạn 200; dùng ô tìm kiếm để lọc).' : '.');
+    } catch (error) {
+      $('paUsersSummary').textContent = '';
+      $('paUsers').replaceChildren(node('p', 'pb-notice pb-notice-error', error.message));
+      if (error.status === 401 || error.status === 403) await checkSession();
+    } finally {
+      state.usersLoading = false;
+    }
+  }
+  function renderUsers() {
+    const container = $('paUsers'); container.replaceChildren();
+    if (!state.users.length) {
+      container.append(node('p', 'pb-admin-empty', 'Chưa có tài khoản phù hợp.'));
+      return;
+    }
+    const list = node('div', 'pb-user-grid');
+    for (const user of state.users) {
+      const card = node('article', 'pb-user-card');
+      const head = node('div', 'pb-user-card-head');
+      const identity = node('div');
+      identity.append(node('strong', 'pb-user-email', user.email || 'Tài khoản chưa có email'));
+      const role = node('span', 'pb-badge ' + (user.role === 'admin' ? 'pb-badge-approved' : ''), user.role === 'admin' ? 'Admin' : 'Người dùng');
+      head.append(identity, role);
+      const stats = node('dl', 'pb-user-stats');
+      detail(stats, 'Mã tài khoản', user.id);
+      detail(stats, 'Tạo tài khoản', date(user.createdAt));
+      detail(stats, 'Hoạt động gần nhất', date(user.lastActivityAt));
+      detail(stats, 'Phiếu khả dụng', number(user.availableCredits));
+      detail(stats, 'Phiếu đang giữ', number(user.reservedCredits));
+      detail(stats, 'Đơn đã duyệt', number(user.approvedOrders) + ' / ' + number(user.totalOrders));
+      detail(stats, 'Đang chờ nạp', number(user.pendingOrders));
+      detail(stats, 'Đã nạp', number(user.purchasedCredits) + ' phiếu · ' + money(user.paidAmountVnd));
+      detail(stats, 'Lượt đã sử dụng', number(user.consumedOperations));
+      if (number(user.unknownOperations) > 0) detail(stats, 'Lượt cần đối chiếu', number(user.unknownOperations));
+      card.append(head, stats);
+      list.append(card);
+    }
+    container.append(list);
+  }
+
   function renderOrders() {
     const container = $('paOrders'); container.replaceChildren();
     if (!state.orders.length) { container.append(node('p', 'pb-admin-empty', 'Không có đơn ở trạng thái này.')); return; }
@@ -277,17 +331,31 @@
     } catch (error) { say(error.message, 'error'); }
     finally { button.disabled = false; }
   }
-  async function init() { if (await checkSession()) await loadOrders(); }
+  async function init() {
+    if (await checkSession()) await Promise.all([loadOrders(), loadUsers()]);
+  }
   $('paFilter').addEventListener('change', () => { if (!state.busy) { state.selected = null; loadOrders(); } });
-  $('paRefresh').addEventListener('click', async () => { if (!state.busy && await checkSession()) await loadOrders(); });
+  $('paRefresh').addEventListener('click', async () => {
+    if (!state.busy && await checkSession()) await Promise.all([loadOrders(), loadUsers()]);
+  });
   $('paRetryEmail').addEventListener('click', retryEmail);
+  $('paUserSearchForm')?.addEventListener('submit', event => {
+    event.preventDefault();
+    if (!state.busy) loadUsers();
+  });
+  $('paUserSearchClear')?.addEventListener('click', () => {
+    if (!$('paUserSearch')) return;
+    $('paUserSearch').value = '';
+    if (!state.busy) loadUsers();
+  });
   window.addEventListener('focus', () => {
     if (state.busy || $('paDetail').querySelector('form')) return;
     if (!state.profile?.user?.isAdmin) init();
-    else loadOrders({quiet:true});
+    else Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true})]);
   });
   setInterval(() => {
-    if (!document.hidden && !state.busy && state.profile?.user?.isAdmin && !$('paDetail').querySelector('form')) loadOrders({quiet:true});
+    if (!document.hidden && !state.busy && state.profile?.user?.isAdmin && !$('paDetail').querySelector('form'))
+      Promise.all([loadOrders({quiet:true}), loadUsers({quiet:true})]);
   }, 30000);
   init();
 })();
