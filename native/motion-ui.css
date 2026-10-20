@@ -253,20 +253,17 @@
   filter: blur(28px);
   opacity: .9;
 }
-.hero-art .hero-scene,
-.hero-art .hero-mascot {
+.hero-art .hero-scene {
   position: absolute;
   inset: 0;
+  z-index: 2;
   width: 100%;
   height: 100%;
   max-width: 100%;
   object-fit: cover;
   object-position: center;
   border-radius: 0;
-}
-.hero-art .hero-scene {
-  z-index: 2;
-  /* The whole cinematic scene is deliberately static. */
+  /* The entire cinematic scene is deliberately static. */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 86%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 86%, transparent);
   -webkit-mask-composite: source-in;
@@ -276,40 +273,32 @@
   transform: none;
   animation: none;
 }
-.hero-panda-erase {
+.hero-art .hero-panda-erase,
+.hero-art .hero-panda-float {
   position: absolute;
-  z-index: 3;
   left: 19.53125%;
   top: 21.41204%;
   width: 33.85417%;
   height: 53.81944%;
   max-width: none;
   object-fit: fill;
+  object-position: center;
+  border-radius: 0;
   pointer-events: none;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
-.hero-art .hero-mascot {
-  --panda-float-down: 12px;
-  --panda-float-up: -18px;
+.hero-art .hero-panda-erase {
+  z-index: 2;
+  transform: none;
+  animation: none;
+}
+.hero-art .hero-panda-float {
+  --panda-float-down: 16px;
+  --panda-float-up: -20px;
   z-index: 4;
-  pointer-events: none;
-  clip-path: polygon(
-    49.6094% 27.0833%, 48.2422% 26.5046%, 46.8750% 27.7778%, 44.7266% 25.1157%,
-    41.2760% 25.4630%, 40.9505% 24.1898%, 40.8854% 26.0417%, 38.9974% 26.9676%,
-    36.7839% 29.6296%, 36.0026% 27.1991%, 36.8490% 23.6111%, 36.0026% 23.4954%,
-    35.1562% 27.0833%, 35.8724% 29.5139%, 34.7005% 31.8287%, 33.5938% 31.3657%,
-    32.8776% 32.4074%, 33.3333% 33.2176%, 31.5755% 38.0787%, 30.4688% 38.0787%,
-    30.1432% 39.4676%, 29.6224% 39.3519%, 28.3854% 43.0556%, 27.0833% 42.0139%,
-    26.3672% 43.2870%, 24.6094% 52.0833%, 24.6094% 53.7037%, 26.2370% 56.5972%,
-    23.3724% 56.8287%, 21.9401% 59.9537%, 21.8750% 61.6898%, 22.5911% 62.2685%,
-    23.1120% 66.3194%, 24.8047% 68.2870%, 26.1719% 67.1296%, 28.5156% 67.5926%,
-    29.6875% 66.7824%, 30.0781% 71.4120%, 31.1849% 72.8009%, 32.2917% 72.6852%,
-    34.3099% 69.3287%, 36.3932% 68.7500%, 38.5417% 64.5833%, 39.7786% 64.8148%,
-    42.9688% 60.8796%, 45.2474% 55.0926%, 49.2188% 51.3889%, 50.7161% 51.6204%,
-    51.6276% 47.5694%, 51.1719% 46.6435%, 51.3672% 44.4444%, 50.3906% 43.6343%,
-    50.9115% 40.5093%, 49.8698% 35.0694%, 50.6510% 33.3333%, 50.5859% 29.6296%
-  );
   transform: translate3d(0,var(--panda-float-down),0);
-  animation: psPandaFloat 4.8s cubic-bezier(.45,0,.55,1) infinite;
+  animation: psPandaFloat 4.6s cubic-bezier(.45,0,.55,1) infinite;
   will-change: transform;
 }
 .hero-aura {
@@ -605,10 +594,10 @@ html.motion-ready .motion-reveal.is-visible {
     margin-left: 0;
     border-radius: 0;
   }
-  .hero-art .hero-mascot {
-    --panda-float-down: 7px;
-    --panda-float-up: -11px;
-    animation-duration: 5.2s;
+  .hero-art .hero-panda-float {
+    --panda-float-down: 10px;
+    --panda-float-up: -14px;
+    animation-duration: 4.8s;
   }
   .hero-live-chip {
     left: 10px;
@@ -640,7 +629,7 @@ html.motion-ready .motion-reveal.is-visible {
   .hero.hero-cinematic::after,
   .hero.hero-cinematic .hero-copy,
   .hero.hero-cinematic h1 strong::after,
-  .hero-mascot,
+  .hero-panda-float,
   .hero-aura,
   .hero-scan,
   .hero-live-chip b,
@@ -651,7 +640,7 @@ html.motion-ready .motion-reveal.is-visible {
     transform: none !important;
   }
   .hero-scene,
-  .hero-mascot {
+  .hero-panda-float {
     transform: none !important;
   }
   html.motion-ready .motion-reveal,

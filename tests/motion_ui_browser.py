@@ -258,8 +258,8 @@ def main():
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-panda-float-v8-1"
-            assert page.locator('link[href="/motion-ui.css?v=20261020h"]').count() == 1
+            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-panda-float-v8-2"
+            assert page.locator('link[href="/motion-ui.css?v=20261020i"]').count() == 1
             assert page.locator('script[src="/motion-ui.js?v=20261020f"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
@@ -286,10 +286,12 @@ def main():
 
             scene_animation = image.evaluate("el => getComputedStyle(el).animationName")
             assert scene_animation == "none", scene_animation
-            mascot = page.locator(".hero-mascot")
+            mascot = page.locator(".hero-panda-float")
             erase = page.locator(".hero-panda-erase")
             assert mascot.count() == 1 and erase.count() == 1
-            page.wait_for_function("document.querySelector('.hero-mascot').complete && document.querySelector('.hero-panda-erase').complete")
+            assert mascot.get_attribute("src") == "/assets/hero-panda-float-v8.webp"
+            assert mascot.get_attribute("srcset") is None
+            page.wait_for_function("document.querySelector('.hero-panda-float').complete && document.querySelector('.hero-panda-erase').complete")
             mascot_animation = mascot.evaluate("el => getComputedStyle(el).animationName")
             assert "psPandaFloat" in mascot_animation, mascot_animation
             travel = mascot.evaluate("""el => {
@@ -308,7 +310,7 @@ def main():
               }
               return out;
             }""")
-            assert travel and max(x["y"] for x in travel)-min(x["y"] for x in travel) >= 24, travel
+            assert travel and max(x["y"] for x in travel)-min(x["y"] for x in travel) >= 34, travel
             assert max(x["x"] for x in travel)-min(x["x"] for x in travel) <= 1, travel
             hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
             assert "gradient" in hero_background, hero_background
@@ -397,7 +399,7 @@ def main():
             rp.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
             reduced_animation = rp.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName")
-            reduced_mascot_animation = rp.locator(".hero-mascot").evaluate("el => getComputedStyle(el).animationName")
+            reduced_mascot_animation = rp.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
             assert reduced_animation == "none", reduced_animation
             assert reduced_mascot_animation == "none", reduced_mascot_animation
             hidden_reveals = rp.locator(".motion-reveal").evaluate_all(
