@@ -650,3 +650,153 @@ html.motion-ready .motion-reveal.is-visible {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* ---------------------------------------------------------
+   PandaStudy V6 / tonal continuity.
+   Hero remains cinematic-dark; work surfaces remain daylight-clear.
+   This bridge is decoration only and never touches navigation state.
+---------------------------------------------------------- */
+:root {
+  --bg: #f2f8f5;
+  --surface-soft: #eaf5ef;
+  --ink: #17362a;
+  --muted: #60766a;
+  --line: #d9e8de;
+  --primary: #276d4a;
+  --primary-dark: #195439;
+}
+body { background: var(--bg); }
+.hero.hero-cinematic { border-bottom: 0; }
+.ps-tone-bridge {
+  position: relative;
+  z-index: 1;
+  height: 108px;
+  margin-top: -1px;
+  overflow: hidden;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    #06100c 0%,
+    #153327 25%,
+    #4e7662 54%,
+    #b6d5c5 82%,
+    #f2f8f5 100%
+  );
+}
+.ps-tone-bridge::before {
+  content: "";
+  position: absolute;
+  inset: -80% -10% -15%;
+  background:
+    radial-gradient(ellipse at 18% 35%, rgba(66, 148, 97, .14), transparent 46%),
+    radial-gradient(ellipse at 83% 65%, rgba(207, 245, 221, .21), transparent 49%);
+  filter: blur(17px);
+}
+.ps-tone-bridge::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 20px;
+  background: linear-gradient(180deg, transparent, #f2f8f5);
+}
+body[data-panda-page]:not([data-panda-page="home"]) .ps-tone-bridge,
+.ps-tone-bridge.hidden { display: none; }
+
+/* The six-step bridge uses ONE surface/number language. An initial
+   step is not painted "active" when no step has been selected. */
+.steps-strip {
+  z-index: 6;
+  max-width: min(1240px, calc(100% - 28px));
+  margin: -43px auto 0;
+  padding: 10px;
+  gap: 8px;
+  border: 1px solid rgba(210, 229, 217, .94);
+  border-radius: 20px;
+  background: rgba(253, 255, 252, .97);
+  box-shadow: 0 16px 40px rgba(16, 54, 38, .12), 0 2px 10px rgba(16, 54, 38, .04);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+.steps-strip a,
+.steps-strip a:first-child {
+  min-width: 0;
+  padding: 13px 11px;
+  gap: 9px;
+  border: 1px solid #e0ece2;
+  border-radius: 12px;
+  background: linear-gradient(140deg, #fff, #f3f9f5);
+  color: #204735;
+  box-shadow: none;
+}
+.steps-strip a:hover,
+.steps-strip a:focus-visible,
+.steps-strip a:first-child:hover,
+.steps-strip a:first-child:focus-visible {
+  border-color: #9fcab0;
+  color: #194e32;
+  background: #eaf5ed;
+  box-shadow: 0 8px 20px rgba(32, 89, 52, .09);
+}
+.steps-strip a:focus-visible {
+  outline: 3px solid #3c8358;
+  outline-offset: 2px;
+}
+.steps-strip a>b,
+.steps-strip a:first-child>b {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  background: #dcefe1;
+  color: #235d3c;
+}
+.steps-strip strong { color: inherit; }
+.steps-strip small { color: #61786a; opacity: 1; }
+.steps-strip a:hover>b,
+.steps-strip a:focus-visible>b { background: #cce6d4; }
+
+/* Keep the header, active section, and first data panel visually related
+   without making long-form data entry dark. */
+.topbar {
+  background: rgba(250, 254, 250, .94);
+  border-bottom-color: #d9e9de;
+}
+.nav-links a[aria-current="page"] {
+  color: #215f3f;
+  background: #e7f3eb;
+  box-shadow: inset 0 -2px #8ec5a1;
+}
+.workspace {
+  border-color: #d6e7dc;
+  box-shadow: 0 16px 44px rgba(22, 66, 43, .075);
+}
+.workspace-head {
+  background: linear-gradient(105deg, #fbfefa 0%, #edf7f0 100%);
+  border-bottom-color: #dce9df;
+}
+.step { border-bottom-color: #e0eae3; }
+.section-heading h2 { color: #1a3a2a; }
+
+@media (max-width: 1180px) {
+  .steps-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@media (max-width: 920px) {
+  .ps-tone-bridge { height: 92px; }
+  .steps-strip { margin: -37px 12px 0; max-width: none; }
+}
+@media (max-width: 650px) {
+  .ps-tone-bridge { height: 78px; }
+  .steps-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: -26px 12px 0;
+    padding: 7px;
+    gap: 6px;
+    border-radius: 16px;
+  }
+  .steps-strip a,
+  .steps-strip a:first-child { min-height: 62px; padding: 9px 7px; gap: 7px; }
+  .steps-strip a>b,
+  .steps-strip a:first-child>b { width: 26px; height: 26px; border-radius: 8px; }
+  .steps-strip strong { font-size: .72rem; }
+  .steps-strip small { font-size: .64rem; }
+}

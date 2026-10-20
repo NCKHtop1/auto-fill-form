@@ -201,6 +201,40 @@ def overflow(page):
     })""")
 
 
+
+def assert_tonal_continuity(page):
+    """The dark hero and light workspace share a real responsive transition."""
+    assert page.locator(".ps-tone-bridge").count() == 1
+    metrics = page.evaluate("""() => {
+      const hero = document.querySelector('.hero.hero-cinematic').getBoundingClientRect();
+      const bridge = document.querySelector('.ps-tone-bridge');
+      const strip = document.querySelector('.steps-strip');
+      const b = bridge.getBoundingClientRect(), s = strip.getBoundingClientRect();
+      const links = [...strip.querySelectorAll('a')];
+      const first = getComputedStyle(links[0]), second = getComputedStyle(links[1]);
+      const pageBg = getComputedStyle(document.body).backgroundColor;
+      return {
+        home: document.body.dataset.pandaPage === 'home',
+        bridgeVisible: getComputedStyle(bridge).display !== 'none',
+        gradient: getComputedStyle(bridge).backgroundImage,
+        heroBottom: hero.bottom, bridgeTop: b.top, bridgeBottom: b.bottom,
+        stripTop: s.top, stripBottom: s.bottom,
+        cardCount: links.length,
+        firstBg: first.backgroundImage, secondBg: second.backgroundImage,
+        firstColor: first.color, secondColor: second.color,
+        pageBg
+      };
+    }""")
+    assert metrics["home"] and metrics["bridgeVisible"], metrics
+    assert "linear-gradient" in metrics["gradient"], metrics
+    assert abs(metrics["heroBottom"] - metrics["bridgeTop"]) <= 3, metrics
+    assert metrics["bridgeTop"] <= metrics["stripTop"] < metrics["bridgeBottom"], metrics
+    assert metrics["cardCount"] == 6, metrics
+    assert metrics["firstBg"] == metrics["secondBg"], metrics
+    assert metrics["firstColor"] == metrics["secondColor"], metrics
+    assert metrics["pageBg"] == "rgb(242, 248, 245)", metrics
+    return metrics
+
 def main():
     assert (ROOT / "motion-ui.js").stat().st_size < 12_000, "motion-ui.js exceeds 12 KB guardrail"
     assert (ROOT / "motion-ui.css").stat().st_size < 24_000, "motion-ui.css exceeds 24 KB guardrail"
@@ -221,8 +255,8 @@ def main():
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-cohesive-v5"
-            assert page.locator('link[href="/motion-ui.css?v=20261020e"]').count() == 1
+            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-tone-bridge-v6"
+            assert page.locator('link[href="/motion-ui.css?v=20261020f"]').count() == 1
             assert page.locator('script[src="/motion-ui.js?v=20261020e"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
@@ -230,6 +264,7 @@ def main():
             assert page.locator(".hero-depth-grid").count() == 1
             assert page.locator(".hero-live-chip").count() == 1
             assert page.locator(".hero-proof span").count() == 3
+            assert_tonal_continuity(page)
 
             image = page.locator(".hero-art img")
             image.wait_for(state="visible")
@@ -283,7 +318,9 @@ def main():
             assert secondary.get_attribute("href") == "#how"
             primary.click()
             page.wait_for_function("location.hash === '#app'")
+            page.wait_for_function("document.body.dataset.pandaPage === 'app'")
             assert page.locator("#app").is_visible()
+            assert not page.locator(".ps-tone-bridge").is_visible(), "Bridge must disappear on tool tab"
 
             workspace = page.locator("#app")
             assert workspace.evaluate("el => el.classList.contains('motion-reveal')")
@@ -292,6 +329,7 @@ def main():
             assert overflow(page)["delta"] <= 1, overflow(page)
             page.evaluate("location.hash='#home'")
             page.wait_for_function("document.body.dataset.pandaPage === 'home'")
+            assert_tonal_continuity(page)
             page.screenshot(path=str(OUT / "cinematic_v4_desktop_1440.png"), full_page=False, animations="disabled")
             assert not errors, errors
             print("PASS cinematic desktop: sharp responsive asset, no headline overlap, motion, parallax, reveal and CTAs preserved", flush=True)
@@ -312,6 +350,7 @@ def main():
                 p.wait_for_function("document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0")
                 quality = assert_hero_quality(p, inventory, pointer_extremes=width >= 1024)
                 (OUT / f"hero-quality-{width}-dpr{dpr}.json").write_text(json.dumps(quality, indent=2), encoding="utf-8")
+                assert_tonal_continuity(p)
                 geom = overflow(p)
                 assert geom["delta"] <= 1, (width, geom)
                 assert p.locator(".hero-art").is_visible()
