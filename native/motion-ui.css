@@ -273,6 +273,58 @@
   transform: none;
   animation: none;
 }
+.hero-data-cube {
+  position: absolute;
+  left: 50.2%;
+  top: 45.2%;
+  z-index: 7;
+  width: 72px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(200,255,210,.5);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(122,255,145,.96), rgba(34,182,70,.94) 58%, rgba(9,89,37,.97));
+  color: #05270f;
+  box-shadow: 0 14px 32px rgba(34,229,86,.22), 0 0 0 1px rgba(255,255,255,.12) inset, 0 -9px 26px rgba(255,255,255,.14) inset;
+  transform: translate(-50%,-50%) rotate(-8deg);
+  pointer-events: none;
+}
+.hero-data-cube::before,
+.hero-data-cube::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+}
+.hero-data-cube::before {
+  left: 9px;
+  right: 9px;
+  top: 8px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(239,255,243,.72);
+  box-shadow: 0 8px 0 rgba(239,255,243,.2);
+}
+.hero-data-cube::after {
+  right: 9px;
+  bottom: 8px;
+  width: 13px;
+  height: 13px;
+  border-radius: 4px;
+  background: rgba(238,255,241,.9);
+  box-shadow: -18px 3px 0 -2px rgba(238,255,241,.62), -32px 7px 0 -4px rgba(238,255,241,.38);
+}
+.hero-data-cube b {
+  position: relative;
+  z-index: 2;
+  margin-top: 9px;
+  margin-left: -14px;
+  font-size: .6rem;
+  line-height: 1;
+  letter-spacing: .08em;
+  font-weight: 900;
+  color: rgba(4,42,15,.86);
+}
 .hero-aura {
   position: absolute;
   z-index: 3;
@@ -314,7 +366,7 @@
   inset: 0;
   z-index: 3;
   pointer-events: none;
-  opacity: .075;
+  opacity: .035;
   background-image:
     linear-gradient(rgba(174,235,184,.35) 1px, transparent 1px),
     linear-gradient(90deg, rgba(174,235,184,.30) 1px, transparent 1px);
@@ -563,6 +615,18 @@ html.motion-ready .motion-reveal.is-visible {
     width: 100%;
     margin-left: 0;
     border-radius: 0;
+  }
+  .hero-data-cube {
+    left: 50%;
+    top: 45%;
+    width: 56px;
+    height: 42px;
+    border-radius: 10px;
+  }
+  .hero-data-cube b {
+    margin-top: 7px;
+    margin-left: -10px;
+    font-size: .5rem;
   }
   .hero-live-chip {
     left: 10px;

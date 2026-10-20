@@ -258,8 +258,8 @@ def main():
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-clean-v9"
-            assert page.locator('link[href="/motion-ui.css?v=20261021b"]').count() == 1
+            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-held-v10"
+            assert page.locator('link[href="/motion-ui.css?v=20261021c"]').count() == 1
             assert page.locator('script[src="/motion-ui.js?v=20261020f"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
@@ -288,6 +288,16 @@ def main():
             assert scene_animation == "none", scene_animation
             assert page.locator(".hero-panda-float").count() == 0
             assert page.locator(".hero-panda-erase").count() == 0
+            assert image.get_attribute("srcset") is None
+            cube = page.locator(".hero-data-cube")
+            assert cube.count() == 1
+            cube_metrics = cube.evaluate("""el => {
+              const s=getComputedStyle(el), r=el.getBoundingClientRect();
+              return {display:s.display,w:r.width,h:r.height,opacity:s.opacity};
+            }""")
+            assert cube_metrics["display"] != "none", cube_metrics
+            assert cube_metrics["w"] >= 55 and cube_metrics["h"] >= 40, cube_metrics
+            assert float(cube_metrics["opacity"]) > .9, cube_metrics
             # Keep the mascot inside the high-resolution responsive scene.
             # Low-resolution full-frame overlays are intentionally forbidden because they blur the panda.
             hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
@@ -380,6 +390,7 @@ def main():
             assert reduced_animation == "none", reduced_animation
             assert rp.locator(".hero-panda-float").count() == 0
             assert rp.locator(".hero-panda-erase").count() == 0
+            assert rp.locator(".hero-data-cube").count() == 1
             hidden_reveals = rp.locator(".motion-reveal").evaluate_all(
                 "els => els.filter(el => { const s=getComputedStyle(el); return s.opacity==='0' || s.transform!=='none'; }).length"
             )
