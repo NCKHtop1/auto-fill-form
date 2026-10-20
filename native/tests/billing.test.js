@@ -365,7 +365,7 @@ test('admin approval requires checked bank evidence, exact amount and transactio
   assert.equal(Number(payment.amount_vnd),order.amountVnd);
 
   const listed=(await billing.listAdminTopups(admin,{status:'approved'})).orders.find(item=>item.id===order.id);
-  assert.equal(listed.manualBankConfirmation,false);
+  assert.equal(listed.manualBankConfirmation,undefined);
   assert.equal(listed.bankReference,'BANK-001');
   assert.equal(listed.receivedAmountVnd,order.amountVnd);
 });
