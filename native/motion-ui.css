@@ -95,6 +95,11 @@
   text-wrap: balance;
   text-shadow: 0 18px 50px rgba(0,0,0,.34);
 }
+.hero-nowrap-desktop { display: inline; }
+@media (min-width: 901px) {
+  .hero-nowrap-desktop { white-space: nowrap; }
+}
+
 .hero.hero-cinematic h1 strong {
   position: relative;
   display: inline-block;
