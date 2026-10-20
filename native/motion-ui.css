@@ -605,7 +605,7 @@ html.motion-ready .motion-reveal.is-visible {
   .hero.hero-cinematic::after,
   .hero.hero-cinematic .hero-copy,
   .hero.hero-cinematic h1 strong::after,
-  .hero-panda-float,
+  .hero-scene,
   .hero-aura,
   .hero-scan,
   .hero-live-chip b,
@@ -615,8 +615,7 @@ html.motion-ready .motion-reveal.is-visible {
   .hero-art {
     transform: none !important;
   }
-  .hero-scene,
-  .hero-panda-float {
+  .hero-scene {
     transform: none !important;
   }
   html.motion-ready .motion-reveal,
