@@ -318,6 +318,7 @@ def main():
             assert secondary.get_attribute("href") == "#how"
             primary.click()
             page.wait_for_function("location.hash === '#app'")
+            page.wait_for_function("document.body.dataset.pandaPage === 'app'")
             assert page.locator("#app").is_visible()
             assert not page.locator(".ps-tone-bridge").is_visible(), "Bridge must disappear on tool tab"
 
