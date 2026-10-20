@@ -80,6 +80,22 @@ function googleRespondentPage(url){
  return u.protocol==='https:'&&u.hostname==='docs.google.com'&&
    /^\/forms\/d\/(?:e\/)?[A-Za-z0-9_-]+\/viewform\/?$/.test(u.pathname);
 }
+function confirmationPage(html){
+ if(typeof html!=='string'||!html)return false;
+ // A returned respondent form means Google is still asking for input or
+ // validation. Never let question text imitate the success message.
+ if(/<form\b[^>]*\baction\s*=\s*(?:"[^"]*\/formResponse[^"]*"|'[^']*\/formResponse[^']*'|[^\s>]*\/formResponse[^\s>]*)/i.test(html))
+   return false;
+ const visible=html
+   .replace(/<!--[\s\S]*?-->/g,' ')
+   .replace(/<(?:script|style|template|noscript)\b[\s\S]*?<\/(?:script|style|template|noscript)\s*>/gi,' ')
+   .replace(/<[^>]+>/g,' ')
+   .replace(/&nbsp;|&#160;/gi,' ')
+   .replace(/&amp;/gi,'&')
+   .replace(/\s+/g,' ')
+   .trim();
+ return CONFIRMATION.test(visible);
+}
 async function sendOne({form,answers,fetchImpl=fetch}) {
  const body=prepareFields(form,answers);
  const destination=responseUrl(form.responderUri);
@@ -121,10 +137,10 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
  let resultHtml='';
  try{resultHtml=(await response.text()).slice(0,250000);}
  catch{return {status:'unverified',delivery:'unknown',note:'Không đọc được trang xác nhận. Không tự gửi lại.'};}
- if(!CONFIRMATION.test(resultHtml))
-   return {status:'unverified',delivery:'unknown',note:'Không thấy thông báo Google đã nhận. Kiểm tra số phản hồi trước khi thử lại.'};
+ if(!confirmationPage(resultHtml))
+   return {status:'unverified',delivery:'unknown',note:'Không thấy bằng chứng xác nhận độc lập rằng Google đã nhận. Kiểm tra Form/Sheet trước khi thử lại.'};
  return {status:'page-confirmed',delivery:'confirmed',receivedAt:new Date().toISOString(),
    note:'Google Form hiện trang xác nhận đã nhận. Hãy đối chiếu tổng phản hồi trước và sau.'};
 }
 
-module.exports={parseAllowlist,allowedAdmin,canTest,sendingConfigured,responseUrl,prepareFields,hiddenFormValues,sendOne};
+module.exports={parseAllowlist,allowedAdmin,canTest,sendingConfigured,responseUrl,prepareFields,hiddenFormValues,confirmationPage,sendOne};

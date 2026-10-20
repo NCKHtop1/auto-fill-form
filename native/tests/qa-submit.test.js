@@ -177,3 +177,24 @@ test('Legacy unaudited submission API is blocked even if QA feature flag is enab
   else process.env.ENABLE_QA_SUBMISSIONS=before;
  }
 });
+
+test('confirmation text inside a returned respondent form is never accepted',async()=>{
+ const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
+  fetchImpl:async(url,opts)=>{
+   if(opts.method==='GET')return getPage();
+   return {ok:true,status:200,url,text:async()=>'<html><form action="https://docs.google.com/forms/d/e/1FAIpQLSample/formResponse"><label>Your response has been recorded</label></form></html>'};
+  }});
+ assert.equal(result.status,'unverified');
+ assert.equal(result.delivery,'unknown');
+});
+test('confirmation phrase present only in script is never accepted',async()=>{
+ const result=await qa.sendOne({form:testForm,answers:{1:'Có',2:['1','2']},
+  fetchImpl:async(url,opts)=>{
+   if(opts.method==='GET')return getPage();
+   return {ok:true,status:200,url,text:async()=>'<html><body><script>const fake="Your response has been recorded"</script><div>Try again</div></body></html>'};
+  }});
+ assert.equal(result.status,'unverified');
+ assert.equal(result.delivery,'unknown');
+});
+assert.equal(qa.confirmationPage('<html><div>Your response has been recorded</div></html>'),true);
+assert.equal(qa.confirmationPage('<html><form action="/forms/d/e/x/formResponse"><div>Your response has been recorded</div></form></html>'),false);

@@ -17,7 +17,7 @@ from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-20-tone-bridge-v6"
+EXPECTED = "2026-10-20-launch-hardening-v7"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -237,6 +237,8 @@ with sync_playwright() as p:
             page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content")
             == EXPECTED
         )
+        assert page.locator('script[src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"]').count() == 1
+        assert page.locator('script[src*="xlsx@0.18.5"]').count() == 0
         assert page.locator(".steps-strip a").count() == 6
         assert page.locator(".hero-cinematic").count() == 1
         hero_image = page.locator(".hero-art img")

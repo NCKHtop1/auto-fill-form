@@ -30,3 +30,11 @@ test('server rejects unsupported mandatory question',()=>{
  assert.equal(validate([{id:'1',title:'Tải tệp',required:true,supported:false}],{}).length,1);
 });
 test('numeric-coded options and Vietnamese accents',()=>{assert.equal(choice('hoan toan dong y',['Hoàn toàn đồng ý','Không đồng ý']), 'Hoàn toàn đồng ý');assert.equal(choice('2',['Hoàn toàn đồng ý','Không đồng ý']),'Không đồng ý')});
+
+test('calendar validation rejects impossible dates and accepts real leap days',()=>{
+ const q=[{id:'d',title:'Ngày',required:true,supported:true,type:'date',entryIds:['1']}];
+ for(const value of ['2026-02-29','2026-02-31','2026-04-31','2026-13-01','2026-00-10'])
+   assert.ok(validate(q,{d:value}).length>0,value);
+ for(const value of ['2026-02-28','2024-02-29','2026-12-31'])
+   assert.deepEqual(validate(q,{d:value}),[],value);
+});

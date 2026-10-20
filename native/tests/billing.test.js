@@ -344,24 +344,30 @@ test('scheduled login promotion grants once, records ledger and is manageable by
   assert.equal(otherProfile.availableCredits,0);
 });
 
-test('admin may approve with checkbox only; amount and bank reference are optional audit details',async () => {
+test('admin approval requires checked bank evidence, exact amount and transaction reference',async () => {
   const order=await pending(5);
-  await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'',receivedAmountVnd:null,
+  await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'BANK-001',receivedAmountVnd:order.amountVnd,
     confirmedBankTransfer:false,idempotencyKey:key('unchecked')}),{code:'BANK_CONFIRMATION_REQUIRED'});
+  await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'',receivedAmountVnd:order.amountVnd,
+    confirmedBankTransfer:true,idempotencyKey:key('missing-reference')}),{code:'BANK_REFERENCE_REQUIRED'});
+  await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'BANK-001',receivedAmountVnd:null,
+    confirmedBankTransfer:true,idempotencyKey:key('missing-amount')}),{code:'RECEIVED_AMOUNT_REQUIRED'});
+  await assert.rejects(billing.approveOrder(admin,{orderId:order.id,bankReference:'BANK-001',receivedAmountVnd:order.amountVnd-1,
+    confirmedBankTransfer:true,idempotencyKey:key('wrong-amount')}),{code:'AMOUNT_MISMATCH'});
 
-  const approved=await billing.approveOrder(admin,{orderId:order.id,bankReference:'',receivedAmountVnd:null,
-    confirmedBankTransfer:true,idempotencyKey:key('manual-approve')});
+  const approved=await billing.approveOrder(admin,{orderId:order.id,bankReference:'BANK-001',receivedAmountVnd:order.amountVnd,
+    confirmedBankTransfer:true,idempotencyKey:key('evidence-approve')});
   assert.equal(approved.status,'approved');
   assert.equal((await billing.getProfile(buyer)).availableCredits,5);
 
   const payment=(await db.query('SELECT reference_original,amount_vnd FROM ps_billing_bank_payments WHERE order_id=$1',[order.id])).rows[0];
-  assert.match(payment.reference_original,/^MANUAL_CONFIRMATION:/);
+  assert.equal(payment.reference_original,'BANK-001');
   assert.equal(Number(payment.amount_vnd),order.amountVnd);
 
   const listed=(await billing.listAdminTopups(admin,{status:'approved'})).orders.find(item=>item.id===order.id);
-  assert.equal(listed.manualBankConfirmation,true);
-  assert.equal(Object.hasOwn(listed,'bankReference'),false);
-  assert.equal(Object.hasOwn(listed,'receivedAmountVnd'),false);
+  assert.equal(listed.manualBankConfirmation,false);
+  assert.equal(listed.bankReference,'BANK-001');
+  assert.equal(listed.receivedAmountVnd,order.amountVnd);
 });
 
 test('admin user directory exposes persistent Google accounts without raw Google subject',async () => {
