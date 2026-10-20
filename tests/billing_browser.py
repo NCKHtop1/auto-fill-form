@@ -160,13 +160,12 @@ def main():
             elif data["action"] == "approve":
                 assert data["confirmedBankTransfer"] is True
                 order = next(item for item in state["orders"] if item["id"] == data["orderId"])
-                if data.get("receivedAmountVnd") is not None:
-                    assert data["receivedAmountVnd"] == order["amountVnd"]
+                assert data.get("receivedAmountVnd") == order["amountVnd"]
+                assert isinstance(data.get("bankReference"), str) and len(data["bankReference"].strip()) >= 3
                 assert order["status"] == "pending_review"
-                if data.get("bankReference"):
-                    order["bankReference"] = data["bankReference"]
-                else:
-                    order["manualBankConfirmation"] = True
+                order["bankReference"] = data["bankReference"]
+                order["receivedAmountVnd"] = data["receivedAmountVnd"]
+                order["manualBankConfirmation"] = False
                 order.update(status="approved", adminNote=data["note"])
                 # Match the mutation API, whose returned order need not include customer metadata.
                 response = {"ok": True, "order": {key: value for key, value in order.items() if key != "customer"}}
@@ -397,17 +396,19 @@ def main():
             admin.get_by_text("Danh sách gần nhất: 2 tài khoản", exact=False).wait_for()
             print("PASS admin accounts: persistent Google users, balances, roles and search visible only to admin")
             admin.get_by_role("button", name="Kiểm tra và duyệt", exact=True).click()
-            assert admin.locator("#paReceivedAmount").get_attribute("required") is None
-            assert admin.locator("#paBankReference").get_attribute("required") is None
+            assert admin.locator("#paReceivedAmount").get_attribute("required") is not None
+            assert admin.locator("#paBankReference").get_attribute("required") is not None
             assert admin.locator("#paConfirmedBank").get_attribute("required") is not None
             admin.get_by_role("button", name="Xác nhận duyệt và cộng 20 phiếu", exact=True).click()
             assert not action_calls("approve")
+            admin.locator("#paReceivedAmount").fill("10000")
+            admin.locator("#paBankReference").fill("BANK-UAT-001")
             admin.locator("#paConfirmedBank").check()
             admin.get_by_role("button", name="Xác nhận duyệt và cộng 20 phiếu", exact=True).click()
             admin.get_by_text("Đã duyệt và cộng 20 phiếu.", exact=True).wait_for()
             assert len(action_calls("approve")) == 1
-            assert action_calls("approve")[0]["data"]["receivedAmountVnd"] is None
-            assert action_calls("approve")[0]["data"]["bankReference"] == ""
+            assert action_calls("approve")[0]["data"]["receivedAmountVnd"] == 10000
+            assert action_calls("approve")[0]["data"]["bankReference"] == "BANK-UAT-001"
             assert USER["email"] in admin.locator("#paDetail").inner_text()
             admin.screenshot(path=str(ARTIFACTS / "billing-admin-desktop.png"), full_page=True)
             print("PASS admin approval: exact amount, reference and explicit confirmation; customer preserved")

@@ -459,12 +459,16 @@ async function approveOrder(identity, input) {
     fail(400,'BANK_CONFIRMATION_REQUIRED','Hãy tick xác nhận đã tự kiểm tra khoản tiền vào trước khi duyệt.');
 
   const suppliedReference = typeof input?.bankReference === 'string' ? input.bankReference.trim() : '';
-  if (suppliedReference.length > 120 || (suppliedReference && suppliedReference.length < 3))
-    fail(400,'INVALID_BANK_REFERENCE','Nếu nhập mã giao dịch ngân hàng thì cần từ 3 đến 120 ký tự.');
+  if (!suppliedReference)
+    fail(400,'BANK_REFERENCE_REQUIRED','Nhập mã giao dịch ngân hàng đã đối soát trước khi duyệt.');
+  if (suppliedReference.length > 120 || suppliedReference.length < 3)
+    fail(400,'INVALID_BANK_REFERENCE','Mã giao dịch ngân hàng cần từ 3 đến 120 ký tự.');
   const suppliedAmount = input?.receivedAmountVnd === null || input?.receivedAmountVnd === undefined || input?.receivedAmountVnd === ''
     ? null : input.receivedAmountVnd;
-  if (suppliedAmount !== null && (!Number.isSafeInteger(suppliedAmount) || suppliedAmount <= 0))
-    fail(400,'INVALID_RECEIVED_AMOUNT','Nếu nhập số tiền thực nhận thì phải là số nguyên dương.');
+  if (suppliedAmount === null)
+    fail(400,'RECEIVED_AMOUNT_REQUIRED','Nhập số tiền thực nhận đã đối soát trước khi duyệt.');
+  if (!Number.isSafeInteger(suppliedAmount) || suppliedAmount <= 0)
+    fail(400,'INVALID_RECEIVED_AMOUNT','Số tiền thực nhận phải là số nguyên dương.');
 
   const note = textNote(input.note);
   const actor = await ensureCustomer(identity);
@@ -477,12 +481,9 @@ async function approveOrder(identity, input) {
       if (suppliedAmount !== null && number(order.amount_vnd) !== suppliedAmount)
         fail(409,'AMOUNT_MISMATCH','Số tiền thực nhận đã nhập không khớp yêu cầu. Có thể sửa lại hoặc để trống rồi xác nhận bằng ô tick.');
 
-      const manualReference = 'MANUAL_CONFIRMATION:' + orderId;
-      const reference = suppliedReference || manualReference;
-      const referenceNorm = suppliedReference
-        ? suppliedReference.toUpperCase().replace(/\s+/g,'')
-        : ('MANUAL' + orderId.replace(/-/g,'').toUpperCase());
-      const effectiveAmount = suppliedAmount === null ? number(order.amount_vnd) : suppliedAmount;
+      const reference = suppliedReference;
+      const referenceNorm = suppliedReference.toUpperCase().replace(/\s+/g,'');
+      const effectiveAmount = suppliedAmount;
 
       await beginAdminAction(client,actor,'approve',orderId,key,
         {action:'approve',orderId,bankReference:suppliedReference || null,

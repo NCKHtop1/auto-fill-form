@@ -3,7 +3,13 @@ function isEmpty(v){return v===undefined||v===null||v===''||(Array.isArray(v)&&v
 function norm(v){return String(v??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/đ/g,'d').replace(/Đ/g,'D').toLowerCase().trim()}
 function choice(v,choices,allowOther=false){const raw=String(v??'').trim();let found=choices.find(c=>String(c).trim()===raw);if(found!==undefined)return String(found);found=choices.find(c=>norm(c)===norm(raw));if(found!==undefined)return String(found);if(/^\d+$/.test(raw)&&Number(raw)>=1&&Number(raw)<=choices.length)return String(choices[Number(raw)-1]);if(allowOther&&raw)return raw;throw new Error('Không tìm thấy lựa chọn '+raw)}
 function split(v){if(Array.isArray(v))return v.map(String).filter(x=>x.trim());if(typeof v==='string'){try{const a=JSON.parse(v);if(Array.isArray(a))return a.map(String)}catch{}return v.split(/[;|]/).map(x=>x.trim()).filter(Boolean)}return [String(v)]}
-function validDate(s){return /^\d{4}-\d{2}-\d{2}/.test(String(s))&&!Number.isNaN(new Date(String(s)).getTime())}
+function validDate(s){
+ const raw=String(s??'').trim(),m=raw.match(/^(\d{4})-(\d{2})-(\d{2})(?:[T\s].*)?$/);
+ if(!m)return false;
+ const year=Number(m[1]),month=Number(m[2]),day=Number(m[3]);
+ if(year<1||month<1||month>12||day<1)return false;
+ return day<=new Date(Date.UTC(year,month,0)).getUTCDate();
+}
 function normalizeAnswer(q,v){if(isEmpty(v))return null;switch(q.type){
  case 'multiple_choice':case 'dropdown':return choice(v,q.options||[],!!q.allowOther);
  case 'checkbox':return split(v).map(x=>choice(x,q.options||[],!!q.allowOther));
