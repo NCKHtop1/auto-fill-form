@@ -535,8 +535,8 @@ html.motion-ready .motion-reveal.is-visible {
     font-size: clamp(2.75rem, 8vw, 4.65rem);
   }
   .hero-art {
-    width: min(108%, 880px);
-    margin-left: -4%;
+    width: min(100%, 880px);
+    margin-left: 0;
   }
 }
 
@@ -570,8 +570,8 @@ html.motion-ready .motion-reveal.is-visible {
     font-size: .68rem;
   }
   .hero-art {
-    width: 112%;
-    margin-left: -6%;
+    width: 100%;
+    margin-left: 0;
     perspective: none;
     border-radius: 0;
   }
