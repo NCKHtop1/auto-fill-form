@@ -259,7 +259,7 @@ def main():
             assert frame_style["overflow"] == "visible", frame_style
             assert frame_style["shadow"] == "none", frame_style
             image_mask = image.evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
-            assert "radial-gradient" in image_mask, image_mask
+            assert "gradient(" in image_mask, ("Hero needs an edge-blending mask", image_mask)
             assert page.locator(".hero-nowrap-desktop").evaluate("el => getComputedStyle(el).whiteSpace") == "nowrap"
 
             before = page.locator(".hero-art").evaluate(

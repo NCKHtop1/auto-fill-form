@@ -34,6 +34,8 @@ The asset filenames retain `v4`; the integrated presentation release is V5. Dime
 
 The old forced enlargement is replaced by a bounded 16:9 image slot and larger sources. The image's base scale is 1; its breathing animation still reaches 1.012 and moves vertically by 4px. This removes the previous undersized-source/layout mechanism, but **“no blur at every size” requires visual evidence**. Soft background glows remain intentional. The important Excel/CSV and Google Form labels also exist as crisp DOM text. Reduced motion disables the image animation and parallax.
 
+The first CI screenshot review found that an elliptical mask still left visible straight picture edges. The final pass feathers the narrow perimeter with intersecting horizontal and vertical masks, leaving the subject and panels fully detailed. The decorative frame remains borderless; do not reintroduce oversizing to hide the edge.
+
 ## Copy and workflow contract
 
 The auth note is now:
