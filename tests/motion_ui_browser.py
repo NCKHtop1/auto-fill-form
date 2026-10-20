@@ -85,9 +85,9 @@ try:
         page.wait_for_function("document.body.dataset.authenticated === 'true'")
         page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-        assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-cinematic-v3"
-        assert page.locator('link[href="/motion-ui.css?v=20261020c"]').count() == 1
-        assert page.locator('script[src="/motion-ui.js?v=20261020c"]').count() == 1
+        assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-seamless-v4"
+        assert page.locator('link[href="/motion-ui.css?v=20261020d"]').count() == 1
+        assert page.locator('script[src="/motion-ui.js?v=20261020d"]').count() == 1
         assert page.locator(".hero-cinematic").count() == 1
         assert page.locator(".hero-aura").count() == 2
         assert page.locator(".hero-scan").count() == 1
@@ -116,6 +116,17 @@ try:
         assert "psCinematicBreath" in animation, animation
         hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
         assert "gradient" in hero_background, hero_background
+        frame_style = page.locator(".hero-art").evaluate("""el => {
+          const s=getComputedStyle(el);
+          return {border:s.borderTopWidth,radius:s.borderRadius,overflow:s.overflow,shadow:s.boxShadow};
+        }""")
+        assert frame_style["border"] == "0px", frame_style
+        assert frame_style["radius"] == "0px", frame_style
+        assert frame_style["overflow"] == "visible", frame_style
+        assert frame_style["shadow"] == "none", frame_style
+        image_mask = image.evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
+        assert "radial-gradient" in image_mask, image_mask
+        assert page.locator(".hero-nowrap-desktop").evaluate("el => getComputedStyle(el).whiteSpace") == "nowrap"
 
         before = page.locator(".hero-art").evaluate(
             "el => [getComputedStyle(el).getPropertyValue('--parallax-x').trim(),"
