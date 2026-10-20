@@ -288,8 +288,8 @@
   pointer-events: none;
 }
 .hero-art .hero-mascot {
-  --panda-float-down: 7px;
-  --panda-float-up: -11px;
+  --panda-float-down: 12px;
+  --panda-float-up: -18px;
   z-index: 4;
   pointer-events: none;
   clip-path: polygon(
@@ -309,7 +309,7 @@
     50.9115% 40.5093%, 49.8698% 35.0694%, 50.6510% 33.3333%, 50.5859% 29.6296%
   );
   transform: translate3d(0,var(--panda-float-down),0);
-  animation: psPandaFloat 5.4s ease-in-out infinite;
+  animation: psPandaFloat 4.8s cubic-bezier(.45,0,.55,1) infinite;
   will-change: transform;
 }
 .hero-aura {
@@ -503,7 +503,7 @@ html.motion-ready .motion-reveal.is-visible {
 }
 @keyframes psPandaFloat {
   0%,100% { transform: translate3d(0,var(--panda-float-down),0); }
-  50% { transform: translate3d(0,var(--panda-float-up),0); }
+  45%,55% { transform: translate3d(0,var(--panda-float-up),0); }
 }
 @keyframes psSceneSweep {
   0%,18% { transform: translateX(-150%) skewX(-12deg); opacity: 0; }
@@ -606,9 +606,9 @@ html.motion-ready .motion-reveal.is-visible {
     border-radius: 0;
   }
   .hero-art .hero-mascot {
-    --panda-float-down: 4px;
-    --panda-float-up: -7px;
-    animation-duration: 5.9s;
+    --panda-float-down: 7px;
+    --panda-float-up: -11px;
+    animation-duration: 5.2s;
   }
   .hero-live-chip {
     left: 10px;
