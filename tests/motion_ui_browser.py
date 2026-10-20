@@ -350,7 +350,7 @@ def main():
             assert_tonal_continuity(page)
             page.screenshot(path=str(OUT / "cinematic_v4_desktop_1440.png"), full_page=False, animations="disabled")
             assert not errors, errors
-            print("PASS cinematic desktop: sharp responsive asset, no headline overlap, motion, parallax, reveal and CTAs preserved", flush=True)
+            print("PASS cinematic desktop: static scene, panda-only vertical float, sharp responsive asset, reveal and CTAs preserved", flush=True)
             context.close()
 
             # DPR2 desktop/tablet and DPR3 phones cover the visible sharpness risk.
@@ -405,11 +405,8 @@ def main():
             assert rbox
             rp.mouse.move(rbox["x"] + rbox["width"] * .9, rbox["y"] + rbox["height"] * .1)
             rp.wait_for_timeout(90)
-            reduced_vars = rp.locator(".hero-art").evaluate(
-                "el => [getComputedStyle(el).getPropertyValue('--parallax-x').trim(),"
-                "getComputedStyle(el).getPropertyValue('--parallax-y').trim()]"
-            )
-            assert reduced_vars == ["0px", "0px"], reduced_vars
+            reduced_transform = rp.locator(".hero-art").evaluate("el => getComputedStyle(el).transform")
+            assert reduced_transform == "none", reduced_transform
             assert rp.get_by_role("link", name="Bắt đầu ngay", exact=True).is_visible()
             assert_hero_quality(rp, inventory)
             rp.screenshot(path=str(OUT / "cinematic_v4_reduced_1440.png"), full_page=False, animations="disabled")
