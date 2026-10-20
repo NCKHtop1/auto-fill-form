@@ -1,23 +1,13 @@
-# PandaStudy V8 — panda-only floating motion
+# PandaStudy V8.2 — mascot-only float
 
-## Product decision
-The cinematic hero scene stays visually fixed. Only the PandaStudy mascot floats vertically. This removes the previous feeling that the whole artwork/card was breathing or drifting.
+The cinematic hero frame, data panels, labels and background stay completely static. Only the transparent panda mascot moves vertically.
 
-## Implementation
-- Keep the responsive V4 cinematic scene as the static base.
-- Cover the original baked-in panda with a small inpainted scene patch.
-- Reuse the same responsive hero source as a clipped panda-only layer, so the browser cache can reuse the selected asset.
-- Animate only the panda layer on the Y axis: about 30px total travel on desktop and 18px on phones.
-- Remove whole-scene pointer parallax.
-- Keep aura/scan ambience; these do not translate the hero frame.
-- Respect `prefers-reduced-motion`: panda float is disabled.
+- Dedicated transparent mascot asset: `/assets/hero-panda-float-v8.webp`.
+- Dedicated erase/background patch removes the panda baked into the base hero without moving the scene.
+- Desktop/tablet travel: +16px to -20px (36px peak-to-peak), 4.6s ease-in-out.
+- Mobile travel: +10px to -14px (24px peak-to-peak), 4.8s.
+- No horizontal drift, scale, tilt or frame parallax.
+- `prefers-reduced-motion: reduce` disables the mascot animation.
+- No auth, billing, Google Form, data validation, pricing or database behavior changes.
 
-## QA acceptance
-1. `.hero-art` computed transform remains `none` before and after pointer movement.
-2. `.hero-scene` has no animation.
-3. `.hero-mascot` uses `psPandaFloat`, moves vertically by at least 10px on desktop, and does not move horizontally.
-4. Existing responsive pixel coverage, headline non-overlap, tonal bridge, CTA/navigation and reduced-motion checks still pass.
-5. No auth, billing, Form, pricing, database or V7 launch-hardening behavior changes.
-
-## V8.1 clarity tuning
-The mascot travel was increased after visual review so the up/down motion is unmistakable while the cinematic scene remains completely static. Desktop travel is about 30px over 4.8s; phone travel is about 18px over 5.2s. The mascot still moves only on the Y axis.
+QA must verify: scene animation is none; hero container transform stays none before/after pointer movement; mascot uses the dedicated asset; vertical travel is at least 34px on desktop; responsive layouts and reduced-motion remain clean.
