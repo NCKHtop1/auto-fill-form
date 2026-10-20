@@ -17,7 +17,7 @@ from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-20-launch-hardening-v7"
+EXPECTED = "2026-10-20-panda-float-v8"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -77,8 +77,8 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261020f", "text/css", b"ps-tone-bridge"),
-    ("/motion-ui.js?v=20261020e", "javascript", b"parallax"),
+    ("/motion-ui.css?v=20261020g", "text/css", b"psPandaFloat"),
+    ("/motion-ui.js?v=20261020f", "javascript", b"motion-ready"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
     assert status == 200, (asset_path, status)
@@ -241,9 +241,11 @@ with sync_playwright() as p:
         assert page.locator('script[src*="xlsx@0.18.5"]').count() == 0
         assert page.locator(".steps-strip a").count() == 6
         assert page.locator(".hero-cinematic").count() == 1
-        hero_image = page.locator(".hero-art img")
+        assert page.locator(".hero-mascot").count() == 1
+        assert page.locator(".hero-panda-erase").count() == 1
+        hero_image = page.locator(".hero-scene")
         page.wait_for_function(
-            "document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0",
+            "document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0",
             timeout=12000,
         )
         if hero_inventory is None:
@@ -252,6 +254,8 @@ with sync_playwright() as p:
         quality = assert_hero_quality(page, hero_inventory, pointer_extremes=width >= 1024)
         (OUT / f"production-hero-quality-{width}-dpr{dpr}.json").write_text(
             json.dumps(quality, indent=2), encoding="utf-8")
+        assert hero_image.evaluate("el => getComputedStyle(el).animationName") == "none"
+        assert "psPandaFloat" in page.locator(".hero-mascot").evaluate("el => getComputedStyle(el).animationName")
         live_luma = hero_image.evaluate("""el => {
           const c=document.createElement('canvas'); c.width=30; c.height=17;
           const x=c.getContext('2d'); x.drawImage(el,0,0,c.width,c.height);
@@ -329,7 +333,8 @@ with sync_playwright() as p:
     reduced_page.route("https://cdn.jsdelivr.net/**", lambda route: route.abort())
     reduced_page.goto(BASE + "/index.html?qa_revision=" + EXPECTED + "#home", wait_until="domcontentloaded", timeout=30000)
     reduced_page.wait_for_function("document.body.dataset.authenticated === 'true'")
-    assert reduced_page.locator(".hero-art img").evaluate("el => getComputedStyle(el).animationName") == "none"
+    assert reduced_page.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName") == "none"
+    assert reduced_page.locator(".hero-mascot").evaluate("el => getComputedStyle(el).animationName") == "none"
     assert reduced_page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform") == "none"
     assert not reduced_errors, reduced_errors
     reduced_page.screenshot(path=str(OUT / "production-cinematic-reduced.png"), full_page=False)

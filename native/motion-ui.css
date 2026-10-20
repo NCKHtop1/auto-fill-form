@@ -221,10 +221,6 @@
 
 /* Cinematic visual blend — the scene dissolves into the page instead of reading as a card. */
 .hero-art {
-  --parallax-x: 0px;
-  --parallax-y: 0px;
-  --parallax-rx: 0deg;
-  --parallax-ry: 0deg;
   position: relative;
   isolation: isolate;
   width: 100%;
@@ -238,13 +234,7 @@
   border-radius: 0;
   background: transparent;
   box-shadow: none;
-  perspective: 1100px;
-  transform:
-    translate3d(var(--parallax-x), var(--parallax-y), 0)
-    rotateX(var(--parallax-rx))
-    rotateY(var(--parallax-ry));
-  transform-style: preserve-3d;
-  will-change: transform;
+  transform: none;
 }
 .hero-art:hover {
   box-shadow: none;
@@ -263,26 +253,63 @@
   filter: blur(28px);
   opacity: .9;
 }
-.hero-art img {
+.hero-art .hero-scene,
+.hero-art .hero-mascot {
   position: absolute;
   inset: 0;
-  z-index: 2;
   width: 100%;
   height: 100%;
   max-width: 100%;
   object-fit: cover;
   object-position: center;
   border-radius: 0;
-  /* Feather only the perimeter. The subject and data panels retain full detail. */
+}
+.hero-art .hero-scene {
+  z-index: 2;
+  /* The whole cinematic scene is deliberately static. */
   -webkit-mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 86%, transparent);
   mask-image: linear-gradient(90deg, transparent, #000 9%, #000 91%, transparent), linear-gradient(180deg, transparent, #000 10%, #000 86%, transparent);
   -webkit-mask-composite: source-in;
   mask-composite: intersect;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  transform-origin: 52% 50%;
-  transform: scale(1);
-  animation: psCinematicBreath 8.6s ease-in-out infinite;
+  transform: none;
+  animation: none;
+}
+.hero-panda-erase {
+  position: absolute;
+  z-index: 3;
+  left: 19.53125%;
+  top: 21.41204%;
+  width: 33.85417%;
+  height: 53.81944%;
+  max-width: none;
+  object-fit: fill;
+  pointer-events: none;
+}
+.hero-art .hero-mascot {
+  --panda-float-down: 7px;
+  --panda-float-up: -11px;
+  z-index: 4;
+  pointer-events: none;
+  clip-path: polygon(
+    49.6094% 27.0833%, 48.2422% 26.5046%, 46.8750% 27.7778%, 44.7266% 25.1157%,
+    41.2760% 25.4630%, 40.9505% 24.1898%, 40.8854% 26.0417%, 38.9974% 26.9676%,
+    36.7839% 29.6296%, 36.0026% 27.1991%, 36.8490% 23.6111%, 36.0026% 23.4954%,
+    35.1562% 27.0833%, 35.8724% 29.5139%, 34.7005% 31.8287%, 33.5938% 31.3657%,
+    32.8776% 32.4074%, 33.3333% 33.2176%, 31.5755% 38.0787%, 30.4688% 38.0787%,
+    30.1432% 39.4676%, 29.6224% 39.3519%, 28.3854% 43.0556%, 27.0833% 42.0139%,
+    26.3672% 43.2870%, 24.6094% 52.0833%, 24.6094% 53.7037%, 26.2370% 56.5972%,
+    23.3724% 56.8287%, 21.9401% 59.9537%, 21.8750% 61.6898%, 22.5911% 62.2685%,
+    23.1120% 66.3194%, 24.8047% 68.2870%, 26.1719% 67.1296%, 28.5156% 67.5926%,
+    29.6875% 66.7824%, 30.0781% 71.4120%, 31.1849% 72.8009%, 32.2917% 72.6852%,
+    34.3099% 69.3287%, 36.3932% 68.7500%, 38.5417% 64.5833%, 39.7786% 64.8148%,
+    42.9688% 60.8796%, 45.2474% 55.0926%, 49.2188% 51.3889%, 50.7161% 51.6204%,
+    51.6276% 47.5694%, 51.1719% 46.6435%, 51.3672% 44.4444%, 50.3906% 43.6343%,
+    50.9115% 40.5093%, 49.8698% 35.0694%, 50.6510% 33.3333%, 50.5859% 29.6296%
+  );
+  transform: translate3d(0,var(--panda-float-down),0);
+  animation: psPandaFloat 5.4s ease-in-out infinite;
   will-change: transform;
 }
 .hero-aura {
@@ -474,9 +501,9 @@ html.motion-ready .motion-reveal.is-visible {
 @keyframes psHeroUnderline {
   to { transform: scaleX(1); }
 }
-@keyframes psCinematicBreath {
-  0%,100% { transform: scale(1) translate3d(0,0,0); }
-  50% { transform: scale(1.012) translate3d(0,-4px,0); }
+@keyframes psPandaFloat {
+  0%,100% { transform: translate3d(0,var(--panda-float-down),0); }
+  50% { transform: translate3d(0,var(--panda-float-up),0); }
 }
 @keyframes psSceneSweep {
   0%,18% { transform: translateX(-150%) skewX(-12deg); opacity: 0; }
@@ -576,11 +603,12 @@ html.motion-ready .motion-reveal.is-visible {
   .hero-art {
     width: 100%;
     margin-left: 0;
-    perspective: none;
     border-radius: 0;
   }
-  .hero-art img {
-    animation-duration: 9.4s;
+  .hero-art .hero-mascot {
+    --panda-float-down: 4px;
+    --panda-float-up: -7px;
+    animation-duration: 5.9s;
   }
   .hero-live-chip {
     left: 10px;
@@ -596,12 +624,7 @@ html.motion-ready .motion-reveal.is-visible {
 }
 
 @media (hover: none), (pointer: coarse) {
-  .hero-art {
-    --parallax-x: 0px !important;
-    --parallax-y: 0px !important;
-    --parallax-rx: 0deg !important;
-    --parallax-ry: 0deg !important;
-  }
+  .hero-art { transform: none !important; }
 }
 
 /* -----------------------------
@@ -617,7 +640,7 @@ html.motion-ready .motion-reveal.is-visible {
   .hero.hero-cinematic::after,
   .hero.hero-cinematic .hero-copy,
   .hero.hero-cinematic h1 strong::after,
-  .hero-art img,
+  .hero-mascot,
   .hero-aura,
   .hero-scan,
   .hero-live-chip b,
@@ -627,7 +650,8 @@ html.motion-ready .motion-reveal.is-visible {
   .hero-art {
     transform: none !important;
   }
-  .hero-art img {
+  .hero-scene,
+  .hero-mascot {
     transform: none !important;
   }
   html.motion-ready .motion-reveal,
