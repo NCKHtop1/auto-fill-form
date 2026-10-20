@@ -259,7 +259,7 @@ def main():
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
             assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-clean-v9-final"
-            assert page.locator('link[href="/motion-ui.css?v=20261021c"]').count() == 1
+            assert page.locator('link[href="/motion-ui.css?v=20261021a"]').count() == 1
             assert page.locator('script[src="/motion-ui.js?v=20261020f"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
