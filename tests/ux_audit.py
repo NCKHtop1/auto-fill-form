@@ -2,8 +2,7 @@
 """PandaStudy UX and responsive audit against the native Vercel app.
 
 All Google/QA writes are mocked. Read-only local fixtures only.
-P2/P3 UX findings are reported as FAIL/WARN without blocking a test-only PR;
-P0/P1 technical failures fail CI.
+P0/P1/P2 regressions fail CI; P3 observations and manual reviews are reported.
 """
 from __future__ import annotations
 import functools
@@ -20,6 +19,7 @@ OUT=Path(os.environ.get("PANDASTUDY_AUDIT_OUT",str(Path(__file__).resolve().pare
 OUT.mkdir(parents=True,exist_ok=True)
 records=[]
 js_errors=[]
+unexpected_writes=[]
 def check(case,group,severity,ok,detail="",viewport="",evidence=""):
     rec={"case":case,"group":group,"priority":severity,"status":"PASS" if ok else "FAIL",
          "detail":detail,"viewport":viewport,"evidence":evidence}
@@ -82,6 +82,60 @@ def unnamed_inputs(page):
         })
         .map(e=>e.id||e.name||e.outerHTML.slice(0,90)).slice(0,20);
     }""")
+
+def text_contrast(locator):
+    """Measure computed text against composed solid/gradient backgrounds.
+
+    A transparent white-text promo CTA used to inherit no --pb-green at all.
+    Checking only its backgroundColor, or the account bar, missed that case.
+    Gradient stops and intermediate colors are included for a transparent CTA;
+    an opaque button resets the backdrop, giving an exact solid-color ratio.
+    """
+    return locator.evaluate(r"""el => {
+      const parse = value => {
+        const values = value.match(/[\d.]+/g)?.map(Number);
+        if (!/^rgba?\(/.test(value) || !values || values.length < 3) return null;
+        return [values[0],values[1],values[2],values[3] ?? 1];
+      };
+      const over = (front,back) => [0,1,2].map(i=>front[i]*front[3]+back[i]*(1-front[3])).concat(1);
+      const chain = []; for (let node=el;node;node=node.parentElement) chain.unshift(node);
+      let backgrounds=[[255,255,255,1]], supported=true;
+      for (const node of chain) {
+        const style=getComputedStyle(node), color=parse(style.backgroundColor);
+        if (!color) { supported=false; continue; }
+        if (color[3] === 1) { backgrounds=[color]; supported=true; }
+        else backgrounds=backgrounds.map(background=>over(color,background));
+        if (style.backgroundImage !== 'none') {
+          const colors=(style.backgroundImage.match(/rgba?\([^)]*\)/g)||[]).map(parse);
+          if (!colors.length || colors.some(color=>!color) || style.backgroundImage.includes('url(')) supported=false;
+          else {
+            const samples=[...colors];
+            for (let i=1;i<colors.length;i++) for (const t of [.25,.5,.75])
+              samples.push(colors[i-1].map((v,k)=>v+(colors[i][k]-v)*t));
+            backgrounds=backgrounds.flatMap(background=>samples.map(color=>over(color,background)));
+          }
+        }
+      }
+      const foreground=parse(getComputedStyle(el).color);
+      if (!foreground) return {supported:false,minimum:0,reason:'Unrecognized foreground color'};
+      const luminance=color=>color.slice(0,3).map(v=>v/255)
+        .map(v=>v<=.04045?v/12.92:((v+.055)/1.055)**2.4)
+        .reduce((sum,v,i)=>sum+v*[.2126,.7152,.0722][i],0);
+      const ratios=backgrounds.map(background=>{
+        const fg=luminance(over(foreground,background)), bg=luminance(background);
+        return (Math.max(fg,bg)+.05)/(Math.min(fg,bg)+.05);
+      });
+      return {supported,minimum:Math.min(...ratios),foreground,
+        backgrounds:backgrounds.length,backgroundColor:getComputedStyle(el).backgroundColor};
+    }""")
+
+def wait_control_transitions(locator):
+    locator.evaluate("""async el => {
+      getComputedStyle(el).backgroundColor;
+      await Promise.all(el.getAnimations().filter(a=>Number.isFinite(a.effect.getComputedTiming().endTime))
+        .map(a=>a.finished.catch(()=>{})));
+    }""")
+
 class Handler(SimpleHTTPRequestHandler):
     def log_message(self,*args):
         pass
@@ -91,7 +145,20 @@ BASE="http://127.0.0.1:"+str(server.server_address[1])
 try:
  with sync_playwright() as pw:
     browser=pw.chromium.launch(headless=True)
-    context=browser.new_context(viewport={"width":1440,"height":900},accept_downloads=True)
+    # Stable full-page design evidence; the dedicated motion suite separately
+    # exercises the real animations and pointer extremes.
+    context=browser.new_context(viewport={"width":1440,"height":900},accept_downloads=True,
+                                reduced_motion="reduce")
+    def read_only(route):
+        if route.request.method not in ("GET","HEAD"):
+            route.abort()
+        else:
+            route.continue_()
+    def track_writes(request):
+        if request.method not in ("GET","HEAD"):
+            unexpected_writes.append(request.method+" "+request.url)
+    context.route("**/*",read_only)
+    context.on("request",track_writes)
     page=context.new_page()
     page.set_default_timeout(8000)
     page.on("pageerror",lambda e:js_errors.append(str(e)))
@@ -101,6 +168,23 @@ try:
     page.route("**/api/qa-status**",lambda r:r.fulfill(status=200,content_type="application/json",
          body=json.dumps({"ok":True,"canSend":True,"configured":True,"signedIn":True,
            "formAllowed":True,"accessMode":"public","reasons":[]})))
+    # Render the standalone promo with a deterministic profile. No order is
+    # created; the local admin fixture only supports the existing blog checks.
+    page.route("**/api/billing?action=profile",lambda r:r.fulfill(status=200,content_type="application/json",
+         body=json.dumps({"ok":True,"billingEnabled":True,"configured":True,"purchasesEnabled":True,
+           "signedIn":True,"user":{"id":"ux-fixture","email":"qa@example.test","isAdmin":True},
+           "availableCredits":10,"reservedCredits":0,"unitPriceVnd":500,
+           "minTopupCredits":1,"maxTopupCredits":100000,"bank":None,"warnings":[],
+           "activePromotions":[],"promotionGrants":[],"topupPackages":[
+             {"id":"starter","name":"Bắt đầu","credits":20,"priceVnd":10000,
+              "listPriceVnd":10000,"discountPercent":0,"popular":False,"featured":False},
+             {"id":"popular","name":"Phổ biến","credits":100,"priceVnd":45000,
+              "listPriceVnd":50000,"discountPercent":10,"popular":True,"featured":True}
+           ]})))
+    page.route("**/api/admin-topups**",lambda r:r.fulfill(status=200,content_type="application/json",
+         body=json.dumps({"ok":True,"orders":[],"pendingOperations":[]})))
+    page.route("**/api/billing?action=orders",lambda r:r.fulfill(status=200,content_type="application/json",
+         body=json.dumps({"ok":True,"orders":[]})))
     page.route("https://cdn.jsdelivr.net/**",lambda r:r.abort())
     page.goto(BASE+"/#home",wait_until="domcontentloaded")
     page.locator("#qaRunStep").wait_for(state="attached")
@@ -116,7 +200,41 @@ try:
     visible_h1=page.locator("h1:visible").count()
     check("UX-004","Nội dung","P2",visible_h1==1,
           "Trang chủ có 1 H1 hiển thị; thực tế="+str(visible_h1))
+    promo_cta=page.locator(".pb-promo-strip .pb-button-primary")
+    promo_cta.wait_for(state="visible")
+    for state in ["default","hover","keyboard-focus"]:
+        if state == "hover":
+            promo_cta.hover()
+        elif state == "keyboard-focus":
+            page.mouse.move(0,0)
+            promo_cta.focus()
+            page.keyboard.press("Tab")
+            page.keyboard.press("Shift+Tab")
+        wait_control_transitions(promo_cta)
+        contrast=text_contrast(promo_cta)
+        check("PROMO-CONTRAST-"+state.upper(),"A11y","P1",
+              contrast["supported"] and contrast["minimum"]>=4.5,
+              "CTA ưu đãi "+state+": "+json.dumps(contrast,ensure_ascii=False))
+        if state == "keyboard-focus":
+            focus=promo_cta.evaluate("""el => ({visible:el.matches(':focus-visible'),
+              outline:getComputedStyle(el).outlineStyle,width:parseFloat(getComputedStyle(el).outlineWidth)})""")
+            check("PROMO-FOCUS","A11y","P1",focus["visible"] and focus["outline"]!="none" and focus["width"]>=1,
+                  "Focus CTA ưu đãi: "+json.dumps(focus,ensure_ascii=False))
+    page.mouse.move(0,0)
     snap(page,"home_desktop_1440")
+    # Viewing package options is read-only. Stop before create-order controls.
+    for modal_width in [1440,390]:
+        page.set_viewport_size({"width":modal_width,"height":900 if modal_width==1440 else 844})
+        page.locator(".pb-promo-strip .pb-button-primary").click()
+        dialog=page.get_by_role("dialog",name="Mua thêm phiếu")
+        dialog.wait_for(state="visible")
+        page.get_by_text("Chưa có đơn mua phiếu.",exact=True).wait_for(state="visible")
+        page.screenshot(path=str(OUT/f"promo_packages_{modal_width}.png"),full_page=False,animations="disabled")
+        page.get_by_role("button",name="Đóng mua phiếu",exact=True).click()
+        check("PROMO-MODAL-CLOSE-"+str(modal_width),"Điều hướng","P1",
+              dialog.is_hidden() and page.evaluate("document.body.style.overflow !== 'hidden'"),
+              "Xem gói/đóng modal không tạo đơn; cuộn trang được khôi phục",viewport=str(modal_width)+"px")
+    page.set_viewport_size({"width":1440,"height":900})
     for tag,screen in [("app","app"),("blog","blog"),("how","how"),
                        ("faq","faq"),("about","about"),("previewSection","app"),
                        ("dropZone","app"),("formSetupStep","app")]:
@@ -188,6 +306,30 @@ try:
           "Bước 5 chỉ có một thông báo khi chưa có dữ liệu")
     check("UX-027","Điều hướng","P2",page.locator(".steps-strip a").last.get_attribute("href")=="#qaRunStep",
           "Mốc 6 từ thanh điều hướng mở đúng bước gửi")
+    step_links=page.locator(".steps-strip a").evaluate_all("""links=>links.map(a=>{
+      const target=document.getElementById(a.hash.slice(1)), step=target?.closest('.step');
+      return {label:Number(a.querySelector('b')?.textContent),href:a.getAttribute('href'),
+        target:Number(step?.querySelector('.step-number')?.textContent),
+        heading:step?.querySelector('h3')?.textContent.trim()||''};
+    })""")
+    check("STEPS-TARGETS","Câu chữ","P1",
+          [item["label"] for item in step_links]==list(range(1,7)) and
+          all(item["label"]==item["target"] and item["heading"] for item in step_links),
+          "Mỗi mốc 1–6 trỏ tới section có cùng số và heading: "+json.dumps(step_links,ensure_ascii=False))
+    form_step=page.locator("#formUrl").evaluate("el=>Number(el.closest('.step').querySelector('.step-number').textContent)")
+    mapping_hint=page.locator("#questionEmpty").inner_text()
+    mentioned_steps=[int(number) for number in re.findall(r"bước\s+(\d+)",mapping_hint,re.I)]
+    check("MAPPING-HELPER-STEP","Câu chữ","P1",bool(mentioned_steps) and all(number==form_step for number in mentioned_steps),
+          "Hướng dẫn mapping phải trỏ đúng bước nhập Form "+str(form_step)+": "+mapping_hint)
+    optional_copy=page.locator("#fileStep h3").inner_text()+" "+page.locator(".steps-strip a").first.inner_text()
+    check("FILE-OPTIONAL","Câu chữ","P1",bool(re.search(r"tùy chọn|bỏ qua",optional_copy,re.I)),
+          "Bước nhập file thể hiện rõ có thể bỏ qua")
+    action_steps=page.locator("#buildPlanBtn,#validatePlanBtn,#downloadPlanBtn,#qaRunStartOne,#qaRunStartAll,#qaRunVerify,#qaRunExport").evaluate_all("""buttons=>buttons.map(button=>({
+      label:button.textContent.trim(),step:Number(button.closest('.step').querySelector('.step-number').textContent)
+    }))""")
+    action_mismatch=[item for item in action_steps if not re.match(r"^"+str(item["step"])+r"(?:[a-z])?\.",item["label"])]
+    check("STEP-ACTION-NUMBERS","Câu chữ","P1",not action_mismatch,
+          "Tiền tố nút khớp bước chứa nó: "+json.dumps(action_mismatch,ensure_ascii=False))
 
     schedule_disabled=page.locator("#scheduleMode option[value='interval']").is_disabled()
     faq_copy=page.locator("#faq [data-i18n='faq_delay_a']").inner_text()
@@ -211,7 +353,7 @@ try:
     check("UX-022","A11y","P3",page.evaluate("document.activeElement!==document.body"),
           "Tab có thể điều hướng từ bàn phím")
     page.locator("#mobileMenu").count()  # Used at mobile breakpoints below.
-    for width in [320,375,390,768,1024,1440]:
+    for width in [320,360,375,390,768,1024,1440]:
         page.set_viewport_size({"width":width,"height":860})
         for tab,screen in [("home","home"),("app","app"),("blog","blog"),("faq","faq")]:
             navigate(page,tab,screen)
@@ -223,7 +365,7 @@ try:
                   viewport=str(width)+"px")
             if not ok:
                 snap(page,"overflow_%s_%s"%(tab,width))
-        if width in [320,390,1440]:
+        if width in [320,390,768,1440]:
             navigate(page,"home","home")
             snap(page,"home_%s"%(width))
         if width in [390]:
@@ -249,7 +391,36 @@ try:
     note("MANUAL-001","OAuth","Chỉ có thể xác nhận đăng nhập OAuth thật bằng tài khoản chủ Form; bài test không sử dụng cookie người dùng.","P1")
     note("MANUAL-002","Gửi","6a/6b trên Google Form thật cần bản sao thử nghiệm có quyền, không tự gửi vào khảo sát đang chạy.","P1")
     note("MANUAL-003","Hiệu năng","Lighthouse/Core Web Vitals thực tế và phản hồi API production chưa được đo trong script cục bộ.","P2")
-    context.close();browser.close()
+    context.close()
+    # Capture signed-out green-brand cohesion for human design review. Assert
+    # legibility/geometry, not a hard-coded shade or implementation token.
+    for auth_width in [320,390]:
+        auth_context=browser.new_context(viewport={"width":auth_width,"height":844},reduced_motion="reduce")
+        auth_context.route("**/*",read_only)
+        auth_context.on("request",track_writes)
+        auth_page=auth_context.new_page()
+        auth_page.on("pageerror",lambda error:js_errors.append(str(error)))
+        auth_page.route("**/api/**",lambda route:route.fulfill(status=200,content_type="application/json",
+            body=json.dumps({"ok":True,"configured":True,"signedIn":False,"email":"",
+              "isAdmin":False,"submissionEnabled":False,"billingEnabled":False,
+              "purchasesEnabled":False,"canSend":False,"formAllowed":False,"reasons":[]})))
+        auth_page.route("https://cdn.jsdelivr.net/**",lambda route:route.abort())
+        auth_page.goto(BASE+"/#home",wait_until="domcontentloaded")
+        auth_page.locator("#psAuthGate").wait_for(state="visible")
+        auth_page.wait_for_function("document.body.dataset.authenticated === 'false'")
+        auth_contrast=text_contrast(auth_page.locator(".ps-auth-google"))
+        check("AUTH-CONTRAST-"+str(auth_width),"A11y","P1",
+              auth_contrast["supported"] and auth_contrast["minimum"]>=4.5,
+              "CTA đăng nhập: "+json.dumps(auth_contrast,ensure_ascii=False),viewport=str(auth_width)+"px")
+        check("AUTH-OVERFLOW-"+str(auth_width),"Responsive","P1",geometry(auth_page)["overflow"]<=1,
+              "Cổng đăng nhập không tràn ngang",viewport=str(auth_width)+"px")
+        snap(auth_page,"auth_signed_out_"+str(auth_width))
+        auth_context.close()
+    check("UI-NO-WRITES","An toàn kiểm thử","P0",not unexpected_writes,
+          "Không có request ghi từ audit: "+json.dumps(unexpected_writes,ensure_ascii=False))
+    check("UI-FINAL-ERRORS","Tính ổn định","P1",not js_errors,
+          "Uncaught JS errors sau cả kiểm signed-out: "+json.dumps(js_errors[:3],ensure_ascii=False))
+    browser.close()
 finally:
  server.shutdown()
 summary={
