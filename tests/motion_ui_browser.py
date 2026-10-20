@@ -26,7 +26,7 @@ def hero_asset_inventory(page):
     responsive tier and checks actual pixel coverage in assert_hero_quality.
     These public/local image GETs cannot submit Forms or change account data.
     """
-    inventory = page.locator(".hero-art img").evaluate(r"""async el => {
+    inventory = page.locator(".hero-scene").evaluate(r"""async el => {
       const entries = (el.getAttribute('srcset') || '').split(',').filter(x => x.trim());
       const candidates = await Promise.all(entries.map(async entry => {
         const match = entry.trim().match(/^(\S+)\s+(\d+)w$/);
@@ -92,7 +92,7 @@ def hero_geometry(page, pointer_extremes=False):
             assert box, "Hero art has no measurable box"
             page.mouse.move(box["x"] + box["width"] * x, box["y"] + box["height"] * y)
             page.evaluate("() => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))")
-        probes.append(page.locator(".hero-art img").evaluate(r"""el => {
+        probes.append(page.locator(".hero-scene").evaluate(r"""el => {
           const rect = r => ({left:r.left, top:r.top, right:r.right, bottom:r.bottom,
             width:r.width, height:r.height});
           const textRects = [];
@@ -255,9 +255,9 @@ def main():
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-launch-hardening-v7"
-            assert page.locator('link[href="/motion-ui.css?v=20261020f"]').count() == 1
-            assert page.locator('script[src="/motion-ui.js?v=20261020e"]').count() == 1
+            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-panda-float-v8"
+            assert page.locator('link[href="/motion-ui.css?v=20261020g"]').count() == 1
+            assert page.locator('script[src="/motion-ui.js?v=20261020f"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
             assert page.locator(".hero-scan").count() == 1
@@ -266,9 +266,9 @@ def main():
             assert page.locator(".hero-proof span").count() == 3
             assert_tonal_continuity(page)
 
-            image = page.locator(".hero-art img")
+            image = page.locator(".hero-scene")
             image.wait_for(state="visible")
-            page.wait_for_function("document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0")
+            page.wait_for_function("document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0")
             inventory = hero_asset_inventory(page)
             desktop_quality = assert_hero_quality(page, inventory, pointer_extremes=True)
             (OUT / "hero-quality-desktop.json").write_text(json.dumps(desktop_quality, indent=2), encoding="utf-8")
@@ -281,8 +281,32 @@ def main():
             }""")
             assert average_luma > 35, ("hero appears blank/dark", average_luma)
 
-            animation = image.evaluate("el => getComputedStyle(el).animationName")
-            assert "psCinematicBreath" in animation, animation
+            scene_animation = image.evaluate("el => getComputedStyle(el).animationName")
+            assert scene_animation == "none", scene_animation
+            mascot = page.locator(".hero-mascot")
+            erase = page.locator(".hero-panda-erase")
+            assert mascot.count() == 1 and erase.count() == 1
+            page.wait_for_function("document.querySelector('.hero-mascot').complete && document.querySelector('.hero-panda-erase').complete")
+            mascot_animation = mascot.evaluate("el => getComputedStyle(el).animationName")
+            assert "psPandaFloat" in mascot_animation, mascot_animation
+            travel = mascot.evaluate("""el => {
+              const a=el.getAnimations()[0]; if(!a) return null;
+              const oldTime=a.currentTime, oldState=a.playState, timing=a.effect.getComputedTiming();
+              const out=[];
+              try {
+                a.pause();
+                for (const f of [0,.5,.999]) {
+                  a.currentTime=timing.duration*f;
+                  const r=el.getBoundingClientRect(); out.push({x:r.x,y:r.y,w:r.width,h:r.height});
+                }
+              } finally {
+                a.currentTime=oldTime;
+                if(oldState==='running')a.play();
+              }
+              return out;
+            }""")
+            assert travel and max(x["y"] for x in travel)-min(x["y"] for x in travel) >= 10, travel
+            assert max(x["x"] for x in travel)-min(x["x"] for x in travel) <= 1, travel
             hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
             assert "gradient" in hero_background, hero_background
             frame_style = page.locator(".hero-art").evaluate("""el => {
@@ -297,19 +321,13 @@ def main():
             assert "gradient(" in image_mask, ("Hero needs an edge-blending mask", image_mask)
             assert page.locator(".hero-nowrap-desktop").evaluate("el => getComputedStyle(el).whiteSpace") == "nowrap"
 
-            before = page.locator(".hero-art").evaluate(
-                "el => [getComputedStyle(el).getPropertyValue('--parallax-x').trim(),"
-                "getComputedStyle(el).getPropertyValue('--parallax-y').trim()]"
-            )
+            before = page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform")
             box = page.locator(".hero-art").bounding_box()
             assert box
             page.mouse.move(box["x"] + box["width"] * .88, box["y"] + box["height"] * .2)
             page.wait_for_timeout(90)
-            after = page.locator(".hero-art").evaluate(
-                "el => [getComputedStyle(el).getPropertyValue('--parallax-x').trim(),"
-                "getComputedStyle(el).getPropertyValue('--parallax-y').trim()]"
-            )
-            assert before != after and after != ["0px", "0px"], (before, after)
+            after = page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform")
+            assert before == "none" and after == "none", (before, after)
 
             # Original CTA semantics and navigation must remain intact.
             primary = page.get_by_role("link", name="Bắt đầu ngay", exact=True)
@@ -332,7 +350,7 @@ def main():
             assert_tonal_continuity(page)
             page.screenshot(path=str(OUT / "cinematic_v4_desktop_1440.png"), full_page=False, animations="disabled")
             assert not errors, errors
-            print("PASS cinematic desktop: sharp responsive asset, no headline overlap, motion, parallax, reveal and CTAs preserved", flush=True)
+            print("PASS cinematic desktop: static scene, panda-only vertical float, sharp responsive asset, reveal and CTAs preserved", flush=True)
             context.close()
 
             # DPR2 desktop/tablet and DPR3 phones cover the visible sharpness risk.
@@ -347,7 +365,7 @@ def main():
                 p.goto(BASE + "/#home", wait_until="domcontentloaded")
                 p.wait_for_function("document.body.dataset.authenticated === 'true'")
                 p.wait_for_function("document.documentElement.classList.contains('motion-ready')")
-                p.wait_for_function("document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0")
+                p.wait_for_function("document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0")
                 quality = assert_hero_quality(p, inventory, pointer_extremes=width >= 1024)
                 (OUT / f"hero-quality-{width}-dpr{dpr}.json").write_text(json.dumps(quality, indent=2), encoding="utf-8")
                 assert_tonal_continuity(p)
@@ -375,8 +393,10 @@ def main():
             rp.wait_for_function("document.body.dataset.authenticated === 'true'")
             rp.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            reduced_animation = rp.locator(".hero-art img").evaluate("el => getComputedStyle(el).animationName")
+            reduced_animation = rp.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName")
+            reduced_mascot_animation = rp.locator(".hero-mascot").evaluate("el => getComputedStyle(el).animationName")
             assert reduced_animation == "none", reduced_animation
+            assert reduced_mascot_animation == "none", reduced_mascot_animation
             hidden_reveals = rp.locator(".motion-reveal").evaluate_all(
                 "els => els.filter(el => { const s=getComputedStyle(el); return s.opacity==='0' || s.transform!=='none'; }).length"
             )
@@ -385,11 +405,8 @@ def main():
             assert rbox
             rp.mouse.move(rbox["x"] + rbox["width"] * .9, rbox["y"] + rbox["height"] * .1)
             rp.wait_for_timeout(90)
-            reduced_vars = rp.locator(".hero-art").evaluate(
-                "el => [getComputedStyle(el).getPropertyValue('--parallax-x').trim(),"
-                "getComputedStyle(el).getPropertyValue('--parallax-y').trim()]"
-            )
-            assert reduced_vars == ["0px", "0px"], reduced_vars
+            reduced_transform = rp.locator(".hero-art").evaluate("el => getComputedStyle(el).transform")
+            assert reduced_transform == "none", reduced_transform
             assert rp.get_by_role("link", name="Bắt đầu ngay", exact=True).is_visible()
             assert_hero_quality(rp, inventory)
             rp.screenshot(path=str(OUT / "cinematic_v4_reduced_1440.png"), full_page=False, animations="disabled")
