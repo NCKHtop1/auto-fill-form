@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PandaStudy cinematic hero quality and motion browser UAT.
+"""PandaStudy cinematic hero quality, clean mascot, and motion browser UAT.
 
 Local-only browser test. Account/API traffic is mocked. It never sends Google
 Form responses, creates a real payment, sends email, or mutates production.
