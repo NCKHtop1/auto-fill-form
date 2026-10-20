@@ -273,11 +273,6 @@
   transform: none;
   animation: none;
 }
-.hero-art .hero-scene {
-  animation: psSceneFloat 11s ease-in-out infinite;
-  transform-origin: 52% 52%;
-  will-change: transform;
-}
 .hero-aura {
   position: absolute;
   z-index: 3;
@@ -286,8 +281,8 @@
   border-radius: 50%;
   pointer-events: none;
   mix-blend-mode: screen;
-  filter: blur(28px);
-  opacity: .12;
+  filter: blur(22px);
+  opacity: .09;
 }
 .hero-aura--one {
   left: 28%;
@@ -589,11 +584,6 @@ html.motion-ready .motion-reveal.is-visible {
 /* -----------------------------
    Reduced motion
 ------------------------------ */
-
-@keyframes psSceneFloat {
-  0%,100% { transform: translate3d(0,0,0) scale(1.006); }
-  50% { transform: translate3d(0,-6px,0) scale(1.014); }
-}
 
 @media (prefers-reduced-motion: reduce) {
   *,

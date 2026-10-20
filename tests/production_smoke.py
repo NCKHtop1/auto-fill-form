@@ -17,7 +17,7 @@ from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-20-panda-float-v8-2"
+EXPECTED = "2026-10-21-panda-clean-v9"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -77,7 +77,7 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261020i", "text/css", b"psPandaFloat"),
+    ("/motion-ui.css?v=20261021b", "text/css", b"hero-scene"),
     ("/motion-ui.js?v=20261020f", "javascript", b"motion-ready"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
@@ -241,9 +241,8 @@ with sync_playwright() as p:
         assert page.locator('script[src*="xlsx@0.18.5"]').count() == 0
         assert page.locator(".steps-strip a").count() == 6
         assert page.locator(".hero-cinematic").count() == 1
-        assert page.locator(".hero-panda-float").count() == 1
-        assert page.locator(".hero-panda-erase").count() == 1
-        assert page.locator(".hero-panda-float").get_attribute("src") == "/assets/hero-panda-float-v8.webp"
+        assert page.locator(".hero-panda-float").count() == 0
+        assert page.locator(".hero-panda-erase").count() == 0
         hero_image = page.locator(".hero-scene")
         page.wait_for_function(
             "document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0",
@@ -256,7 +255,6 @@ with sync_playwright() as p:
         (OUT / f"production-hero-quality-{width}-dpr{dpr}.json").write_text(
             json.dumps(quality, indent=2), encoding="utf-8")
         assert hero_image.evaluate("el => getComputedStyle(el).animationName") == "none"
-        assert "psPandaFloat" in page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
         live_luma = hero_image.evaluate("""el => {
           const c=document.createElement('canvas'); c.width=30; c.height=17;
           const x=c.getContext('2d'); x.drawImage(el,0,0,c.width,c.height);
@@ -335,7 +333,8 @@ with sync_playwright() as p:
     reduced_page.goto(BASE + "/index.html?qa_revision=" + EXPECTED + "#home", wait_until="domcontentloaded", timeout=30000)
     reduced_page.wait_for_function("document.body.dataset.authenticated === 'true'")
     assert reduced_page.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName") == "none"
-    assert reduced_page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName") == "none"
+    assert reduced_page.locator(".hero-panda-float").count() == 0
+    assert reduced_page.locator(".hero-panda-erase").count() == 0
     assert reduced_page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform") == "none"
     assert not reduced_errors, reduced_errors
     reduced_page.screenshot(path=str(OUT / "production-cinematic-reduced.png"), full_page=False)
