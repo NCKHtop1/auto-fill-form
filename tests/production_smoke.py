@@ -13,10 +13,11 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from playwright.sync_api import sync_playwright
+from motion_ui_browser import assert_hero_quality, hero_asset_inventory
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-20-seamless-v4"
+EXPECTED = "2026-10-20-cohesive-v5"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -76,19 +77,17 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261020d", "text/css", b"hero-cinematic"),
-    ("/motion-ui.js?v=20261020d", "javascript", b"parallax"),
+    ("/motion-ui.css?v=20261020e", "text/css", b"hero-cinematic"),
+    ("/motion-ui.js?v=20261020e", "javascript", b"parallax"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
     assert status == 200, (asset_path, status)
     assert expected_type in (headers.get("content-type", "").lower()), (asset_path, headers.get("content-type"))
     assert marker in body, (asset_path, "release marker missing")
-hero_status, hero_headers, hero_bytes = no_redirect(BASE + "/assets/hero-cinematic-v3.webp")
-assert hero_status == 200, hero_status
-assert "image/webp" in hero_headers.get("content-type", "").lower(), hero_headers.get("content-type")
-assert 10_000 < len(hero_bytes) < 60_000, len(hero_bytes)
-assert hero_bytes[:4] == b"RIFF" and hero_bytes[8:12] == b"WEBP", hero_bytes[:12]
-print("POST_DEPLOY_PASS cinematic V3 CSS/JS/WebP assets served", flush=True)
+# Every responsive WebP candidate is fetched, decoded and checked against its
+# own quality/transfer budget in the browser section below. Do not keep checking
+# an obsolete 600px asset after the page has moved to a sharper srcset.
+print("POST_DEPLOY_PASS cinematic V5 CSS/JS release assets served", flush=True)
 
 # Canonical hostname.
 status, headers, _ = no_redirect(APEX + "/")
@@ -175,9 +174,13 @@ with sync_playwright() as p:
     signed_out.close()
     print("POST_DEPLOY_PASS signed-out visitor is blocked by login wall", flush=True)
 
-    # Existing six-step UI must remain unchanged and responsive after authentication.
-    for width in [320, 390, 768, 1024, 1440]:
-        context = browser.new_context(viewport={"width": width, "height": 860})
+    # Existing six-step behavior stays intact; real DPRs verify delivered pixels.
+    # Account traffic stays mocked, so these checks cannot spend live credits.
+    hero_inventory = None
+    for width, dpr in [(320, 2), (360, 3), (390, 3), (768, 2), (1024, 2), (1440, 2)]:
+        context = browser.new_context(viewport={"width": width, "height": 860},
+                                      device_scale_factor=dpr, is_mobile=width <= 650,
+                                      has_touch=width <= 650)
         page = context.new_page()
         errors = []
         page.on("pageerror", lambda error: errors.append(str(error)))
@@ -213,6 +216,15 @@ with sync_playwright() as p:
                 ),
             ),
         )
+        page.route(
+            "**/api/billing?action=profile",
+            lambda route: route.fulfill(
+                status=200, content_type="application/json",
+                body=json.dumps({**profile, "signedIn": True,
+                    "user": {"id": "production-ui-fixture", "email": "qa@example.test", "isAdmin": False},
+                    "availableCredits": 10, "reservedCredits": 0}),
+            ),
+        )
         page.route("https://cdn.jsdelivr.net/**", lambda route: route.abort())
         page.goto(
             BASE + "/index.html?qa_revision=" + EXPECTED + "#home",
@@ -220,6 +232,7 @@ with sync_playwright() as p:
             timeout=30000,
         )
         page.locator("#qaRunStep").wait_for(state="attached", timeout=12000)
+        page.wait_for_function("document.body.dataset.authenticated === 'true'", timeout=12000)
         assert (
             page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content")
             == EXPECTED
@@ -227,12 +240,16 @@ with sync_playwright() as p:
         assert page.locator(".steps-strip a").count() == 6
         assert page.locator(".hero-cinematic").count() == 1
         hero_image = page.locator(".hero-art img")
-        assert hero_image.get_attribute("src") == "/assets/hero-cinematic-v3.webp"
         page.wait_for_function(
             "document.querySelector('.hero-art img').complete && document.querySelector('.hero-art img').naturalWidth > 0",
             timeout=12000,
         )
-        assert hero_image.evaluate("el => [el.naturalWidth,el.naturalHeight]") == [600, 338]
+        if hero_inventory is None:
+            hero_inventory = hero_asset_inventory(page)
+            print("POST_DEPLOY_PASS every responsive WebP candidate decoded within its quality budget", flush=True)
+        quality = assert_hero_quality(page, hero_inventory, pointer_extremes=width >= 1024)
+        (OUT / f"production-hero-quality-{width}-dpr{dpr}.json").write_text(
+            json.dumps(quality, indent=2), encoding="utf-8")
         live_luma = hero_image.evaluate("""el => {
           const c=document.createElement('canvas'); c.width=30; c.height=17;
           const x=c.getContext('2d'); x.drawImage(el,0,0,c.width,c.height);
@@ -274,8 +291,8 @@ with sync_playwright() as p:
             )
         assert not errors, "Uncaught JS errors: " + repr(errors)
         print(
-            "POST_DEPLOY_PASS viewport=" + str(width)
-            + " core flow/navigation unchanged",
+            "POST_DEPLOY_PASS viewport=" + str(width) + " DPR=" + str(dpr)
+            + " hero sharp/no overlap; core flow/navigation unchanged",
             flush=True,
         )
         context.close()

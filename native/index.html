@@ -6,7 +6,7 @@
   <meta name="color-scheme" content="light">
   <title>PandaStudy</title>
   <meta name="theme-color" content="#245936">
-  <meta name="pandastudy-ui-revision" content="2026-10-20-seamless-v4">
+  <meta name="pandastudy-ui-revision" content="2026-10-20-cohesive-v5">
   <meta name="description" content="PandaStudy: công cụ Google Form, Excel/CSV và blog về phân tích dữ liệu.">
   <link rel="icon" type="image/svg+xml" href="/panda.svg">
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,7 +18,7 @@
   <script src="/qa-run.js?v=20261013d" defer></script>
   <script src="/auth-gate.js?v=20261019a" defer></script>
   <script src="/billing-ui.js?v=20261019-commerce5" defer></script>
-  <script src="/motion-ui.js?v=20261020d" defer></script>
+  <script src="/motion-ui.js?v=20261020e" defer></script>
   <style>
     :root {
       --bg: #f7f8fc;
@@ -730,18 +730,18 @@
   #blog,#how,#faq,#about{scroll-margin-top:86px}
 </style>
 <link rel="stylesheet" href="/blog.css?v=20261019-admin2">
-<link rel="stylesheet" href="/billing.css?v=20261019-commerce5">
-<link rel="stylesheet" href="/auth-gate.css?v=20261019a">
-<link rel="stylesheet" href="/motion-ui.css?v=20261020d">
+<link rel="stylesheet" href="/billing.css?v=20261020-cohesive5">
+<link rel="stylesheet" href="/auth-gate.css?v=20261020-cohesive5">
+<link rel="stylesheet" href="/motion-ui.css?v=20261020e">
 </head>
 <body class="ps-auth-pending">
   <section id="psAuthGate" aria-labelledby="psAuthGateTitle">
     <div class="ps-auth-card">
       <img class="ps-auth-logo" src="/panda.svg" alt="">
       <h1 id="psAuthGateTitle">Đăng nhập để vào PandaStudy</h1>
-      <p>Tài khoản Google dùng để xác định tài khoản PandaStudy, số phiếu, lịch sử nạp và quyền quản trị. Sau khi đăng nhập bạn sẽ vào màn hình chính.</p>
+      <p>Đăng nhập bằng Google để sử dụng công cụ, xem số phiếu và quản lý lịch sử nạp của bạn.</p>
       <a class="ps-auth-google" href="/api/auth/start">Đăng nhập với Google →</a>
-      <p class="ps-auth-note">PandaStudy chỉ sử dụng quyền Google đã được bạn cấp cho quy trình Google Form hiện có.</p>
+      <p class="ps-auth-note">PandaStudy dùng thông tin đăng nhập Google để xác định tài khoản và quản lý phiếu của bạn.</p>
       <div id="psAuthGateStatus" class="ps-auth-status" role="status" aria-live="polite">Đang kiểm tra phiên đăng nhập…</div>
       <button id="psAuthRetry" class="ps-auth-retry" type="button" hidden>Kiểm tra lại</button>
     </div>
@@ -757,8 +757,8 @@
   <section class="hero hero-cinematic" id="home"><div class="hero-inner"><div class="hero-copy">
  <span class="pill">✦ Dữ liệu nghiên cứu · Google Form</span>
  <h1>Tạo dữ liệu cho<br><strong>Google Form</strong><br><span class="hero-nowrap-desktop">từ Excel hoặc CSV</span></h1>
- <p>Nhập Form, ghép dữ liệu và gửi phản hồi.</p>
- <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay ↗</a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
+ <p>Nhập liên kết Form, ghép cột dữ liệu với câu hỏi và kiểm tra trước khi gửi.</p>
+ <div class="hero-buttons"><a href="#app" class="btn btn-primary">Bắt đầu ngay <span aria-hidden="true">→</span></a><a href="#how" class="btn btn-outline">Xem cách dùng</a></div>
  <div class="hero-proof" aria-label="Luồng dữ liệu từ Excel hoặc CSV qua PandaStudy tới Google Form">
    <span>Excel / CSV</span><i aria-hidden="true">→</i><span>PandaStudy</span><i aria-hidden="true">→</i><span>Google Form</span>
  </div>
@@ -768,9 +768,13 @@
    <span class="hero-aura hero-aura--two" aria-hidden="true"></span>
    <span class="hero-scan" aria-hidden="true"></span>
    <span class="hero-depth-grid" aria-hidden="true"></span>
-   <img src="/assets/hero-cinematic-v3.webp" width="600" height="338"
+   <img src="/assets/hero-cinematic-v4-1536.webp" width="1536" height="864"
+        srcset="/assets/hero-cinematic-v4-768.webp 768w, /assets/hero-cinematic-v4-1536.webp 1536w"
+        sizes="(max-width: 650px) calc(100vw - 36px), (max-width: 756px) calc(100vw - 56px), (max-width: 900px) 700px, (max-width: 1180px) calc(54vw - 52px), 660px"
         alt="Gấu trúc PandaStudy kết nối dữ liệu Excel hoặc CSV sang Google Form"
         loading="eager" decoding="async" fetchpriority="high">
+   <span class="hero-art-label hero-art-label--input" aria-hidden="true">Excel / CSV</span>
+   <span class="hero-art-label hero-art-label--output" aria-hidden="true">Google Form</span>
    <span class="hero-live-chip" aria-hidden="true"><b></b> Excel / CSV → Google Form</span>
  </div></div></section>
  <div class="steps-strip" aria-label="6 bước sử dụng"><a href="#dropZone"><b>1</b><span><strong>Chọn file</strong><small>Có thể bỏ qua</small></span></a><a href="#formSetupStep"><b>2</b><span><strong>Nhập Google Form</strong><small>Dán link /edit</small></span></a><a href="#mappingStep"><b>3</b><span><strong>Ghép dữ liệu</strong><small>Chọn cột câu hỏi</small></span></a><a href="#planStep"><b>4</b><span><strong>Tạo &amp; kiểm tra</strong><small>50, 100 dòng...</small></span></a><a href="#previewSection"><b>5</b><span><strong>Tải dữ liệu</strong><small>CSV cho Sheets</small></span></a><a href="#qaRunStep"><b>6</b><span><strong>Gửi &amp; đối chiếu</strong><small>Kiểm tra tổng</small></span></a></div>
@@ -878,7 +882,7 @@
           </div>
         </div>
 
-        <div id="questionEmpty" class="warning-box" data-i18n="question_empty">Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.</div>
+        <div id="questionEmpty" class="warning-box" data-i18n="question_empty">Nhập Google Form ở Bước 2 để hiển thị câu hỏi và tiếp tục ghép dữ liệu.</div>
         <div id="questionList" class="question-list"></div>
       </div>
 
@@ -1178,7 +1182,7 @@
         workspace_title:'Bảng điều khiển', workspace_subtitle:'Thực hiện theo các bước bên dưới.', workspace_chip:'Không dùng Apps Script',
         step1_title:'Nhập Google Form', step1_desc:'Dán đường dẫn /edit để nhập Google Form.', import_btn:'Nhập biểu mẫu', importing:'Đang nhập...',
         step2_title:'Tải dữ liệu (tùy chọn)', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel, CSV hoặc JSON',
-        step3_title:'Ánh xạ dữ liệu và quy tắc tạo câu trả lời', step3_desc:'Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.', mapping_explain:'“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.', question_empty:'Hãy nhập Google Form ở Bước 1 để hiển thị câu hỏi.',
+        step3_title:'Ánh xạ dữ liệu và quy tắc tạo câu trả lời', step3_desc:'Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.', mapping_explain:'“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.', question_empty:'Nhập Google Form ở Bước 2 để hiển thị câu hỏi và tiếp tục ghép dữ liệu.',
         step4_title:'Số lượng và thời gian gửi', step4_desc:'Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.', response_count:'Số phản hồi', estimated_cost:'Chi phí dự kiến', row_strategy:'Cách lấy dòng dữ liệu', row_sequential:'Tuần tự, lặp lại khi hết dòng', row_random:'Ngẫu nhiên', schedule_mode:'Chế độ gửi', mode_now:'Gửi ngay trên trang', mode_interval:'Gửi theo khoảng thời gian', mode_daily_random:'Phân bổ ngẫu nhiên theo ngày', min_delay:'Khoảng nghỉ tối thiểu (giây)', max_delay:'Khoảng nghỉ tối đa (giây)', delay_explain:'Hai ô này chỉ tạo khoảng nghỉ giữa các phản hồi khi “Gửi ngay”. Trang web phải được mở trong suốt quá trình. Với lịch 1 giờ/lần hoặc nhiều giờ, hãy chọn chế độ chạy nền.', start_time:'Bắt đầu lúc', repeat_every:'Lặp lại mỗi', unit:'Đơn vị', minutes:'Phút', hours:'Giờ', days:'Ngày', from_date:'Từ ngày', to_date:'Đến ngày', window_start:'Khung giờ từ', window_end:'Khung giờ đến', per_day:'Số phản hồi tối đa mỗi ngày', daily_note_title:'Mục đích', daily_note:'Chức năng này phân bổ lịch QA trong một khung giờ để kiểm thử tải và quy trình. Không dùng để che giấu tự động hóa hoặc giả danh người trả lời thật.', authorization_ack:'Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.', build_plan:'Tạo kế hoạch xem trước', validate_plan:'Kiểm tra kế hoạch',
         billing_hint:'Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.', step5_title:'Xem trước, gửi và tải báo cáo', step5_desc:'Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.', plan_empty:'Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.', th_scheduled:'Thời điểm', th_data_row:'Dòng dữ liệu', th_preview:'Xem trước câu trả lời', th_status:'Trạng thái', th_google_time:'Google timestamp', download_plan:'Tải kế hoạch CSV', submit_plan:'Gửi vào Google Form', schedule_plan:'Tạo lịch chạy nền', download_report:'Tải báo cáo CSV', refresh_count:'Cập nhật tổng phản hồi',
         scheduled_runs_title:'Lịch chạy nền', scheduled_runs_desc:'Theo dõi, hủy hoặc xóa các lịch đã tạo bằng tài khoản Google hiện tại.', refresh_jobs:'Làm mới lịch', jobs_empty:'Chưa có lịch chạy nền.', job_form:'Biểu mẫu', job_created:'Ngày tạo', job_progress:'Tiến độ', job_next:'Lần tiếp theo', job_actions:'Thao tác', cancel:'Hủy', delete:'Xóa',
@@ -1205,7 +1209,7 @@
         workspace_title:'Dashboard', workspace_subtitle:'Follow the steps below.', workspace_chip:'500 VND / response',
         step1_title:'Import a Google Form', step1_desc:'Paste the edit URL ending in /edit. The signed-in account must have edit access.', import_btn:'Import form', importing:'Importing...',
         step2_title:'Upload existing data — optional', step2_desc:'Supports XLSX, XLS, CSV and JSON. Each data row becomes one response set.', drop_title:'Choose or drop a file here', drop_desc:'Excel / CSV / JSON — read in your browser',
-        step3_title:'Map data and configure answer rules', step3_desc:'Select a data column for each question. If no column is selected, the generator rule below is used.', mapping_explain:'“Excel / data column” connects a column in the uploaded file to a Google Form question. For example, map the “Gender” column to the “What is your gender?” question.', question_empty:'Import a Google Form in Step 1 to display its questions.',
+        step3_title:'Map data and configure answer rules', step3_desc:'Select a data column for each question. If no column is selected, the generator rule below is used.', mapping_explain:'“Excel / data column” connects a column in the uploaded file to a Google Form question. For example, map the “Gender” column to the “What is your gender?” question.', question_empty:'Import a Google Form in Step 2 to display its questions and map your data.',
         step4_title:'Response count and timing', step4_desc:'Send now with a short delay or create a persistent background schedule for future times.', response_count:'Number of responses', estimated_cost:'Estimated cost', row_strategy:'Data-row strategy', row_sequential:'Sequential, cycle after the last row', row_random:'Random rows', schedule_mode:'Submission mode', mode_now:'Send now in this page', mode_interval:'Send at a fixed interval', mode_daily_random:'Randomly distribute by day', min_delay:'Minimum delay (seconds)', max_delay:'Maximum delay (seconds)', delay_explain:'These values only add a pause between responses in “Send now” mode. Keep the page open. For hourly or longer schedules, use a background mode.', start_time:'Start at', repeat_every:'Repeat every', unit:'Unit', minutes:'Minutes', hours:'Hours', days:'Days', from_date:'From date', to_date:'To date', window_start:'Window starts', window_end:'Window ends', per_day:'Maximum responses per day', daily_note_title:'Purpose', daily_note:'This distributes QA runs inside a time window for load and workflow testing. Do not use it to hide automation or impersonate real respondents.', authorization_ack:'I confirm that I own this form or have explicit authorization to submit QA data; the data will not impersonate participants or distort research.', build_plan:'Build preview plan', validate_plan:'Validate plan',
         billing_hint:'You need enough balance before submitting. Only successful responses are charged.', step5_title:'Preview, submit and download reports', step5_desc:'Review every row before submission. Status and timestamps update in the table.', plan_empty:'No plan yet. Click “Build preview plan”.', th_scheduled:'Scheduled time', th_data_row:'Data row', th_preview:'Answer preview', th_status:'Status', th_google_time:'Google timestamp', download_plan:'Download plan CSV', submit_plan:'Submit to Google Form', schedule_plan:'Create background schedule', download_report:'Download report CSV', refresh_count:'Refresh response count',
         scheduled_runs_title:'Background schedules', scheduled_runs_desc:'Review, cancel or delete schedules created by the current Google account.', refresh_jobs:'Refresh schedules', jobs_empty:'No background schedules yet.', job_form:'Form', job_created:'Created', job_progress:'Progress', job_next:'Next run', job_actions:'Actions', cancel:'Cancel', delete:'Delete',

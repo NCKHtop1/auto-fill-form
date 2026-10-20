@@ -1,11 +1,12 @@
 /* Additive payment UI. All selectors are scoped away from the six-step workspace. */
 .pb-account-bar,
+.pb-promo-strip,
 .pb-modal,
 .pb-admin {
   --pb-ink: #173823;
-  --pb-muted: #617166;
-  --pb-line: #dce7dc;
-  --pb-green: #246d3c;
+  --pb-muted: #526458;
+  --pb-line: #dce7d9;
+  --pb-green: #256d3f;
   --pb-soft: #f0f7ee;
   --pb-danger: #a52d27;
   color: var(--pb-ink);
@@ -14,22 +15,22 @@
   line-height: 1.6;
   box-sizing: border-box;
 }
-.pb-account-bar *, .pb-modal *, .pb-admin * { box-sizing: border-box; }
+.pb-account-bar *, .pb-promo-strip *, .pb-modal *, .pb-admin * { box-sizing: border-box; }
 .pb-account-bar[hidden], .pb-overlay[hidden], .pb-admin [hidden], .pb-modal [hidden] { display: none !important; }
 .pb-account-bar {
   max-width: 1240px;
   margin: 0 auto;
-  padding: 12px 24px;
-  display: flex;
+  padding: 10px 24px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 10px 18px;
-  flex-wrap: wrap;
+  gap: 6px 20px;
   border-bottom: 1px solid var(--pb-line);
-  background: #fbfdfa;
+  background: #fff;
 }
-.pb-account-copy { min-width: 0; flex: 1 1 220px; }
-.pb-account-title { font-weight: 700; }
+.pb-account-copy { display: flex; align-items: baseline; flex-wrap: wrap; gap: 2px 12px; min-width: 0; line-height: 1.5; }
+.pb-account-copy > * { max-width: 100%; overflow-wrap: anywhere; }
+.pb-account-title { font-weight: 700; color: var(--pb-green); }
 .pb-muted { color: var(--pb-muted); }
 .pb-small { font-size: 12px; }
 .pb-account-email { display: block; overflow-wrap: anywhere; }
@@ -39,12 +40,13 @@
   align-items: center;
   justify-content: center;
   gap: 7px;
-  min-height: 42px;
-  padding: 9px 14px;
-  border: 1px solid var(--pb-line);
+  min-width: 44px;
+  min-height: 44px;
+  padding: 9px 13px;
+  border: 1px solid var(--pb-line, #dce7d9);
   border-radius: 10px;
   background: #fff;
-  color: var(--pb-ink);
+  color: var(--pb-ink, #173823);
   font: inherit;
   font-weight: 600;
   line-height: 1.4;
@@ -54,19 +56,20 @@
   transition: background .15s, border-color .15s;
 }
 .pb-button:hover:not(:disabled) { background: #f3f7f1; border-color: #9bb89d; }
-.pb-button-primary { background: var(--pb-green); border-color: var(--pb-green); color: #fff; }
+.pb-button-primary { background: var(--pb-green, #256d3f); border-color: var(--pb-green, #256d3f); color: #fff; }
 .pb-button-primary:hover:not(:disabled) { background: #1c5930; border-color: #1c5930; }
 .pb-button-danger { color: var(--pb-danger); border-color: #e6bab6; }
 .pb-button-danger:hover:not(:disabled) { background: #fff2f0; border-color: #bd675f; }
 .pb-button:disabled { opacity: .55; cursor: not-allowed; }
 .pb-button:focus-visible,
+.pb-package-card:focus-visible,
 .pb-modal input:focus-visible,
 .pb-admin input:focus-visible,
 .pb-admin textarea:focus-visible,
 .pb-admin select:focus-visible,
 .pb-admin a:focus-visible,
 .pb-modal a:focus-visible {
-  outline: 3px solid #5b91e4;
+  outline: 3px solid #256d3f;
   outline-offset: 3px;
 }
 .pb-overlay {
@@ -106,7 +109,7 @@
 .pb-modal h3, .pb-admin h2 { margin: 0 0 12px; font-size: 17px; line-height: 1.4; }
 .pb-modal p, .pb-admin p { margin: 8px 0; }
 .pb-modal-body { padding: 20px 24px 24px; }
-.pb-close { flex: 0 0 42px; padding: 7px; font-size: 23px; line-height: 1; }
+.pb-close { flex: 0 0 44px; padding: 7px; font-size: 23px; line-height: 1; }
 .pb-section + .pb-section { margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--pb-line); }
 .pb-modal .pb-notice + .pb-section { margin-top: 18px; }
 .pb-notice {
@@ -153,7 +156,7 @@
 .pb-detail-row { display: grid; grid-template-columns: minmax(110px, .8fr) minmax(0, 1.5fr) auto; gap: 8px 12px; align-items: center; padding: 11px 0; border-bottom: 1px solid #edf1eb; }
 .pb-detail-row dt { color: var(--pb-muted); }
 .pb-detail-row dd { margin: 0; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
-.pb-copy { min-height: 36px; padding: 7px 9px; font-size: 12px; }
+.pb-copy { min-height: 44px; padding: 7px 9px; font-size: 12px; }
 .pb-qr { margin: 18px auto; max-width: 300px; text-align: center; }
 .pb-qr img { display: block; width: 100%; height: auto; border: 1px solid var(--pb-line); border-radius: 10px; background: white; }
 .pb-qr figcaption { color: var(--pb-muted); font-size: 12px; margin-top: 8px; }
@@ -206,32 +209,35 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 18px;
+  gap: 8px 16px;
   flex-wrap: wrap;
-  padding: 10px 18px;
-  border-bottom: 1px solid #d9e7d4;
-  background: linear-gradient(90deg,#edf8e9,#f7fbf4 48%,#eef5ff);
+  padding: 6px max(18px, calc((100vw - 1192px) / 2));
+  border-bottom: 1px solid var(--pb-line);
+  background: #f0f7ee;
   color: #21432d;
-  box-shadow: 0 6px 18px rgba(36,109,60,.06);
 }
-.pb-promo-copy { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; flex: 1 1 280px; min-width: 0; }
-.pb-promo-copy strong { font-size: 14px; }
-.pb-promo-copy span { color: #52645a; font-size: 13px; }
+.pb-promo-copy { display: flex; align-items: baseline; gap: 2px 10px; flex-wrap: wrap; flex: 1 1 440px; min-width: 0; line-height: 1.5; }
+.pb-promo-copy strong { font-size: 13px; }
+.pb-promo-copy span { color: var(--pb-muted); font-size: 12px; overflow-wrap: anywhere; }
 .pb-promo-actions { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
-.pb-promo-dismiss { min-width: 36px; padding-inline: 10px; font-size: 18px; }
+.pb-promo-actions .pb-button { font-size: 13px; }
+.pb-promo-actions .pb-promo-dismiss { width: 44px; min-width: 44px; padding-inline: 10px; font-size: 18px; }
 .pb-account-offer {
+  grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 10px 14px;
+  justify-content: flex-end;
+  gap: 6px 12px;
   flex-wrap: wrap;
-  margin-left: auto;
-  padding: 8px 10px;
-  border: 1px solid #d5e6cf;
-  border-radius: 11px;
-  background: #f8fcf6;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
 }
 .pb-account-offer strong { font-size: 13px; color: #275937; }
 .pb-account-offer span { color: var(--pb-muted); font-size: 12px; }
+.pb-account-offer .pb-button { font-size: 13px; }
 
 .pb-package-grid {
   display: grid;
@@ -312,26 +318,35 @@
 .pb-admin-promo-head { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--pb-line); }
 .pb-admin-promo-head h3 { margin-bottom: 4px; }
 
+@media (max-width: 960px) {
+  .pb-account-bar { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .pb-account-bar > .pb-actions { justify-content: flex-start; }
+  .pb-account-offer { justify-content: flex-start; }
+}
 @media (max-width: 720px) {
   .pb-admin-grid, .pb-user-grid { grid-template-columns: minmax(0, 1fr); }
   .pb-package-grid { grid-template-columns: minmax(0,1fr); }
   .pb-commerce-form-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .pb-metric-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .pb-promo-strip { align-items: flex-start; justify-content: space-between; }
+  .pb-promo-strip { align-items: center; justify-content: space-between; }
+  .pb-promo-copy { flex-basis: 100%; }
+  .pb-account-bar { padding: 10px 18px; }
+  .pb-account-bar > .pb-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: stretch; }
+  .pb-account-bar > .pb-actions .pb-button { min-width: 0; font-size: 13px; overflow-wrap: anywhere; }
+  .pb-account-offer { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding-top: 8px; border-top: 1px solid var(--pb-line); }
+  .pb-account-offer strong { grid-column: 1; grid-row: 1; }
+  .pb-account-offer span { grid-column: 1; grid-row: 2; overflow-wrap: anywhere; }
+  .pb-account-offer .pb-button { grid-column: 2; grid-row: 1 / span 2; }
   .pb-admin-header-inner, .pb-admin-main { padding: 18px 16px; }
   .pb-admin-toolbar .pb-actions { width: 100%; }
 }
 @media (max-width: 440px) {
-  .pb-account-bar { padding: 11px 16px; gap: 8px; }
-  .pb-promo-strip { padding: 10px 12px; gap: 10px; }
-  .pb-promo-copy span { display: none; }
-  .pb-promo-actions .pb-button-primary { min-height: 38px; padding: 8px 10px; font-size: 12px; }
-  .pb-account-offer { width: 100%; margin-left: 0; }
+  .pb-account-bar { padding: 10px 16px; gap: 8px; }
+  .pb-promo-strip { padding: 8px 16px; gap: 6px; }
+  .pb-promo-actions .pb-button-primary { min-height: 44px; padding: 9px 12px; font-size: 13px; }
   .pb-commerce-form-grid { grid-template-columns: minmax(0,1fr); }
   .pb-metric-grid { grid-template-columns: minmax(0,1fr); }
-  .pb-account-copy { flex-basis: 100%; }
   .pb-account-bar .pb-actions { width: 100%; }
-  .pb-account-bar .pb-button-primary { flex: 1; }
   .pb-overlay { padding: 9px; }
   .pb-modal { max-height: calc(100dvh - 18px); border-radius: 14px; }
   .pb-modal-head { padding: 17px 16px 13px; }

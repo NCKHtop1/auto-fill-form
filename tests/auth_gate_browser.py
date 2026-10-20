@@ -127,7 +127,7 @@ def main():
 
             gate = page.locator("#psAuthGate")
             gate.wait_for(state="visible")
-            assert page.locator('link[href="/auth-gate.css?v=20261019a"]').count() == 1
+            assert page.locator('link[href="/auth-gate.css?v=20261020-cohesive5"]').count() == 1
             assert page.locator('script[src="/auth-gate.js?v=20261019a"]').count() == 1
             assert page.locator(".topbar").is_hidden()
             assert page.locator("#app").is_hidden()

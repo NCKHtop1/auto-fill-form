@@ -1,6 +1,7 @@
 body.ps-auth-pending {
   min-height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 body.ps-auth-pending > :not(#psAuthGate):not(script):not(noscript) {
   display: none !important;
@@ -8,85 +9,107 @@ body.ps-auth-pending > :not(#psAuthGate):not(script):not(noscript) {
 #psAuthGate[hidden] { display: none !important; }
 #psAuthGate {
   min-height: 100vh;
+  min-height: 100dvh;
   display: grid;
   place-items: center;
-  padding: 28px 18px;
+  box-sizing: border-box;
+  padding: 32px 20px;
   background:
-    radial-gradient(circle at 78% 16%, rgba(125, 90, 255, .18), transparent 32%),
-    radial-gradient(circle at 12% 86%, rgba(49, 164, 255, .14), transparent 30%),
-    linear-gradient(135deg, #ffffff, #f7f2ff 64%, #eff8ff);
-  color: #17223b;
+    radial-gradient(circle at 78% 16%, rgba(117, 180, 103, .12), transparent 38%),
+    radial-gradient(circle at 12% 86%, rgba(185, 206, 136, .14), transparent 34%),
+    linear-gradient(135deg, #fdfefb, #f3f8ee);
+  color: #173823;
   font-family: 'Be Vietnam Pro', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 .ps-auth-card {
   width: min(470px, 100%);
-  padding: 34px 30px 30px;
-  border: 1px solid #e5e7ef;
-  border-radius: 24px;
-  background: rgba(255,255,255,.96);
-  box-shadow: 0 24px 80px rgba(31,42,68,.14);
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 32px;
+  border: 1px solid #dce7d9;
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 16px 48px rgba(23, 56, 35, .08);
   text-align: center;
 }
 .ps-auth-logo {
-  width: 72px;
-  height: 72px;
+  width: 64px;
+  height: 64px;
   display: block;
-  margin: 0 auto 18px;
+  margin: 0 auto 20px;
 }
 .ps-auth-card h1 {
-  margin: 0 0 10px;
-  color: #173253;
-  font-size: clamp(1.8rem, 6vw, 2.45rem);
-  line-height: 1.1;
-  letter-spacing: -.035em;
+  margin: 0 0 12px;
+  color: #173823;
+  font-size: clamp(1.65rem, 4vw, 2rem);
+  line-height: 1.25;
+  letter-spacing: -.03em;
+  text-wrap: balance;
 }
 .ps-auth-card p {
-  margin: 0 auto 18px;
+  margin: 0 auto 20px;
   max-width: 390px;
-  color: #667085;
+  color: #526458;
+  font-size: .94rem;
   line-height: 1.65;
 }
 .ps-auth-google {
   width: 100%;
   min-height: 50px;
+  box-sizing: border-box;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
+  padding: 11px 18px;
   border: 0;
   border-radius: 12px;
-  background: #315eea;
+  background: #256d3f;
   color: #fff;
   font: inherit;
-  font-weight: 800;
+  font-weight: 700;
   text-decoration: none;
-  box-shadow: 0 10px 28px rgba(49,94,234,.22);
+  box-shadow: 0 6px 16px rgba(37, 109, 63, .14);
+  transition: background .16s ease, box-shadow .16s ease;
 }
-.ps-auth-google:hover { background: #2448bd; }
-.ps-auth-google:focus-visible {
-  outline: 3px solid rgba(49,94,234,.28);
-  outline-offset: 3px;
+.ps-auth-google:hover { background: #1c5732; box-shadow: 0 8px 20px rgba(37, 109, 63, .18); }
+.ps-auth-google:active { background: #164929; }
+.ps-auth-google:focus-visible,
+.ps-auth-retry:focus-visible {
+  outline: 3px solid #256d3f;
+  outline-offset: 4px;
 }
-.ps-auth-note {
+.ps-auth-card .ps-auth-note {
   margin-top: 14px !important;
   font-size: .82rem;
 }
 .ps-auth-status {
-  min-height: 24px;
-  margin-top: 14px;
-  color: #667085;
+  min-height: 22px;
+  margin-top: 12px;
+  color: #526458;
   font-size: .88rem;
-  font-weight: 650;
+  font-weight: 600;
+  line-height: 1.5;
 }
-.ps-auth-status.error { color: #c0362c; }
+.ps-auth-status.error { color: #a52d27; }
 .ps-auth-retry {
   margin-top: 10px;
-  border: 1px solid #d8dce8;
+  max-width: 100%;
+  min-height: 44px;
+  border: 1px solid #c6d9c5;
   border-radius: 10px;
   padding: 9px 13px;
   background: #fff;
-  color: #17223b;
+  color: #256d3f;
   font: inherit;
-  font-weight: 750;
+  font-weight: 600;
   cursor: pointer;
+}
+.ps-auth-retry:hover { background: #f0f7ee; }
+@media (max-width: 480px) {
+  #psAuthGate { padding: 24px 16px; }
+  .ps-auth-card { padding: 26px 22px; border-radius: 18px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ps-auth-google { transition: none; }
 }
