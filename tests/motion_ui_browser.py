@@ -86,8 +86,8 @@ try:
         page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
         assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-20-cinematic-v3"
-        assert page.locator('link[href="/motion-ui.css?v=20261020b"]').count() == 1
-        assert page.locator('script[src="/motion-ui.js?v=20261020b"]').count() == 1
+        assert page.locator('link[href="/motion-ui.css?v=20261020c"]').count() == 1
+        assert page.locator('script[src="/motion-ui.js?v=20261020c"]').count() == 1
         assert page.locator(".hero-cinematic").count() == 1
         assert page.locator(".hero-aura").count() == 2
         assert page.locator(".hero-scan").count() == 1
