@@ -16,7 +16,7 @@ from playwright.sync_api import sync_playwright
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-20-cinematic-v3"
+EXPECTED = "2026-10-20-seamless-v4"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -76,8 +76,8 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261020c", "text/css", b"hero-cinematic"),
-    ("/motion-ui.js?v=20261020c", "javascript", b"parallax"),
+    ("/motion-ui.css?v=20261020d", "text/css", b"hero-cinematic"),
+    ("/motion-ui.js?v=20261020d", "javascript", b"parallax"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
     assert status == 200, (asset_path, status)
