@@ -204,6 +204,9 @@ def overflow(page):
 
 def assert_tonal_continuity(page):
     """The dark hero and light workspace share a real responsive transition."""
+    # Keep hover/focus styling from contaminating the default-state comparison.
+    page.mouse.move(2, 2)
+    page.wait_for_timeout(30)
     assert page.locator(".ps-tone-bridge").count() == 1
     metrics = page.evaluate("""() => {
       const hero = document.querySelector('.hero.hero-cinematic').getBoundingClientRect();
