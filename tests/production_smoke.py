@@ -76,8 +76,8 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261020b", "text/css", b"hero-cinematic"),
-    ("/motion-ui.js?v=20261020b", "javascript", b"parallax"),
+    ("/motion-ui.css?v=20261020c", "text/css", b"hero-cinematic"),
+    ("/motion-ui.js?v=20261020c", "javascript", b"parallax"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
     assert status == 200, (asset_path, status)
