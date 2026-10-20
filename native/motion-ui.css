@@ -273,32 +273,9 @@
   transform: none;
   animation: none;
 }
-.hero-art .hero-panda-erase,
-.hero-art .hero-panda-float {
-  position: absolute;
-  left: 19.53125%;
-  top: 21.41204%;
-  width: 33.85417%;
-  height: 53.81944%;
-  max-width: none;
-  object-fit: fill;
-  object-position: center;
-  border-radius: 0;
-  pointer-events: none;
-  -webkit-mask-image: none;
-  mask-image: none;
-}
-.hero-art .hero-panda-erase {
-  z-index: 2;
-  transform: none;
-  animation: none;
-}
-.hero-art .hero-panda-float {
-  --panda-float-down: 16px;
-  --panda-float-up: -20px;
-  z-index: 4;
-  transform: translate3d(0,var(--panda-float-down),0);
-  animation: psPandaFloat 4.6s cubic-bezier(.45,0,.55,1) infinite;
+.hero-art .hero-scene {
+  animation: psSceneFloat 11s ease-in-out infinite;
+  transform-origin: 52% 52%;
   will-change: transform;
 }
 .hero-aura {
@@ -490,9 +467,7 @@ html.motion-ready .motion-reveal.is-visible {
 @keyframes psHeroUnderline {
   to { transform: scaleX(1); }
 }
-@keyframes psPandaFloat {
-  0%,100% { transform: translate3d(0,var(--panda-float-down),0); }
-  45%,55% { transform: translate3d(0,var(--panda-float-up),0); }
+45%,55% { transform: translate3d(0,var(--panda-float-up),0); }
 }
 @keyframes psSceneSweep {
   0%,18% { transform: translateX(-150%) skewX(-12deg); opacity: 0; }
@@ -594,11 +569,6 @@ html.motion-ready .motion-reveal.is-visible {
     margin-left: 0;
     border-radius: 0;
   }
-  .hero-art .hero-panda-float {
-    --panda-float-down: 10px;
-    --panda-float-up: -14px;
-    animation-duration: 4.8s;
-  }
   .hero-live-chip {
     left: 10px;
     bottom: 10px;
@@ -619,6 +589,12 @@ html.motion-ready .motion-reveal.is-visible {
 /* -----------------------------
    Reduced motion
 ------------------------------ */
+
+@keyframes psSceneFloat {
+  0%,100% { transform: translate3d(0,0,0) scale(1.006); }
+  50% { transform: translate3d(0,-6px,0) scale(1.014); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
