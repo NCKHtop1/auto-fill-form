@@ -13,11 +13,11 @@ from urllib.parse import parse_qs, urlparse
 from urllib.request import HTTPRedirectHandler, Request, build_opener, urlopen
 
 from playwright.sync_api import sync_playwright
-from motion_ui_browser import assert_hero_quality, hero_asset_inventory
+from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_tonal_continuity
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-20-cohesive-v5"
+EXPECTED = "2026-10-20-tone-bridge-v6"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -77,7 +77,7 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261020e", "text/css", b"hero-cinematic"),
+    ("/motion-ui.css?v=20261020f", "text/css", b"ps-tone-bridge"),
     ("/motion-ui.js?v=20261020e", "javascript", b"parallax"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
