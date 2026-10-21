@@ -778,9 +778,38 @@ body[data-panda-page]:not([data-panda-page="home"]) .ps-tone-bridge,
 }
 
 
-/* Panda V10b: silhouette-safe, vertical-only mascot float. */
-.hero-panda-erase{position:absolute;z-index:4;left:18.359%;top:17.245%;width:36.849%;height:61.921%;pointer-events:none;background:url("/assets/hero-panda-erase-v10.jpg") center/100% 100% no-repeat;clip-path:polygon(85.69% 14.39%,81.27% 13.08%,77.39% 14.58%,72.08% 11.03%,63.78% 11.03%,61.48% 9.35%,59.54% 10.65%,59.19% 13.08%,50.35% 17.57%,49.82% 15.33%,51.94% 9.91%,50.53% 8.41%,47.00% 8.60%,44.35% 11.96%,44.88% 20.19%,38.69% 22.80%,34.63% 32.15%,32.33% 31.96%,29.68% 34.21%,26.33% 39.63%,23.85% 38.13%,20.32% 40.93%,15.19% 55.89%,16.61% 61.31%,11.31% 63.18%,7.95% 68.60%,7.77% 72.15%,9.72% 74.02%,11.48% 80.37%,17.67% 84.30%,21.91% 82.43%,28.80% 82.62%,29.33% 86.54%,32.16% 90.47%,38.34% 91.21%,44.17% 85.79%,49.65% 84.86%,56.01% 78.13%,58.66% 78.50%,68.02% 71.78%,74.56% 62.43%,84.28% 57.20%,89.05% 56.82%,92.05% 51.40%,91.70% 44.30%,89.05% 41.31%,90.11% 37.20%,87.63% 29.16%,89.58% 25.42%,89.22% 19.63%)}
-.hero-art .hero-panda-float{--panda-float-up:-9px;--panda-float-down:7px;position:absolute;inset:0;z-index:6;width:100%;height:100%;max-width:100%;object-fit:cover;object-position:center;border-radius:0;pointer-events:none;-webkit-mask-image:none;mask-image:none;clip-path:polygon(49.74% 26.62%,48.31% 25.93%,46.88% 26.97%,44.66% 24.54%,41.60% 24.77%,41.02% 23.61%,40.43% 25.81%,38.87% 26.50%,36.85% 28.94%,36.39% 26.62%,37.17% 23.50%,35.87% 23.03%,35.03% 24.77%,35.16% 30.09%,34.57% 31.13%,33.46% 30.90%,32.55% 32.29%,32.75% 33.33%,31.32% 37.73%,30.34% 37.62%,29.95% 38.89%,29.49% 38.89%,28.26% 42.48%,27.15% 41.44%,26.11% 42.94%,24.67% 48.38%,24.80% 50.12%,24.28% 51.97%,24.28% 53.82%,25.39% 55.90%,22.72% 56.83%,21.61% 59.84%,21.55% 61.81%,22.27% 62.73%,22.85% 66.67%,24.87% 68.87%,26.30% 67.71%,28.45% 68.17%,29.30% 67.59%,29.82% 71.76%,31.05% 73.26%,32.23% 73.26%,34.44% 69.91%,36.65% 69.10%,38.87% 64.93%,39.91% 65.28%,41.54% 62.62%,42.71% 61.92%,44.08% 59.72%,45.51% 55.56%,47.07% 53.70%,49.41% 51.97%,50.98% 51.97%,51.95% 48.96%,51.82% 44.79%,50.78% 43.17%,51.24% 40.39%,50.26% 35.30%,50.98% 33.45%,50.91% 29.51%);transform-origin:36.85% 48%;animation:psPandaFloatV10 3.6s ease-in-out infinite;will-change:transform}
-@keyframes psPandaFloatV10{0%,100%{transform:translate3d(0,var(--panda-float-down),0) scale(.97)}50%{transform:translate3d(0,var(--panda-float-up),0) scale(.97)}}
-@media(max-width:650px){.hero-art .hero-panda-float{--panda-float-up:-6px;--panda-float-down:5px}}
-@media(prefers-reduced-motion:reduce){.hero-art .hero-panda-float{animation:none!important;transform:scale(.97)!important}}
+/* Panda V11: no polygon clipping. The original cinematic scene is static.
+   A soft underlay hides the old mascot; a duplicate of the original scene is
+   masked with a generous feathered ellipse and moves vertically only. */
+.hero-panda-erase{
+  position:absolute;z-index:4;left:18.359%;top:17.245%;width:36.849%;height:61.921%;
+  pointer-events:none;background:url("/assets/hero-panda-erase-v10.jpg") center/100% 100% no-repeat;
+  -webkit-mask-image:radial-gradient(ellipse at 50% 50%,#000 0 78%,rgba(0,0,0,.98) 86%,transparent 100%);
+  mask-image:radial-gradient(ellipse at 50% 50%,#000 0 78%,rgba(0,0,0,.98) 86%,transparent 100%);
+}
+.hero-art .hero-panda-float{
+  --panda-float-up:-8px;--panda-float-down:6px;
+  position:absolute;inset:0;z-index:6;width:100%;height:100%;max-width:100%;
+  object-fit:cover;object-position:center;border-radius:0;pointer-events:none;
+  clip-path:none!important;-webkit-clip-path:none!important;
+  -webkit-mask-image:
+    radial-gradient(ellipse 10.5% 12.5% at 42.3% 34%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 9.5% 16.5% at 36.2% 49.5%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 7.5% 12.5% at 27.8% 56%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 8% 8.5% at 34.5% 66%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 7.5% 8.5% at 46% 49%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 6% 8% at 31.5% 37%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%);
+  -webkit-mask-composite:source-over,source-over,source-over,source-over,source-over;
+  mask-image:
+    radial-gradient(ellipse 10.5% 12.5% at 42.3% 34%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 9.5% 16.5% at 36.2% 49.5%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 7.5% 12.5% at 27.8% 56%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 8% 8.5% at 34.5% 66%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 7.5% 8.5% at 46% 49%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%),
+    radial-gradient(ellipse 6% 8% at 31.5% 37%,#000 0 87%,rgba(0,0,0,.98) 93%,transparent 100%);
+  mask-composite:add,add,add,add,add;
+  transform-origin:37% 48%;animation:psPandaFloatV11 3.6s ease-in-out infinite;will-change:transform;
+}
+@keyframes psPandaFloatV11{0%,100%{transform:translate3d(0,var(--panda-float-down),0)}50%{transform:translate3d(0,var(--panda-float-up),0)}}
+@media(max-width:650px){.hero-art .hero-panda-float{--panda-float-up:-5px;--panda-float-down:4px}}
+@media(prefers-reduced-motion:reduce){.hero-art .hero-panda-float{animation:none!important;transform:none!important}}

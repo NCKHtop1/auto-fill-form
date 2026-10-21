@@ -258,8 +258,8 @@ def main():
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-float-v10b"
-            assert page.locator('link[href="/motion-ui.css?v=20261021d"]').count() == 1
+            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-no-clip-v11"
+            assert page.locator('link[href="/motion-ui.css?v=20261021e"]').count() == 1
             assert page.locator('script[src="/motion-ui.js?v=20261020f"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
@@ -289,13 +289,17 @@ def main():
             assert page.locator(".hero-panda-float").count() == 1
             assert page.locator(".hero-panda-erase").count() == 1
             panda_animation = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
-            assert "psPandaFloatV10" in panda_animation, panda_animation
+            assert "psPandaFloatV11" in panda_animation, panda_animation
             erase_bg = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).backgroundImage")
             assert "hero-panda-erase-v10.jpg" in erase_bg, erase_bg
             panda_clip = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).clipPath")
             erase_clip = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).clipPath")
-            assert panda_clip.startswith("polygon(") and panda_clip.count("%") >= 100, panda_clip
-            assert erase_clip.startswith("polygon(") and erase_clip.count("%") >= 80, erase_clip
+            panda_mask = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
+            erase_mask = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
+            assert panda_clip == "none", panda_clip
+            assert erase_clip == "none", erase_clip
+            assert panda_mask.count("radial-gradient") >= 6, panda_mask
+            assert "radial-gradient" in erase_mask, erase_mask
             panda = page.locator(".hero-panda-float")
             panda.evaluate("""el => { const a=el.getAnimations()[0]; a.pause(); a.currentTime=0; }""")
             low_box = panda.bounding_box()
@@ -303,7 +307,9 @@ def main():
             panda.evaluate("""el => { const a=el.getAnimations()[0]; a.currentTime=1800; }""")
             high_box = panda.bounding_box()
             page.screenshot(path=str(OUT / "panda-float-high-1440.png"), full_page=False)
-            assert low_box and high_box and low_box["y"] - high_box["y"] >= 14, (low_box, high_box)
+            assert low_box and high_box and low_box["y"] - high_box["y"] >= 12, (low_box, high_box)
+            assert abs(low_box["width"] - high_box["width"]) <= 0.5, (low_box, high_box)
+            assert abs(low_box["height"] - high_box["height"]) <= 0.5, (low_box, high_box)
             # Keep the high-resolution scene static while the duplicated mascot floats independently.
             hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
             assert "gradient" in hero_background, hero_background
@@ -348,7 +354,7 @@ def main():
             assert_tonal_continuity(page)
             page.screenshot(path=str(OUT / "cinematic_v4_desktop_1440.png"), full_page=False, animations="disabled")
             assert not errors, errors
-            print("PASS cinematic desktop: static scene, panda-only vertical float, sharp responsive asset, reveal and CTAs preserved", flush=True)
+            print("PASS cinematic desktop: static scene, no-clip panda-only vertical float, sharp responsive asset, reveal and CTAs preserved", flush=True)
             context.close()
 
             # DPR2 desktop/tablet and DPR3 phones cover the visible sharpness risk.
