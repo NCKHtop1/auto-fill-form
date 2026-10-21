@@ -17,7 +17,7 @@ from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-21-panda-clean-v9"
+EXPECTED = "2026-10-21-panda-float-v10"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -77,8 +77,9 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261021b", "text/css", b"hero-scene"),
+    ("/motion-ui.css?v=20261021c", "text/css", b"hero-scene"),
     ("/motion-ui.js?v=20261020f", "javascript", b"motion-ready"),
+    ("/assets/hero-panda-erase-v10.jpg", "image/jpeg", b"\xff\xd8\xff"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
     assert status == 200, (asset_path, status)
@@ -241,8 +242,9 @@ with sync_playwright() as p:
         assert page.locator('script[src*="xlsx@0.18.5"]').count() == 0
         assert page.locator(".steps-strip a").count() == 6
         assert page.locator(".hero-cinematic").count() == 1
-        assert page.locator(".hero-panda-float").count() == 0
-        assert page.locator(".hero-panda-erase").count() == 0
+        assert page.locator(".hero-panda-float").count() == 1
+        assert page.locator(".hero-panda-erase").count() == 1
+        assert "psPandaFloatV10" in page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
         hero_image = page.locator(".hero-scene")
         page.wait_for_function(
             "document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0",
