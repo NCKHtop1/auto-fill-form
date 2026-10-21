@@ -17,7 +17,7 @@ from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-21-panda-float-v10"
+EXPECTED = "2026-10-21-panda-float-v10b"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -77,7 +77,7 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261021c", "text/css", b"hero-scene"),
+    ("/motion-ui.css?v=20261021d", "text/css", b"hero-scene"),
     ("/motion-ui.js?v=20261020f", "javascript", b"motion-ready"),
     ("/assets/hero-panda-erase-v10.jpg", "image/jpeg", b"\xff\xd8\xff"),
 ]:
@@ -335,8 +335,9 @@ with sync_playwright() as p:
     reduced_page.goto(BASE + "/index.html?qa_revision=" + EXPECTED + "#home", wait_until="domcontentloaded", timeout=30000)
     reduced_page.wait_for_function("document.body.dataset.authenticated === 'true'")
     assert reduced_page.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName") == "none"
-    assert reduced_page.locator(".hero-panda-float").count() == 0
-    assert reduced_page.locator(".hero-panda-erase").count() == 0
+    assert reduced_page.locator(".hero-panda-float").count() == 1
+    assert reduced_page.locator(".hero-panda-erase").count() == 1
+    assert reduced_page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName") == "none"
     assert reduced_page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform") == "none"
     assert not reduced_errors, reduced_errors
     reduced_page.screenshot(path=str(OUT / "production-cinematic-reduced.png"), full_page=False)
