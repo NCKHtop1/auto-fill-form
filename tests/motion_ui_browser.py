@@ -258,8 +258,8 @@ def main():
             page.wait_for_function("document.body.dataset.authenticated === 'true'")
             page.wait_for_function("document.documentElement.classList.contains('motion-ready')")
 
-            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-clean-v9"
-            assert page.locator('link[href="/motion-ui.css?v=20261021b"]').count() == 1
+            assert page.locator('meta[name="pandastudy-ui-revision"]').get_attribute("content") == "2026-10-21-panda-float-v10"
+            assert page.locator('link[href="/motion-ui.css?v=20261021c"]').count() == 1
             assert page.locator('script[src="/motion-ui.js?v=20261020f"]').count() == 1
             assert page.locator(".hero-cinematic").count() == 1
             assert page.locator(".hero-aura").count() == 2
@@ -286,10 +286,13 @@ def main():
 
             scene_animation = image.evaluate("el => getComputedStyle(el).animationName")
             assert scene_animation == "none", scene_animation
-            assert page.locator(".hero-panda-float").count() == 0
-            assert page.locator(".hero-panda-erase").count() == 0
-            # Keep the mascot inside the high-resolution responsive scene.
-            # Low-resolution full-frame overlays are intentionally forbidden because they blur the panda.
+            assert page.locator(".hero-panda-float").count() == 1
+            assert page.locator(".hero-panda-erase").count() == 1
+            panda_animation = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
+            assert "psPandaFloatV10" in panda_animation, panda_animation
+            erase_bg = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).backgroundImage")
+            assert "hero-panda-erase-v10.jpg" in erase_bg, erase_bg
+            # Keep the high-resolution scene static while the duplicated mascot floats independently.
             hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
             assert "gradient" in hero_background, hero_background
             frame_style = page.locator(".hero-art").evaluate("""el => {
@@ -378,8 +381,9 @@ def main():
 
             reduced_animation = rp.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName")
             assert reduced_animation == "none", reduced_animation
-            assert rp.locator(".hero-panda-float").count() == 0
-            assert rp.locator(".hero-panda-erase").count() == 0
+            assert rp.locator(".hero-panda-float").count() == 1
+            assert rp.locator(".hero-panda-erase").count() == 1
+            assert rp.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName") == "none"
             hidden_reveals = rp.locator(".motion-reveal").evaluate_all(
                 "els => els.filter(el => { const s=getComputedStyle(el); return s.opacity==='0' || s.transform!=='none'; }).length"
             )

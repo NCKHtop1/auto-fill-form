@@ -462,8 +462,6 @@ html.motion-ready .motion-reveal.is-visible {
 @keyframes psHeroUnderline {
   to { transform: scaleX(1); }
 }
-45%,55% { transform: translate3d(0,var(--panda-float-up),0); }
-}
 @keyframes psSceneSweep {
   0%,18% { transform: translateX(-150%) skewX(-12deg); opacity: 0; }
   42% { opacity: .22; }
@@ -777,4 +775,59 @@ body[data-panda-page]:not([data-panda-page="home"]) .ps-tone-bridge,
   .steps-strip a:first-child>b { width: 26px; height: 26px; border-radius: 8px; }
   .steps-strip strong { font-size: .72rem; }
   .steps-strip small { font-size: .64rem; }
+}
+
+
+/* ---------------------------------------------------------
+   PandaStudy V10 / panda-only float.
+   Keep the cinematic scene completely static; erase the original mascot
+   under a feathered clean patch and animate one crisp duplicate only.
+---------------------------------------------------------- */
+.hero-panda-erase {
+  position: absolute;
+  z-index: 4;
+  left: 18.359%;
+  top: 17.245%;
+  width: 36.849%;
+  height: 61.921%;
+  pointer-events: none;
+  background: url("/assets/hero-panda-erase-v10.jpg") center / 100% 100% no-repeat;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 50%, #000 66%, #000 82%, transparent 100%);
+  mask-image: radial-gradient(ellipse at 50% 50%, #000 66%, #000 82%, transparent 100%);
+}
+.hero-art .hero-panda-float {
+  --panda-float-up: -14px;
+  --panda-float-down: 10px;
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  object-fit: cover;
+  object-position: center;
+  border-radius: 0;
+  pointer-events: none;
+  -webkit-mask-image: none;
+  mask-image: none;
+  clip-path: polygon(49.544% 27.199%,48.307% 26.620%,46.875% 28.009%,44.661% 25.231%,41.211% 25.579%,41.016% 24.306%,40.951% 26.157%,36.784% 29.745%,35.872% 27.199%,36.784% 23.727%,36.068% 23.611%,35.221% 27.199%,36.003% 29.514%,34.766% 31.944%,33.659% 31.481%,32.943% 32.523%,33.464% 33.333%,31.706% 37.963%,29.688% 39.468%,28.385% 43.171%,27.148% 42.130%,26.497% 43.171%,24.674% 52.199%,24.740% 53.819%,26.302% 56.713%,23.438% 56.944%,22.005% 60.069%,23.242% 66.435%,24.870% 68.171%,26.107% 67.014%,29.753% 66.667%,30.208% 71.528%,32.227% 72.569%,34.245% 69.213%,36.458% 68.519%,38.542% 64.468%,39.714% 64.699%,43.034% 60.648%,45.182% 55.093%,49.219% 51.273%,50.781% 51.389%,51.562% 48.727%,51.042% 46.528%,51.432% 45.023%,50.195% 43.634%,50.846% 40.625%,49.805% 34.954%,50.651% 32.639%,50.521% 29.745%);
+  transform-origin: 36.85% 48.0%;
+  animation: psPandaFloatV10 3.8s cubic-bezier(.45,.05,.55,.95) infinite;
+  will-change: transform;
+}
+@keyframes psPandaFloatV10 {
+  0%,100% { transform: translate3d(0,var(--panda-float-down),0) scale(.94) rotate(-.3deg); }
+  50% { transform: translate3d(0,var(--panda-float-up),0) scale(.94) rotate(.3deg); }
+}
+@media (max-width: 650px) {
+  .hero-art .hero-panda-float {
+    --panda-float-up: -10px;
+    --panda-float-down: 7px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-art .hero-panda-float {
+    animation: none !important;
+    transform: scale(.94) !important;
+  }
 }
