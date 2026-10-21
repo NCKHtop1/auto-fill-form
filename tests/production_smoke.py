@@ -335,8 +335,9 @@ with sync_playwright() as p:
     reduced_page.goto(BASE + "/index.html?qa_revision=" + EXPECTED + "#home", wait_until="domcontentloaded", timeout=30000)
     reduced_page.wait_for_function("document.body.dataset.authenticated === 'true'")
     assert reduced_page.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName") == "none"
-    assert reduced_page.locator(".hero-panda-float").count() == 0
-    assert reduced_page.locator(".hero-panda-erase").count() == 0
+    assert reduced_page.locator(".hero-panda-float").count() == 1
+    assert reduced_page.locator(".hero-panda-erase").count() == 1
+    assert reduced_page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName") == "none"
     assert reduced_page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform") == "none"
     assert not reduced_errors, reduced_errors
     reduced_page.screenshot(path=str(OUT / "production-cinematic-reduced.png"), full_page=False)
