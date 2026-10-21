@@ -298,7 +298,7 @@ def main():
             erase_mask = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
             assert panda_clip == "none", panda_clip
             assert erase_clip == "none", erase_clip
-            assert "radial-gradient" in panda_mask, panda_mask
+            assert panda_mask.count("radial-gradient") >= 6, panda_mask
             assert "radial-gradient" in erase_mask, erase_mask
             panda = page.locator(".hero-panda-float")
             panda.evaluate("""el => { const a=el.getAnimations()[0]; a.pause(); a.currentTime=0; }""")

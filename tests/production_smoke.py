@@ -246,7 +246,7 @@ with sync_playwright() as p:
         assert page.locator(".hero-panda-erase").count() == 1
         assert "psPandaFloatV11" in page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
         assert page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).clipPath") == "none"
-        assert "radial-gradient" in page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
+        assert page.locator(".hero-panda-float").evaluate("el => (getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage).split("radial-gradient").length - 1") >= 6
         hero_image = page.locator(".hero-scene")
         page.wait_for_function(
             "document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0",
