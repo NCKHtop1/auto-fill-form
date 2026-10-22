@@ -472,7 +472,7 @@
     if (order.submittedAt) detail(data, 'Báo đã chuyển', date(order.submittedAt));
     if (order.reviewedAt) detail(data, 'Xử lý lúc', date(order.reviewedAt));
     if (order.reviewedBy) detail(data, 'Người xử lý', typeof order.reviewedBy === 'object' ? order.reviewedBy.email : order.reviewedBy);
-    if (order.manualBankConfirmation) detail(data, 'Đối soát', 'Admin xác nhận thủ công bằng ô tick; không nhập số tiền/mã giao dịch.');
+    if (order.manualBankConfirmation) detail(data, 'Đối soát', 'Admin duyệt thủ công bằng nút xác nhận nhanh; không yêu cầu nhập số tiền hoặc mã giao dịch.');
     if (order.bankReference) detail(data, 'Mã giao dịch ngân hàng', order.bankReference);
     if (order.receivedAmountVnd != null) detail(data, 'Tiền đã xác nhận', money(order.receivedAmountVnd));
     if (order.adminNote) detail(data, 'Ghi chú', order.adminNote);
@@ -486,39 +486,25 @@
     if (order.status === 'pending_review' || order.status === 'pending_payment') {
       if (order.status === 'pending_payment') container.append(node('p', 'pb-notice pb-notice-warning', 'Người dùng chưa báo đã chuyển khoản. Đơn sẽ vào hàng chờ duyệt sau khi người dùng xác nhận.'));
       const actions = node('div', 'pb-actions');
-      if (order.status === 'pending_review') actions.append(button('Kiểm tra và duyệt', () => showApprove(container, order), 'primary'));
+      if (order.status === 'pending_review') {
+        const approve = button('Xác nhận duyệt và cộng ' + number(order.quantity) + ' phiếu', () => {
+          if (state.busy) return;
+          review(container, approve, {
+            action: 'approve',
+            orderId: order.id,
+            manualApproval: true,
+            note: '',
+            idempotencyKey: keyFor('approve', order.id)
+          }, 'Đã duyệt và cộng ' + number(order.quantity) + ' phiếu.');
+        }, 'primary');
+        actions.append(approve);
+      }
       actions.append(button('Từ chối đơn', () => showReject(container, order), 'danger'));
       container.append(actions);
     }
   }
   function clearForm(container) { container.querySelector('.pb-admin-confirm')?.remove(); }
-  function showApprove(container, order) {
-    if (state.busy) return; clearForm(container);
-    const form = node('form', 'pb-admin-confirm');
-    form.append(node('h3', '', 'Xác nhận tiền vào ngân hàng'), node('p', 'pb-notice', 'Duyệt đơn này sẽ cộng ' + number(order.quantity) + ' phiếu cho ' + (order.customer?.email || 'tài khoản của đơn') + '. Bắt buộc nhập đúng số tiền thực nhận, mã giao dịch ngân hàng và tick xác nhận sau khi đã đối soát.'));
-    const amount = field('Số tiền thực nhận (đồng) · bắt buộc', 'number', 'paReceivedAmount', String(order.amountVnd));
-    amount.input.min = '1'; amount.input.step = '1'; amount.input.inputMode = 'numeric';
-    const reference = field('Mã giao dịch ngân hàng · bắt buộc', 'text', 'paBankReference', 'Nhập mã tham chiếu trên sao kê');
-    reference.input.minLength = 3; reference.input.maxLength = 120; reference.input.autocomplete = 'off';
-    const note = field('Ghi chú (không bắt buộc)', 'textarea', 'paApproveNote'); note.input.required = false; note.input.maxLength = 2000;
-    const confirmed = check('Bắt buộc: Tôi đã tự kiểm tra khoản tiền vào đúng tài khoản nhận và xác nhận đơn này được phép cộng phiếu.', 'paConfirmedBank');
-    const submit = node('button', 'pb-button pb-button-primary', 'Xác nhận duyệt và cộng ' + number(order.quantity) + ' phiếu'); submit.type = 'submit';
-    const actions = node('div', 'pb-actions'); actions.append(submit, button('Hủy', () => { if (!state.busy) clearForm(container); }));
-    form.append(amount.label, reference.label, note.label, confirmed.label, actions);
-    form.addEventListener('submit', async event => {
-      event.preventDefault(); if (state.busy || !form.reportValidity()) return;
-      const amountText = amount.input.value.trim();
-      const received = amountText === '' ? null : Number(amountText);
-      if (received === null || !Number.isSafeInteger(received) || received !== Number(order.amountVnd))
-        return formSay(form, 'Nhập đúng số tiền thực nhận và phải khớp số tiền của đơn.');
-      const bankReference = reference.input.value.trim();
-      if (bankReference.length < 3) return formSay(form, 'Nhập mã giao dịch ngân hàng ít nhất 3 ký tự.');
-      await review(form, submit, { action: 'approve', orderId: order.id, receivedAmountVnd: received,
-        bankReference, note: note.input.value.trim(), confirmedBankTransfer: confirmed.input.checked,
-        idempotencyKey: keyFor('approve', order.id) }, 'Đã duyệt và cộng ' + number(order.quantity) + ' phiếu.');
-    });
-    container.append(form); amount.input.focus();
-  }
+
   function showReject(container, order) {
     if (state.busy) return; clearForm(container);
     const form = node('form', 'pb-admin-confirm');
