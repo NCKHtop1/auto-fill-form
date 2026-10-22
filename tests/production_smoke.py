@@ -17,7 +17,7 @@ from motion_ui_browser import assert_hero_quality, hero_asset_inventory, assert_
 
 BASE = "https://www.pandastudy.info.vn"
 APEX = "https://pandastudy.info.vn"
-EXPECTED = "2026-10-21-panda-no-clip-v11"
+EXPECTED = "2026-10-22-panda-static-oneclick-v13"
 OUT = Path("qa-artifacts")
 OUT.mkdir(parents=True, exist_ok=True)
 
@@ -77,9 +77,9 @@ wait_until_deployed()
 
 # Presentation assets for the release must be served from the canonical domain.
 for asset_path, expected_type, marker in [
-    ("/motion-ui.css?v=20261021e", "text/css", b"hero-scene"),
+    ("/motion-ui.css?v=20261022-panda-v13", "text/css", b"hero-scene"),
     ("/motion-ui.js?v=20261020f", "javascript", b"motion-ready"),
-    ("/assets/hero-panda-erase-v10.jpg", "image/jpeg", b"\xff\xd8\xff"),
+    ("/assets/hero-cinematic-v4-1536.webp", "image/webp", b"RIFF"),
 ]:
     status, headers, body = no_redirect(BASE + asset_path)
     assert status == 200, (asset_path, status)
@@ -88,7 +88,7 @@ for asset_path, expected_type, marker in [
 # Every responsive WebP candidate is fetched, decoded and checked against its
 # own quality/transfer budget in the browser section below. Do not keep checking
 # an obsolete 600px asset after the page has moved to a sharper srcset.
-print("POST_DEPLOY_PASS cinematic V5 CSS/JS release assets served", flush=True)
+print("POST_DEPLOY_PASS cinematic V13 CSS/JS release assets served", flush=True)
 
 # Canonical hostname.
 status, headers, _ = no_redirect(APEX + "/")
@@ -242,11 +242,8 @@ with sync_playwright() as p:
         assert page.locator('script[src*="xlsx@0.18.5"]').count() == 0
         assert page.locator(".steps-strip a").count() == 6
         assert page.locator(".hero-cinematic").count() == 1
-        assert page.locator(".hero-panda-float").count() == 1
-        assert page.locator(".hero-panda-erase").count() == 1
-        assert "psPandaFloatV11" in page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
-        assert page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).clipPath") == "none"
-        assert page.locator(".hero-panda-float").evaluate("el => (getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage).split("radial-gradient").length - 1") >= 6
+        assert page.locator(".hero-panda-float").count() == 0
+        assert page.locator(".hero-panda-erase").count() == 0
         hero_image = page.locator(".hero-scene")
         page.wait_for_function(
             "document.querySelector('.hero-scene').complete && document.querySelector('.hero-scene').naturalWidth > 0",
@@ -337,10 +334,8 @@ with sync_playwright() as p:
     reduced_page.goto(BASE + "/index.html?qa_revision=" + EXPECTED + "#home", wait_until="domcontentloaded", timeout=30000)
     reduced_page.wait_for_function("document.body.dataset.authenticated === 'true'")
     assert reduced_page.locator(".hero-scene").evaluate("el => getComputedStyle(el).animationName") == "none"
-    assert reduced_page.locator(".hero-panda-float").count() == 1
-    assert reduced_page.locator(".hero-panda-erase").count() == 1
-    assert reduced_page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName") == "none"
-    assert reduced_page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).transform") == "none"
+    assert reduced_page.locator(".hero-panda-float").count() == 0
+    assert reduced_page.locator(".hero-panda-erase").count() == 0
     assert reduced_page.locator(".hero-art").evaluate("el => getComputedStyle(el).transform") == "none"
     assert not reduced_errors, reduced_errors
     reduced_page.screenshot(path=str(OUT / "production-cinematic-reduced.png"), full_page=False)
