@@ -71,6 +71,18 @@
           login(), node('p', 'pb-small', 'Nếu cần, kết nối lại bằng tài khoản quản trị đã được cấp quyền.'));
       } else {
         session.append(node('strong', '', 'Quản trị viên: ' + profile.user.email), node('p', 'pb-small', 'Mọi quyết định duyệt, từ chối và xử lý phiếu chờ đều được ghi lại.'));
+        const warnings = new Set(Array.isArray(profile.warnings) ? profile.warnings : []);
+        if (warnings.has('email_notifications')) {
+          session.append(node('p', 'pb-notice pb-notice-error',
+            'Email báo có người nạp đang TẮT vì máy chủ chưa có cấu hình nhà cung cấp gửi mail. Đơn vẫn vào hàng chờ duyệt nhưng quản trị viên sẽ không nhận email cho tới khi cấu hình được bổ sung.'));
+        } else if (warnings.has('notification_recipients')) {
+          session.append(node('p', 'pb-notice pb-notice-error',
+            'Email báo có người nạp đang TẮT vì chưa có địa chỉ quản trị hợp lệ để nhận thông báo.'));
+        }
+        if (warnings.has('notification_worker')) {
+          session.append(node('p', 'pb-notice pb-notice-warning',
+            'Tác vụ gửi lại email chưa có secret hợp lệ. Email gửi ngay vẫn được thử, nhưng các lần retry có thể không chạy.'));
+        }
       }
       return !!allowed;
     } catch (error) {
