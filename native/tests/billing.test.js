@@ -128,10 +128,12 @@ test('financial infrastructure fails closed while optional email can degrade saf
   const notificationSetting = process.env.BILLING_NOTIFICATION_EMAILS;
   delete process.env.BILLING_NOTIFICATION_EMAILS;
   assert.equal(billing.getConfigStatus().configured,true);
-  assert.ok(billing.getConfigStatus().warnings.includes('notification_recipients'));
+  assert.ok(!billing.getConfigStatus().warnings.includes('notification_recipients'));
+  assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[admin.email,admin2.email]);
   process.env.BILLING_NOTIFICATION_EMAILS = `${admin.email},invalid-address`;
   assert.equal(billing.getConfigStatus().configured,true);
-  assert.ok(billing.getConfigStatus().warnings.includes('notification_recipients'));
+  assert.ok(!billing.getConfigStatus().warnings.includes('notification_recipients'));
+  assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[admin.email,admin2.email]);
   process.env.BILLING_NOTIFICATION_EMAILS = notificationSetting;
   assert.deepEqual(billing.NOTIFICATION_RECIPIENTS,[admin.email,admin2.email]);
 

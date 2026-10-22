@@ -44,12 +44,14 @@ function validBank(bank) {
     name(bank.bankName,80) && name(bank.accountName,120);
 }
 function notificationRecipients() {
-  const recipients = String(process.env.BILLING_NOTIFICATION_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
-  // Recipients are persisted to the durable outbox even when the mail
-  // provider is temporarily unconfigured. This keeps top-up alerts recoverable
-  // and lets an admin retry delivery after the transport is restored.
-  if (!recipients.length || recipients.length > 10 || !recipients.every(validEmail)) return Object.freeze([]);
-  return Object.freeze([...new Set(recipients)]);
+  const configured = String(process.env.BILLING_NOTIFICATION_EMAILS || '').toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
+  // Payment administrators are always notification recipients. Keep the
+  // optional notification list as an additive alias so a configuration drift
+  // cannot silently exclude one of the authorized admins.
+  const validConfigured = configured.length <= 10 && configured.every(validEmail) ? configured : [];
+  const recipients = [...new Set([...adminEmails(), ...validConfigured])];
+  if (!recipients.length || recipients.length > 10) return Object.freeze([]);
+  return Object.freeze(recipients);
 }
 function siteOrigin() {
   const site = process.env.BILLING_PUBLIC_SITE_URL || process.env.PUBLIC_SITE_URL;
@@ -250,12 +252,58 @@ function orderView(row) {
   };
 }
 
+async function notifyNewAccount(account) {
+  if (!account || !notificationTransportConfigured()) return false;
+  if (process.env.NODE_ENV === 'test' && process.env.BILLING_TEST_SEND_ACCOUNT_NOTIFICATIONS !== 'true') return false;
+  const recipients = notificationRecipients();
+  if (!recipients.length) return false;
+  const adminUrl = siteOrigin() ? new URL('/admin-topups.html',siteOrigin()).toString() : '';
+  const createdAt = account.created_at ? new Date(account.created_at).toLocaleString('vi-VN',{timeZone:'Asia/Ho_Chi_Minh'}) : '';
+  const text = [
+    'PandaStudy vừa ghi nhận một tài khoản mới.',
+    'Email: ' + account.email,
+    'Mã tài khoản: ' + account.id,
+    createdAt ? 'Thời điểm tạo: ' + createdAt : '',
+    adminUrl ? 'Mở trang quản trị: ' + adminUrl : ''
+  ].filter(Boolean).join('\n\n');
+  const from = String(process.env.BILLING_EMAIL_FROM || '').trim();
+  const tasks = recipients.map(async recipient => {
+    const suffix = crypto.createHash('sha256').update(recipient).digest('hex').slice(0,12);
+    try {
+      const response = await fetch('https://api.resend.com/emails',{
+        method:'POST',
+        headers:{
+          Authorization:`Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type':'application/json',
+          'Idempotency-Key':`pandastudy-account-${account.id}-${suffix}`
+        },
+        body:JSON.stringify({
+          from,to:[recipient],
+          subject:'[PandaStudy] Có tài khoản mới đăng ký',
+          text
+        }),
+        signal:AbortSignal.timeout(5000)
+      });
+      return response.ok;
+    } catch (_) {
+      return false;
+    }
+  });
+  const delivered = await Promise.all(tasks);
+  if (delivered.some(ok => !ok)) console.error('[PandaStudy account notification] DELIVERY_FAILED');
+  return delivered.every(Boolean);
+}
+
 async function ensureAccount(identity) {
   const current = verifiedIdentity(identity);
+  const proposedId = crypto.randomUUID();
   const result = await db.query(`INSERT INTO ps_billing_customers(id,google_sub,email)
     VALUES($1,$2,$3) ON CONFLICT(google_sub) DO UPDATE SET email=EXCLUDED.email,updated_at=now()
-    RETURNING *`, [crypto.randomUUID(), current.sub, current.email]);
-  return result.rows[0];
+    RETURNING *, id=$1::uuid AS was_inserted`, [proposedId, current.sub, current.email]);
+  const account = result.rows[0];
+  if (account.was_inserted) await notifyNewAccount(account);
+  delete account.was_inserted;
+  return account;
 }
 async function ensureCustomer(identity) {
   assertReady();

@@ -222,19 +222,37 @@
   }
   async function openPurchase(options) {
     createModal();
-    const profile = await refresh();
-    if (!profile?.billingEnabled) return false;
     state.previousFocus = document.activeElement;
     if (!state.open) { oldOverflow = document.body.style.overflow; document.body.style.overflow = 'hidden'; }
-    state.open = true; overlay.hidden = false;
+    state.open = true;
+    overlay.hidden = false;
+
     if (options?.showOrders) state.order = null;
     if (options?.packageId && packageById(options.packageId)) {
       state.selectedPackageId = options.packageId;
       state.intent = null;
       state.order = null;
     }
+
+    // Open the dialog immediately. Network refreshes happen after the modal is
+    // visible so "Xem các gói" never feels blocked by a 1–2 second API call.
+    if (state.profile) renderModal();
+    else {
+      content.replaceChildren(node('p', 'pb-notice', 'Đang tải các gói và số dư tài khoản…'));
+      message = node('div', 'pb-status');
+      message.setAttribute('aria-live', 'polite');
+      message.setAttribute('aria-atomic', 'true');
+      content.append(message);
+    }
+    overlay.querySelector('.pb-close')?.focus();
+
+    const profile = await refresh();
+    if (!state.open) return false;
+    if (!profile?.billingEnabled) {
+      renderModal();
+      return false;
+    }
     renderModal();
-    overlay.querySelector('.pb-close').focus();
     if (profile.configured && profile.signedIn) {
       await loadOrders();
       if (options?.showOrders) document.getElementById('pbOrderHistory')?.scrollIntoView({ block: 'nearest' });

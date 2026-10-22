@@ -813,3 +813,53 @@ body[data-panda-page]:not([data-panda-page="home"]) .ps-tone-bridge,
 @keyframes psPandaFloatV11{0%,100%{transform:translate3d(0,var(--panda-float-down),0)}50%{transform:translate3d(0,var(--panda-float-up),0)}}
 @media(max-width:650px){.hero-art .hero-panda-float{--panda-float-up:-5px;--panda-float-down:4px}}
 @media(prefers-reduced-motion:reduce){.hero-art .hero-panda-float{animation:none!important;transform:none!important}}
+
+
+/* Panda V12: use the purpose-built transparent mascot asset instead of masking
+   a duplicate of the entire cinematic frame. This keeps every ear, paw and
+   boot inside the moving layer at all animation positions. */
+.hero-art .hero-panda-erase,
+.hero-art .hero-panda-float {
+  position: absolute;
+  left: 19.53125%;
+  top: 21.41204%;
+  width: 33.85417%;
+  height: 53.81944%;
+  max-width: none;
+  object-fit: fill;
+  object-position: center;
+  border-radius: 0;
+  pointer-events: none;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+  -webkit-mask-image: none !important;
+  mask-image: none !important;
+}
+.hero-art .hero-panda-erase {
+  z-index: 4;
+  background: none;
+  transform: none;
+  animation: none;
+}
+.hero-art .hero-panda-float {
+  --panda-float-up: -12px;
+  --panda-float-down: 8px;
+  z-index: 6;
+  transform: translate3d(0,var(--panda-float-down),0);
+  transform-origin: 50% 50%;
+  animation: psPandaFloatV12 4.2s cubic-bezier(.45,0,.55,1) infinite;
+  will-change: transform;
+}
+@keyframes psPandaFloatV12 {
+  0%,100% { transform: translate3d(0,var(--panda-float-down),0); }
+  50% { transform: translate3d(0,var(--panda-float-up),0); }
+}
+@media (max-width:650px) {
+  .hero-art .hero-panda-float {
+    --panda-float-up: -8px;
+    --panda-float-down: 5px;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .hero-art .hero-panda-float { animation:none !important; transform:none !important; }
+}
