@@ -1,8 +1,6 @@
 name: Retry PandaStudy payment notifications
 
 on:
-  schedule:
-    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -13,8 +11,8 @@ concurrency:
 
 jobs:
   retry:
-    # Enable only after the real database, sender and target deployment pass UAT.
-    if: vars.PANDASTUDY_BILLING_LIVE == 'true'
+    # Manual fallback only. Production retries are scheduled by Vercel Cron
+    # in vercel.json so they run in the same environment as the billing API.
     runs-on: ubuntu-latest
     timeout-minutes: 3
     steps:
@@ -26,7 +24,7 @@ jobs:
           const secret = process.env.BILLING_WORKER_SECRET || '';
           if (secret.length < 32) throw new Error('Billing worker secret is not configured.');
           (async () => {
-            const response = await fetch('https://auto-fill-form-liard.vercel.app/api/billing-notifications', {
+            const response = await fetch('https://www.pandastudy.info.vn/api/billing-notifications', {
               headers: { Authorization: 'Bearer ' + secret },
               signal: AbortSignal.timeout(75000)
             });
@@ -34,7 +32,7 @@ jobs:
             const result = await response.json();
             if (result.ok !== true) throw new Error('Billing worker did not confirm completion.');
             console.log(JSON.stringify({ claimed: result.claimed, sent: result.sent,
-              retry: result.retry, failed: result.failed }));
+              retry: result.retry, failed: result.failed, paused: result.paused || false }));
             if (result.failed > 0) throw new Error('Some notifications require administrator review.');
           })().catch(error => { console.error(error.message); process.exitCode = 1; });
           NODE
