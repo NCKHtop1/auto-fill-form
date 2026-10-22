@@ -2,7 +2,7 @@
 (function () {
   'use strict';
   const $ = id => document.getElementById(id);
-  const state = { profile: null, orders: [], operations: [], users: [], metrics: null, commerce: null, selected: null,
+  const state = { profile: null, orders: [], operations: [], users: [], metrics: null, commerce: null, selected: null, selectedUser: null,
     loading: false, usersLoading: false, metricsLoading: false, commerceLoading: false, busy: false,
     initialOrder: new URLSearchParams(location.search).get('orderId'), keys: new Map() };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Đã từ chối' };
@@ -355,33 +355,69 @@
   function renderUsers() {
     const container = $('paUsers'); container.replaceChildren();
     if (!state.users.length) {
+      state.selectedUser = null;
       container.append(node('p', 'pb-admin-empty', 'Chưa có tài khoản phù hợp.'));
       return;
     }
-    const list = node('div', 'pb-user-grid');
+    if (state.selectedUser && !state.users.some(user => user.id === state.selectedUser.id)) state.selectedUser = null;
+
+    const wrap = node('div','pb-user-table-wrap');
+    const table = node('table','pb-user-table');
+    const thead = node('thead'), head = node('tr');
+    for (const title of ['Email','Quyền','Phiếu khả dụng','Đang chờ nạp','Hoạt động gần nhất','']) head.append(node('th','',title));
+    thead.append(head); table.append(thead);
+    const tbody = node('tbody');
+
     for (const user of state.users) {
-      const card = node('article', 'pb-user-card');
-      const head = node('div', 'pb-user-card-head');
-      const identity = node('div');
-      identity.append(node('strong', 'pb-user-email', user.email || 'Tài khoản chưa có email'));
-      const role = node('span', 'pb-badge ' + (user.role === 'admin' ? 'pb-badge-approved' : ''), user.role === 'admin' ? 'Admin' : 'Người dùng');
-      head.append(identity, role);
-      const stats = node('dl', 'pb-user-stats');
-      detail(stats, 'Mã tài khoản', user.id);
-      detail(stats, 'Tạo tài khoản', date(user.createdAt));
-      detail(stats, 'Hoạt động gần nhất', date(user.lastActivityAt));
-      detail(stats, 'Phiếu khả dụng', number(user.availableCredits));
-      detail(stats, 'Phiếu đang giữ', number(user.reservedCredits));
-      detail(stats, 'Đơn đã duyệt', number(user.approvedOrders) + ' / ' + number(user.totalOrders));
-      detail(stats, 'Đang chờ nạp', number(user.pendingOrders));
-      detail(stats, 'Đã nạp', number(user.purchasedCredits) + ' phiếu · ' + money(user.paidAmountVnd));
-      if (number(user.promotionGrants) > 0) detail(stats, 'Phiếu ưu đãi', '+' + number(user.promotionCredits) + ' phiếu · ' + number(user.promotionGrants) + ' chương trình');
-      detail(stats, 'Lượt đã sử dụng', number(user.consumedOperations));
-      if (number(user.unknownOperations) > 0) detail(stats, 'Lượt cần đối chiếu', number(user.unknownOperations));
-      card.append(head, stats);
-      list.append(card);
+      const tr = node('tr','pb-user-row' + (state.selectedUser?.id===user.id ? ' is-selected' : ''));
+      tr.tabIndex = 0;
+      tr.setAttribute('role','button');
+      tr.setAttribute('aria-label','Xem chi tiết tài khoản ' + (user.email || user.id));
+      tr.append(
+        node('td','pb-user-email',user.email || 'Tài khoản chưa có email'),
+        node('td','',user.role === 'admin' ? 'Admin' : 'Người dùng'),
+        node('td','',number(user.availableCredits)),
+        node('td','',number(user.pendingOrders)),
+        node('td','',date(user.lastActivityAt))
+      );
+      const action = node('td','pb-user-row-action','Xem chi tiết');
+      tr.append(action);
+      const choose = () => {
+        state.selectedUser = state.selectedUser?.id === user.id ? null : user;
+        renderUsers();
+        if (state.selectedUser) document.getElementById('paUserDetail')?.scrollIntoView({block:'nearest'});
+      };
+      tr.addEventListener('click', choose);
+      tr.addEventListener('keydown', event => {
+        if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); choose(); }
+      });
+      tbody.append(tr);
     }
-    container.append(list);
+    table.append(tbody); wrap.append(table); container.append(wrap);
+
+    if (state.selectedUser) {
+      const user = state.selectedUser;
+      const detailBox = node('section','pb-user-detail');
+      detailBox.id='paUserDetail';
+      const head = node('div','pb-user-detail-head');
+      head.append(node('div','',user.email || 'Tài khoản chưa có email'),
+        node('span','pb-badge ' + (user.role === 'admin' ? 'pb-badge-approved' : ''),user.role === 'admin' ? 'Admin' : 'Người dùng'));
+      detailBox.append(head);
+      const stats=node('dl','pb-user-stats pb-user-stats-detail');
+      detail(stats,'Mã tài khoản',user.id);
+      detail(stats,'Tạo tài khoản',date(user.createdAt));
+      detail(stats,'Hoạt động gần nhất',date(user.lastActivityAt));
+      detail(stats,'Phiếu khả dụng',number(user.availableCredits));
+      detail(stats,'Phiếu đang giữ',number(user.reservedCredits));
+      detail(stats,'Đơn đã duyệt',number(user.approvedOrders)+' / '+number(user.totalOrders));
+      detail(stats,'Đang chờ nạp',number(user.pendingOrders));
+      detail(stats,'Đã nạp',number(user.purchasedCredits)+' phiếu · '+money(user.paidAmountVnd));
+      if (number(user.promotionGrants) > 0) detail(stats,'Phiếu ưu đãi','+'+number(user.promotionCredits)+' phiếu · '+number(user.promotionGrants)+' chương trình');
+      detail(stats,'Lượt đã sử dụng',number(user.consumedOperations));
+      if (number(user.unknownOperations)>0) detail(stats,'Lượt cần đối chiếu',number(user.unknownOperations));
+      detailBox.append(stats);
+      container.append(detailBox);
+    }
   }
 
   function renderOrders() {
