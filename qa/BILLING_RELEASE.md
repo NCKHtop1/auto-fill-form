@@ -1,27 +1,53 @@
 # PandaStudy — kế hoạch phát hành và bằng chứng UAT thanh toán
 
-Ngày kiểm tra: **17/10/2026**. Nhánh: `feat/pandastudy-manual-topups`.
+Lập ban đầu: **17/10/2026**. Đối chiếu mã nguồn: **20/10/2026 (UTC+7)**, `main` tại `612c89121c40bcbd176941ad4323e3386caf1974`.
 
-Baseline production đã đối chiếu: `6dd119bc23c125e9b629c2ba28c1a84e8406d04e`, repository `NCKHtop1/auto-fill-form`, Vercel project `auto-fill-form`, root directory `native`, domain `https://auto-fill-form-liard.vercel.app`.
+Baseline production lịch sử ngày 17/10 (không phải xác nhận deployment hiện tại): `6dd119bc23c125e9b629c2ba28c1a84e8406d04e`, repository `NCKHtop1/auto-fill-form`, Vercel project `auto-fill-form`, root directory `native`, domain `https://auto-fill-form-liard.vercel.app`.
 
 ## 1. Trạng thái và quyết định phát hành
 
-**Mã triển khai và UAT cục bộ đã hoàn tất. Chưa đủ điều kiện bật thanh toán production.** Các điều kiện còn thiếu là PostgreSQL production, dịch vụ email với sender đã xác minh, QR được phép công bố trên website, worker đã cấu hình và UAT qua các tài khoản/dịch vụ thật. Không coi dữ liệu giả lập hoặc database UAT cục bộ là bằng chứng đã nhận tiền/gửi email thật.
+**Mã đã merge; chưa có bằng chứng trong lần đối chiếu này để kết luận production sẵn sàng hoặc thu phí đã bật.**
+- [PR #12](https://github.com/NCKHtop1/auto-fill-form/pull/12) merge ngày 18/10/2026, commit `8090f58011be9fd1796165c08e47953ff243ad19`.
+- [PR #14](https://github.com/NCKHtop1/auto-fill-form/pull/14) merge ngày 19/10/2026, commit `e7292fcbd6213cd5a7f6e48c508cf65f0e5b0366`.
+- Yêu cầu “không merge” ngày 17/10 là lịch sử, được thay bằng gate trước khi mở thu phí ở mục 7. Merge, deploy, cấu hình runtime và GO là bốn trạng thái riêng. Git integration có thể tự deploy nhưng không chứng minh UAT đã đạt.
+- Phiên này chỉ đối chiếu repository; không đọc secrets, đổi cờ, migrate database, chuyển tiền, duyệt đơn hay ghi Google Form thật. Các bằng chứng kiểm thử cũ ở mục 6 không được nâng thành bằng chứng production.
 
-Không merge vào `main` trước các gate bên dưới: Git integration có thể tự đưa commit mới lên production. Cờ `BILLING_ENABLED` mặc định tắt; không bật thu tiền khi chưa có hạ tầng và bằng chứng UAT đích.
+### Phân loại điều kiện
 
-Đã rà soát độc lập theo ba phạm vi backend, giao diện/sản phẩm và hệ thống. Đây là đánh giá kỹ thuật bằng các nhánh công việc AI, không phải biên bản phê duyệt của nhân sự công ty.
+| Điều kiện | Mã nguồn hiện tại | Gate vận hành / quyết định |
+|---|---|---|
+| Billing và mua mới | `assertReady()` yêu cầu `BILLING_ENABLED=true` và đủ cấu hình bắt buộc; tạo đơn còn yêu cầu `BILLING_TOPUPS_PAUSED` khác `true` | Chủ dự án phê duyệt cửa sổ UAT và GO riêng; không tự bật cờ |
+| Cấu hình tài chính | `getConfigStatus().missing`: `database`, `administrators`, `bank`, `payment_qr`, `admin_url` | Xác minh database thật, quyền admin, chủ tài khoản ngân hàng, QR được phép công bố và origin đúng |
+| Email thông báo | Thiếu transport/recipients/worker chỉ tạo `warnings`: `email_notifications`, `notification_recipients`, `notification_worker` | Chủ dự án chọn email là gate bắt buộc hoặc chấp nhận vận hành qua dashboard với người trực, tần suất kiểm tra và xử lý tồn đọng; chưa quyết định thì chưa GO |
+| Email danh tính Google | `sub`, email hợp lệ và `email_verified=true` bắt buộc cho billing; admin phải thuộc `BILLING_ADMIN_EMAILS` | Đây là xác minh danh tính, khác với xác minh sender email thông báo |
+| Database/schema | Có `DATABASE_URL` chỉ là kiểm tra cấu hình; health chỉ kiểm tra migration v1 | Bản hiện tại cần migration 001 và 002, bảng/cột commerce, quyền đọc/ghi, backup/restore được xác minh |
+| OAuth | Client ID/secret, `APP_SESSION_SECRET` ít nhất 32 ký tự; scopes `openid email profile`; API tự kiểm tra quyền | Đăng nhập thật trên canonical domain, callback/session/logout và tài khoản buyer/admin/non-admin phải đạt |
+| Duyệt ngân hàng | Admin đã xác minh + `confirmedBankTransfer=true`; amount/reference là tùy chọn, được kiểm tra khi nhập | Bắt buộc đối soát tiền thực nhận. Chủ dự án chốt chính sách ghi chứng từ; không coi checkbox là bằng chứng ngân hàng |
+| Giá/gói/khuyến mãi | Giá và lượt do server quyết định; catalog có thể sửa trong database; đơn giữ snapshot | Chủ dự án duyệt catalog và campaign thực tế trước GO |
+
+`configured=true` khi billing tắt không có nghĩa hạ tầng sẵn sàng. `/api/billing?action=health` cung cấp `financialConfigReady`, `missing`, `warnings`, `databaseReachable`, `schemaReady`; HTTP 200/`ok:true` không chứng minh tất cả đều đạt. `schemaVersion:1` không xác nhận migration 002. Xem [UAT production](PRODUCTION_UAT.md) để ghi bằng chứng và quyết định.
 
 ## 2. Phạm vi đã chốt
 
-- Giá: **500 đồng/phiếu**. Một dòng được Google báo nhận dùng một phiếu. Giá và số phiếu được kiểm tra phía server.
+- Giá tùy chọn số lượng: **500 đồng/phiếu**, không chiết khấu gói. Một dòng được Google báo nhận dùng một phiếu. Giá và số phiếu được kiểm tra phía server.
 - Mua từ 1 đến 100.000 phiếu; giao diện mặc định 20. Giới hạn mỗi tài khoản: 5 đơn đang chờ, 20 đơn/ngày.
 - Tạo đơn → quét QR/chuyển khoản → người dùng báo đã chuyển → gửi thông báo → quản trị đối soát tiền thực nhận → duyệt và cộng phiếu.
-- Hai người nhận thông báo do chủ dự án chỉ định được cấu hình riêng qua `BILLING_NOTIFICATION_EMAILS`; địa chỉ cá nhân không nằm trong mã nguồn hoặc fixture UAT.
+- Người nhận thông báo tùy chọn do chủ dự án chỉ định qua `BILLING_NOTIFICATION_EMAILS` (1–10 địa chỉ hợp lệ nếu dùng); tách biệt quyền admin. Không mặc định bắt buộc đúng hai người nhận.
 - Ngân hàng, số tài khoản và người thụ hưởng được cấu hình phía server. Giá trị thật và ảnh QR không được đưa vào thay đổi Git này.
 - Duyệt tiền chỉ cập nhật số dư. Người dùng chủ động bấm gửi Form sau đó; không tự chạy hoặc tiếp tục lô đang dừng.
 - Tải file, ghép cột, tạo bảng, kiểm tra, CSV và luồng sáu bước được giữ. Định dạng báo cáo gửi vẫn có đúng năm cột cũ; mã thao tác của lượt có tính phí nằm trong ghi chú.
 - Quyền duyệt tiền độc lập với quyền sử dụng công cụ. Chủ ví lấy từ Google `sub` đã xác minh; email do trình duyệt gửi lên không quyết định chủ ví hoặc quyền admin.
+
+### Bảng giá mặc định và catalog đang vận hành
+
+| ID gói | Lượt | Giá niêm yết (VND) | Giá thanh toán (VND) | Giảm |
+|---|---:|---:|---:|---:|
+| `starter` | 20 | 10.000 | 10.000 | 0% |
+| `popular` | 100 | 50.000 | 45.000 | 10% |
+| `research` | 250 | 125.000 | 110.000 | 12% |
+| `pro` | 500 | 250.000 | 200.000 | 20% |
+
+Đây là seed/fallback trong `native/lib/billing.js` và migration 002, không phải cam kết catalog production chưa bị sửa. Bảng `ps_billing_packages` cho admin sửa tên, lượt, giá, badge, thứ tự, featured/enabled; phải đối chiếu catalog thực tế với bản được chủ dự án duyệt. Đơn đã tạo giữ snapshot giá/lượt/tên gói; sửa catalog không đổi đơn cũ. Doanh thu chỉ gồm đơn approved, không gồm lượt tặng; báo cáo tháng dùng Asia/Ho_Chi_Minh.
 
 ### QR và dữ liệu người nhận
 
@@ -35,10 +61,10 @@ Không merge vào `main` trước các gate bên dưới: Git integration có th
 |---|---|---|
 | `pending_payment` | Đã tạo đơn; chưa báo chuyển | Không |
 | `pending_review` | Người dùng báo đã chuyển, chờ ngân hàng được đối soát | Không |
-| `approved` | Quản trị xác nhận tiền, đúng số tiền và mã giao dịch | Cộng đúng một lần |
+| `approved` | Quản trị xác nhận đã đối soát ngân hàng | Cộng đúng một lần |
 | `rejected` | Không đủ điều kiện duyệt, có lý do | Không |
 
-Ảnh chụp, nút “Tôi đã chuyển khoản” và email không chứng minh ngân hàng đã nhận tiền. Mã giao dịch ngân hàng được ràng buộc duy nhất trên tài khoản nhận để không duyệt cho hai đơn. Duyệt, cập nhật ví, ledger và dấu vết quản trị nằm trong cùng transaction PostgreSQL.
+Ảnh chụp, nút “Tôi đã chuyển khoản” và email không chứng minh ngân hàng đã nhận tiền. Khi nhập mã giao dịch ngân hàng thật, mã chuẩn hóa được ràng buộc duy nhất trên tài khoản nhận. Nếu bỏ trống, mã sinh riêng theo đơn không phát hiện cùng một khoản tiền bị dùng cho hai đơn khác nhau. Số tiền nhập phải khớp đơn; nếu bỏ trống, mã dùng số tiền của đơn. Chính sách vận hành yêu cầu ghi số tiền thực nhận và mã chứng từ khi ngân hàng cung cấp; trường hợp không có mã cần chủ dự án chấp thuận quy trình đối soát thay thế. Nếu yêu cầu hai trường bắt buộc ở cấp API, cần thay đổi mã riêng trước GO; bản cập nhật tài liệu này không thêm ràng buộc đó. Duyệt, cập nhật ví, ledger và dấu vết quản trị nằm trong cùng transaction PostgreSQL.
 
 | Kết quả gửi Form | Xử lý phiếu | Xử lý gửi lại |
 |---|---|---|
@@ -51,7 +77,9 @@ Mỗi operation gắn với người dùng, Form và hash đáp án phía server
 
 Quản trị có thể đối soát operation chưa rõ sau ít nhất 5 phút, phải ghi căn cứ và xác nhận đã kiểm tra. Quyết định hoàn/trừ được lưu và không gọi lại Google. Không tự hết hạn rồi hoàn các lượt chưa rõ vì có thể Google đã nhận.
 
-## 4. Cấu hình và hạ tầng cần hoàn thiện
+## 4. Cấu hình và hạ tầng cần xác minh
+
+Các biến email/recipients/worker dưới đây chỉ bắt buộc cho chế độ email được chọn, không thuộc lỗi tài chính `missing`. Mọi giá trị production vẫn chưa được xác minh trong lần rà soát này.
 
 | Biến/cấu hình | Mục đích |
 |---|---|
@@ -72,23 +100,25 @@ Quản trị có thể đối soát operation chưa rõ sau ít nhất 5 phút, 
 | GitHub secret `PANDASTUDY_BILLING_CRON_SECRET` | Khớp secret worker trên production |
 | GitHub variable `PANDASTUDY_BILLING_LIVE=true` | Bật job retry sau UAT đích; mặc định job không chạy |
 
-Các biến Google OAuth và `APP_SESSION_SECRET` hiện có được tiếp tục sử dụng. Cookie cũ được bổ sung định danh Google theo yêu cầu khi vào billing; không đổi OAuth scopes. UAT preview cần origin và callback OAuth thực sự được cho phép; không vô hiệu hóa bảo vệ deployment để thử.
+Cấu hình OAuth bắt buộc: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `APP_SESSION_SECRET` ít nhất 32 ký tự và `PUBLIC_SITE_URL=https://www.pandastudy.info.vn`. Authorized origin là `https://www.pandastudy.info.vn`, redirect URI là `https://www.pandastudy.info.vn/api/auth/callback`. `BILLING_PUBLIC_SITE_URL` nếu đặt phải phù hợp host phát hành. Cookie cũ được bổ sung định danh Google theo yêu cầu khi vào billing; không đổi OAuth scopes. UAT preview cần origin và callback OAuth thực sự được cho phép; không vô hiệu hóa bảo vệ deployment để thử.
 
-Trong phiên kiểm tra, metadata production chỉ có cấu hình Google/session/site, chưa có database hoặc email. Connector không có thao tác cấp integration; Vercel CLI chưa đăng nhập. Đã tìm thấy lựa chọn Neon free, nhưng chưa tạo tài nguyên, chấp nhận điều khoản hay mua dịch vụ.
+Trong phiên lịch sử ngày 17/10, metadata production chỉ có cấu hình Google/session/site, chưa có database hoặc email. Connector không có thao tác cấp integration; Vercel CLI chưa đăng nhập. Đã tìm thấy lựa chọn Neon free, nhưng chưa tạo tài nguyên, chấp nhận điều khoản hay mua dịch vụ.
 
-Resend với domain thử `resend.dev` chỉ cho gửi đến email chủ tài khoản, nên không đủ để kiểm chứng gửi đến cả hai quản trị viên. Phải dùng sender được phép gửi đến cả hai người nhận. Không đặt API key, connection string hoặc mật khẩu trong chat, GitHub hay file được commit.
+Nếu chọn email làm gate, phải dùng sender được phép gửi tới toàn bộ người nhận đã chỉ định và kiểm chứng inbox thực tế; domain thử hạn chế người nhận không đủ cho UAT nhiều người. Không đặt API key, connection string hoặc mật khẩu trong chat, GitHub hay file được commit.
 
 ## 5. Email và vận hành worker
 
-Đơn và các bản ghi outbox được ghi trước khi thử gửi email; với hai người nhận đã chỉ định, mỗi đơn tạo hai bản ghi. Request báo chuyển khoản thử xử lý tối đa hai email; lỗi provider không làm mất hoặc hoàn tác đơn. Worker dùng lease, khóa bản ghi, payload được giữ nguyên từ lần gửi đầu và idempotency key ổn định.
+Email là hỗ trợ tùy chọn, không phải ủy quyền tài chính. Đơn và outbox cho danh sách người nhận hợp lệ được ghi trước khi thử gửi email; nếu có hai người nhận thì tạo hai bản ghi. Nếu không có người nhận hợp lệ, không có outbox tương ứng để tự phát lại; admin phải theo dõi dashboard. Request báo chuyển khoản thử xử lý tối đa hai email; lỗi provider không làm mất hoặc hoàn tác đơn. Worker dùng lease, khóa bản ghi, payload được giữ nguyên từ lần gửi đầu và idempotency key ổn định.
 
-Workflow `billing-notifications.yml` gọi đúng endpoint production mỗi 5 phút khi cờ repository cho phép. Đây là lịch theo khả năng của GitHub, không phải cam kết email đến trong 5 phút. Scheduled Actions có thể bị trì hoãn, chỉ chạy từ default branch và có thể bị tắt sau thời gian repository công khai không hoạt động. Admin cũng có nút thử gửi lại email lỗi.
+Workflow `billing-notifications.yml` hiện gọi `https://auto-fill-form-liard.vercel.app/api/billing-notifications` mỗi 5 phút khi cờ repository cho phép. Trước khi bật phải xác minh alias cũ trỏ đúng deployment/database và endpoint nhận đúng secret; không suy ra từ canonical domain mới. Đây là lịch theo khả năng của GitHub, không phải cam kết email đến trong 5 phút. Scheduled Actions có thể bị trì hoãn, chỉ chạy từ default branch và có thể bị tắt sau thời gian repository công khai không hoạt động. Admin cũng có nút thử gửi lại email lỗi.
 
 Lần gửi có kết quả chưa rõ quá 23 giờ được giữ để kiểm tra, tránh gửi lại sau cửa sổ idempotency của provider. Trạng thái `sent` ghi nhận provider chấp nhận request; UAT đích phải xác nhận nhận mail thực tế, gồm cả thư rác. Không dùng email để tự duyệt giao dịch.
 
-Không thêm cron Vercel mỗi 5 phút: tài khoản default hiện báo Hobby, còn gói của team/project chưa được xác nhận độc lập. Hobby giới hạn lịch cron một lần/ngày. Job GitHub giữ cờ tắt cho tới khi secret và hạ tầng thật đã sẵn sàng.
+Quyết định lịch sử ngày 17/10 là dùng workflow GitHub thay vì thêm cron Vercel; không suy ra gói dịch vụ hoặc trạng thái job hiện tại từ ghi chép đó. Chỉ bật worker khi chọn dùng email và đã kiểm chứng endpoint, secret, sender cùng hạ tầng đích.
 
-## 6. Bằng chứng kiểm thử
+## 6. Bằng chứng kiểm thử lịch sử ngày 17/10
+
+Các kết quả dưới đây được giữ từ runbook ban đầu, không phải kết quả chạy lại trên commit đối chiếu hiện tại. CI mới cần gắn đúng SHA; PostgreSQL thử nghiệm, email/API mock và browser giả lập không chứng minh UAT production.
 
 | Nhóm | Kết quả | Phạm vi |
 |---|---|---|
@@ -130,18 +160,18 @@ npm run test:postgres
 
 Browser: dùng Python Playwright theo `.github/workflows/tests.yml`; chạy `tests/billing_browser.py`, `tests/qa_browser.py`, `tests/native_smoke.py`, `tests/ux_audit.py`, `tests/smoke.py` từ root. Các test ghi Google thật luôn được tách khỏi test giả lập. Trong môi trường thực hiện lần này, test Google chỉ đọc cần `NODE_USE_ENV_PROXY=1` để dùng proxy mạng; production không cần thay code vì điều đó.
 
-## 7. Trình tự phát hành sau khi có hạ tầng
+## 7. Trình tự và quyết định GO/NO-GO sau merge
 
-1. **Chọn đúng project/database.** Xác nhận project ID `prj_BNL9GBoMnWf4otcPGCG53qIeERcb`, root `native`, commit dự kiến. Cấp PostgreSQL, sender và QR được phép công bố trên website; dùng database/schema UAT riêng, chưa bật thu tiền.
-2. **Migration và kiểm thử database đích.** Chạy migration trên database được chọn; xác nhận schema version 1, đọc/ghi, TLS, sao lưu và khả năng khôi phục. Không nhập số dư giả 1.000.000 của legacy stub thành tiền/phiếu thật.
-3. **UAT bản triển khai đích.** Đăng nhập người mua và cả hai admin, tạo đơn thử, kiểm tra QR bằng app ngân hàng, đối chiếu số tiền/memo, xác nhận cả hai hộp thư nhận thông báo; duyệt và kiểm tra số dư sau tải lại. Lặp nút duyệt phải không cộng thêm.
-4. **UAT gửi có tính phiếu.** Dùng Form bản sao được cấp phép và dữ liệu tổng hợp; gửi một dòng, kiểm tra trang xác nhận/số liệu, trừ đúng một phiếu. Kiểm tra lỗi chắc chắn chưa gửi, kết quả chưa rõ và đối soát. Không thử ghi vào khảo sát thật đang vận hành.
-5. **Kiểm chứng worker.** Cấu hình secret matching, chạy worker bằng quyền hợp lệ và kiểm tra khi thiếu/sai secret bị từ chối. Thử retry trên môi trường UAT, không tạo email giả mang nghĩa tiền đã nhận.
-6. **Gate phát hành.** CI trên đúng commit thành công; bằng chứng UAT dịch vụ thật đầy đủ; không còn lỗi chặn. Chỉ khi đó merge/promote đúng bản đã kiểm tra và bật enforcement. Git integration merge main có thể tự deploy: không merge sớm chỉ để lấy preview.
-7. **Kiểm tra production.** Xác nhận commit/alias, người dùng cũ vẫn import/map/export được, admin truy cập đúng quyền, profile/config sẵn sàng, đơn tồn tại qua reload, mail có link đúng host. Bật biến worker sau kiểm tra.
-8. **Theo dõi sau mở.** Theo dõi lỗi API, outbox retry/failed, đơn chờ và operation unknown. Đối chiếu số dư với tổng delta ledger. Nếu lỗi, áp dụng mục 8; không tự cấp phiếu hoặc gửi lại hàng loạt.
+1. **Chốt bản phát hành và quyền vận hành.** Ghi SHA/deployment/alias, project `auto-fill-form`, root `native`, canonical host `https://www.pandastudy.info.vn`; xác minh project ID thực tế thay vì dùng baseline cũ. Kiểm kê trạng thái cờ và paid credits trước mọi thay đổi. Trước lần thu phí đầu tiên giữ mua mới đóng; nếu đã có thanh toán thật tuyệt đối không tắt enforcement.
+2. **Database.** Chủ dự án chọn database đích; backup trước migration. Người được ủy quyền chạy `npm run migrate:billing` (001 + 002), kiểm tra versions 1/2, bảng/cột/ràng buộc, quyền đọc/ghi, kết nối bảo mật và phục hồi. Không import số dư giả legacy. Dùng database/schema tách biệt cho kiểm thử phá lỗi/cạnh tranh.
+3. **Campaign và giá.** Migration 002 seed `WELCOME_OCT_2026` enabled, 10 lượt, từ 19/10/2026 23:40 đến trước 28/10/2026 00:00 UTC+7. Profile có đăng nhập có thể tạo customer và cấp lượt tặng ngay cả khi billing tắt; không dùng nó như probe chỉ đọc. Chủ dự án phải duyệt campaign/catalog và kế hoạch migration trước khi chạy; không tự sửa dữ liệu trong lần rà soát này.
+4. **OAuth và phân quyền.** UAT A–D trong [PRODUCTION_UAT.md](PRODUCTION_UAT.md): buyer/admin/non-admin, callback, session/logout, sáu bước, wallet, health và schema thực tế.
+5. **Chốt email và chứng từ.** Ghi lựa chọn email bắt buộc hoặc dashboard-only, người trực và thời gian kiểm tra. Nếu email là gate: sender/recipients thật, inbox/spam, retry, worker secret đúng/sai và alias phải qua UAT. Nếu dashboard-only: chứng minh đơn vẫn hiện pending_review, không mất đối soát; đánh dấu kiểm thử gửi mail N/A có phê duyệt, không đánh dấu PASS. Chốt quy trình chứng từ ở mục 3.
+6. **UAT có kiểm soát, cần ủy quyền riêng.** Chủ dự án duyệt người thực hiện, số tiền, cửa sổ, phương án đóng mua mới và Form bản sao. Cờ môi trường hiện tại không giới hạn riêng buyer UAT: mở mua mới có thể mở cho mọi người đăng nhập, phải có biện pháp giới hạn truy cập được phê duyệt trước. Sau đó người được ủy quyền mới thực hiện UAT E/F/H/I, đối soát tiền thật, cộng đúng lượt, kiểm tra lặp, snapshot giá và vòng đời giữ/trừ/hoàn. Không thử lỗi phá dữ liệu hoặc sửa catalog/campaign live chỉ để kiểm thử.
+7. **GO chỉ khi** CI đúng SHA đạt; database 001/002 và backup/restore, OAuth, bank/QR, quyền admin, UAT tiền thật và Form bản sao đạt; catalog/campaign/chứng từ/email được chủ dự án chốt; không còn blocker; biên bản ghi người duyệt, thời gian, môi trường và bằng chứng đã che dữ liệu nhạy cảm. Thiếu bằng chứng hoặc quyết định: **NO-GO cho mở thu phí mới**, không khẳng định production đang tắt.
+8. **Sau GO do người có thẩm quyền thực hiện:** xác minh deployment/cờ, theo dõi đơn chờ, ledger/số dư, operation unknown và outbox nếu dùng. Khi cần dừng mua mới dùng mục 8. Merge tài liệu không cấp phép bật cờ hoặc tạo giao dịch.
 
-Hiện các bước liên quan dịch vụ thật còn mở; chưa có bằng chứng go-live và không có tự động hóa nào âm thầm bật thanh toán sau cuộc trao đổi.
+Lần đối chiếu này chưa xác minh các gate production; giữ trạng thái **chưa đủ bằng chứng để GO**. Không tự động thay đổi cấu hình sau khi tài liệu được merge.
 
 ## 8. Tạm dừng và phục hồi
 
