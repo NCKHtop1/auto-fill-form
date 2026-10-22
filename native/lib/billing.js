@@ -254,6 +254,7 @@ function orderView(row) {
 
 async function notifyNewAccount(account) {
   if (!account || !notificationTransportConfigured()) return false;
+  if (process.env.NODE_ENV === 'test' && process.env.BILLING_TEST_SEND_ACCOUNT_NOTIFICATIONS !== 'true') return false;
   const recipients = notificationRecipients();
   if (!recipients.length) return false;
   const adminUrl = siteOrigin() ? new URL('/admin-topups.html',siteOrigin()).toString() : '';
