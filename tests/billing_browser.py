@@ -158,15 +158,15 @@ def main():
                                query.get("status") == "all" or item["status"] == query.get("status"))]
                     response = {"ok": True, "orders": orders, "pendingOperations": state["operations"]}
             elif data["action"] == "approve":
-                assert data["confirmedBankTransfer"] is True
+                assert data.get("manualApproval") is True
+                assert data.get("receivedAmountVnd") is None
+                assert data.get("bankReference") is None
                 order = next(item for item in state["orders"] if item["id"] == data["orderId"])
-                assert data.get("receivedAmountVnd") == order["amountVnd"]
-                assert isinstance(data.get("bankReference"), str) and len(data["bankReference"].strip()) >= 3
                 assert order["status"] == "pending_review"
-                order["bankReference"] = data["bankReference"]
-                order["receivedAmountVnd"] = data["receivedAmountVnd"]
-                order["manualBankConfirmation"] = False
-                order.update(status="approved", adminNote=data["note"])
+                order.pop("bankReference", None)
+                order.pop("receivedAmountVnd", None)
+                order["manualBankConfirmation"] = True
+                order.update(status="approved", adminNote=data.get("note", ""))
                 # Match the mutation API, whose returned order need not include customer metadata.
                 response = {"ok": True, "order": {key: value for key, value in order.items() if key != "customer"}}
             elif data["action"] == "reject":
@@ -395,23 +395,19 @@ def main():
             admin.get_by_role("button", name="Xóa lọc", exact=True).click()
             admin.get_by_text("Danh sách gần nhất: 2 tài khoản", exact=False).wait_for()
             print("PASS admin accounts: persistent Google users, balances, roles and search visible only to admin")
-            admin.get_by_role("button", name="Kiểm tra và duyệt", exact=True).click()
-            assert admin.locator("#paReceivedAmount").get_attribute("required") is not None
-            assert admin.locator("#paBankReference").get_attribute("required") is not None
-            assert admin.locator("#paConfirmedBank").get_attribute("required") is not None
-            admin.get_by_role("button", name="Xác nhận duyệt và cộng 20 phiếu", exact=True).click()
-            assert not action_calls("approve")
-            admin.locator("#paReceivedAmount").fill("10000")
-            admin.locator("#paBankReference").fill("BANK-UAT-001")
-            admin.locator("#paConfirmedBank").check()
+            assert admin.locator("#paReceivedAmount").count() == 0
+            assert admin.locator("#paBankReference").count() == 0
+            assert admin.locator("#paConfirmedBank").count() == 0
             admin.get_by_role("button", name="Xác nhận duyệt và cộng 20 phiếu", exact=True).click()
             admin.get_by_text("Đã duyệt và cộng 20 phiếu.", exact=True).wait_for()
             assert len(action_calls("approve")) == 1
-            assert action_calls("approve")[0]["data"]["receivedAmountVnd"] == 10000
-            assert action_calls("approve")[0]["data"]["bankReference"] == "BANK-UAT-001"
+            assert action_calls("approve")[0]["data"]["manualApproval"] is True
+            assert action_calls("approve")[0]["data"].get("receivedAmountVnd") is None
+            assert action_calls("approve")[0]["data"].get("bankReference") is None
             assert USER["email"] in admin.locator("#paDetail").inner_text()
+            assert "Admin duyệt thủ công bằng nút xác nhận nhanh" in admin.locator("#paDetail").inner_text()
             admin.screenshot(path=str(ARTIFACTS / "billing-admin-desktop.png"), full_page=True)
-            print("PASS admin approval: exact amount, reference and explicit confirmation; customer preserved")
+            print("PASS admin approval: one click, no required bank fields; customer preserved")
 
             admin.locator("#paOrders button").first.click()
             admin.get_by_role("button", name="Từ chối đơn", exact=True).click()
@@ -439,7 +435,7 @@ def main():
 
             admin.locator("#paFilter").select_option("pending_payment")
             admin.locator("#paOrders button").first.click()
-            assert admin.get_by_role("button", name="Kiểm tra và duyệt", exact=True).count() == 0
+            assert admin.get_by_role("button", name="Xác nhận duyệt và cộng 20 phiếu", exact=True).count() == 0
             assert "Người dùng chưa báo đã chuyển khoản" in admin.locator("#paDetail").inner_text()
             assert not any(call["path"] == "/api/qa-submit" for call in state["calls"])
 
