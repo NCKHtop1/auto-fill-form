@@ -503,20 +503,27 @@ async function beginAdminAction(client, actor, action, targetId, key, payload, e
 async function approveOrder(identity, input) {
   requireAdmin(identity);
   const orderId = uuid(input?.orderId), key = requestKey(input?.idempotencyKey);
-  if (input.confirmedBankTransfer !== true)
-    fail(400,'BANK_CONFIRMATION_REQUIRED','Hãy tick xác nhận đã tự kiểm tra khoản tiền vào trước khi duyệt.');
+  const manualApproval = input?.manualApproval === true;
 
   const suppliedReference = typeof input?.bankReference === 'string' ? input.bankReference.trim() : '';
-  if (!suppliedReference)
-    fail(400,'BANK_REFERENCE_REQUIRED','Nhập mã giao dịch ngân hàng đã đối soát trước khi duyệt.');
-  if (suppliedReference.length > 120 || suppliedReference.length < 3)
-    fail(400,'INVALID_BANK_REFERENCE','Mã giao dịch ngân hàng cần từ 3 đến 120 ký tự.');
   const suppliedAmount = input?.receivedAmountVnd === null || input?.receivedAmountVnd === undefined || input?.receivedAmountVnd === ''
     ? null : input.receivedAmountVnd;
-  if (suppliedAmount === null)
-    fail(400,'RECEIVED_AMOUNT_REQUIRED','Nhập số tiền thực nhận đã đối soát trước khi duyệt.');
-  if (!Number.isSafeInteger(suppliedAmount) || suppliedAmount <= 0)
-    fail(400,'INVALID_RECEIVED_AMOUNT','Số tiền thực nhận phải là số nguyên dương.');
+
+  // Normal evidence-based approval remains supported for API/back-office use.
+  // The admin UI may explicitly choose manualApproval for the requested
+  // one-click workflow; that decision is still audited and idempotent.
+  if (!manualApproval) {
+    if (input.confirmedBankTransfer !== true)
+      fail(400,'BANK_CONFIRMATION_REQUIRED','Hãy xác nhận đã tự kiểm tra khoản tiền vào trước khi duyệt.');
+    if (!suppliedReference)
+      fail(400,'BANK_REFERENCE_REQUIRED','Nhập mã giao dịch ngân hàng đã đối soát trước khi duyệt.');
+    if (suppliedReference.length > 120 || suppliedReference.length < 3)
+      fail(400,'INVALID_BANK_REFERENCE','Mã giao dịch ngân hàng cần từ 3 đến 120 ký tự.');
+    if (suppliedAmount === null)
+      fail(400,'RECEIVED_AMOUNT_REQUIRED','Nhập số tiền thực nhận đã đối soát trước khi duyệt.');
+    if (!Number.isSafeInteger(suppliedAmount) || suppliedAmount <= 0)
+      fail(400,'INVALID_RECEIVED_AMOUNT','Số tiền thực nhận phải là số nguyên dương.');
+  }
 
   const note = textNote(input.note);
   const actor = await ensureCustomer(identity);
@@ -526,16 +533,22 @@ async function approveOrder(identity, input) {
       if (!selected.rowCount) fail(404,'ORDER_NOT_FOUND','Không tìm thấy yêu cầu nạp.');
       const order = selected.rows[0];
 
-      if (suppliedAmount !== null && number(order.amount_vnd) !== suppliedAmount)
-        fail(409,'AMOUNT_MISMATCH','Số tiền thực nhận đã nhập không khớp yêu cầu. Có thể sửa lại hoặc để trống rồi xác nhận bằng ô tick.');
+      if (!manualApproval && number(order.amount_vnd) !== suppliedAmount)
+        fail(409,'AMOUNT_MISMATCH','Số tiền thực nhận đã nhập không khớp yêu cầu.');
 
-      const reference = suppliedReference;
-      const referenceNorm = suppliedReference.toUpperCase().replace(/\s+/g,'');
-      const effectiveAmount = suppliedAmount;
+      const reference = manualApproval ? 'MANUAL_CONFIRMATION:' + orderId : suppliedReference;
+      const referenceNorm = reference.toUpperCase().replace(/\s+/g,'');
+      const effectiveAmount = manualApproval ? number(order.amount_vnd) : suppliedAmount;
 
-      await beginAdminAction(client,actor,'approve',orderId,key,
-        {action:'approve',orderId,bankReference:suppliedReference || null,
-          receivedAmountVnd:suppliedAmount,note,confirmedBankTransfer:true},note);
+      await beginAdminAction(client,actor,'approve',orderId,key,{
+        action:'approve',
+        orderId,
+        manualApproval,
+        bankReference:manualApproval ? null : suppliedReference,
+        receivedAmountVnd:manualApproval ? null : suppliedAmount,
+        note,
+        confirmedBankTransfer:manualApproval ? false : true
+      },note);
 
       if (order.status === 'approved') {
         const payment = await client.query('SELECT reference_norm FROM ps_billing_bank_payments WHERE order_id=$1',[orderId]);
