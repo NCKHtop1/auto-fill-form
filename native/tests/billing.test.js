@@ -372,6 +372,27 @@ test('admin approval requires checked bank evidence, exact amount and transactio
   assert.equal(listed.receivedAmountVnd,order.amountVnd);
 });
 
+test('admin one-click manual approval needs no bank fields and remains idempotent',async () => {
+  const order=await pending(6);
+  const first=await billing.approveOrder(admin,{orderId:order.id,manualApproval:true,note:'',idempotencyKey:key('manual-approve')});
+  assert.equal(first.status,'approved');
+  assert.equal((await billing.getProfile(buyer)).availableCredits,6);
+
+  const payment=(await db.query('SELECT reference_original,amount_vnd FROM ps_billing_bank_payments WHERE order_id=$1',[order.id])).rows[0];
+  assert.equal(payment.reference_original,'MANUAL_CONFIRMATION:'+order.id);
+  assert.equal(Number(payment.amount_vnd),order.amountVnd);
+
+  const listed=(await billing.listAdminTopups(admin,{status:'approved'})).orders.find(item=>item.id===order.id);
+  assert.equal(listed.manualBankConfirmation,true);
+  assert.equal(Object.hasOwn(listed,'bankReference'),false);
+  assert.equal(Object.hasOwn(listed,'receivedAmountVnd'),false);
+
+  const replay=await billing.approveOrder(admin,{orderId:order.id,manualApproval:true,note:'',idempotencyKey:key('manual-replay')});
+  assert.equal(replay.status,'approved');
+  assert.equal((await billing.getProfile(buyer)).availableCredits,6);
+  assert.equal((await db.query("SELECT * FROM ps_billing_ledger WHERE kind='topup' AND source_id=$1",[order.id])).rowCount,1);
+});
+
 test('admin user directory exposes persistent Google accounts without raw Google subject',async () => {
   await billing.getProfile(buyer);
   await billing.getProfile(admin);
