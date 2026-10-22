@@ -289,28 +289,28 @@ def main():
             assert page.locator(".hero-panda-float").count() == 1
             assert page.locator(".hero-panda-erase").count() == 1
             panda_animation = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).animationName")
-            assert "psPandaFloatV11" in panda_animation, panda_animation
-            erase_bg = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).backgroundImage")
-            assert "hero-panda-erase-v10.jpg" in erase_bg, erase_bg
+            assert "psPandaFloatV12" in panda_animation, panda_animation
+            assert "hero-panda-float-v8.webp" in page.locator(".hero-panda-float").get_attribute("src")
+            assert "hero-panda-erase-v8.webp" in page.locator(".hero-panda-erase").get_attribute("src")
             panda_clip = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).clipPath")
             erase_clip = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).clipPath")
             panda_mask = page.locator(".hero-panda-float").evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
             erase_mask = page.locator(".hero-panda-erase").evaluate("el => getComputedStyle(el).webkitMaskImage || getComputedStyle(el).maskImage")
             assert panda_clip == "none", panda_clip
             assert erase_clip == "none", erase_clip
-            assert panda_mask.count("radial-gradient") >= 6, panda_mask
-            assert "radial-gradient" in erase_mask, erase_mask
+            assert panda_mask == "none", panda_mask
+            assert erase_mask == "none", erase_mask
             panda = page.locator(".hero-panda-float")
             panda.evaluate("""el => { const a=el.getAnimations()[0]; a.pause(); a.currentTime=0; }""")
             low_box = panda.bounding_box()
             page.screenshot(path=str(OUT / "panda-float-low-1440.png"), full_page=False)
-            panda.evaluate("""el => { const a=el.getAnimations()[0]; a.currentTime=1800; }""")
+            panda.evaluate("""el => { const a=el.getAnimations()[0]; a.currentTime=2100; }""")
             high_box = panda.bounding_box()
             page.screenshot(path=str(OUT / "panda-float-high-1440.png"), full_page=False)
             assert low_box and high_box and low_box["y"] - high_box["y"] >= 12, (low_box, high_box)
             assert abs(low_box["width"] - high_box["width"]) <= 0.5, (low_box, high_box)
             assert abs(low_box["height"] - high_box["height"]) <= 0.5, (low_box, high_box)
-            # Keep the high-resolution scene static while the duplicated mascot floats independently.
+            # Keep the high-resolution scene static while the transparent mascot floats independently.
             hero_background = page.locator(".hero-cinematic").evaluate("el => getComputedStyle(el).backgroundImage")
             assert "gradient" in hero_background, hero_background
             frame_style = page.locator(".hero-art").evaluate("""el => {
