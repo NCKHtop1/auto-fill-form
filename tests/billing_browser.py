@@ -350,6 +350,7 @@ def main():
             print("PASS nonadmin: no administration data requested or actions shown")
 
             state["profile"]["user"] = ADMIN
+            state["profile"]["warnings"] = ["email_notifications"]
             state["orders"] = [make_order("admin-one", "pending_review"), make_order("admin-two", "pending_review"), make_order("admin-unpaid")]
             state["users"] = [
                 {"id": "uat-user", "email": USER["email"], "role": "user", "availableCredits": 22,
@@ -368,6 +369,7 @@ def main():
                  "status": "dispatching", "createdAt": "2026-10-18T03:00:00Z", "canResolve": False},
             ]
             admin.goto(base + "/admin-topups.html?orderId=admin-one")
+            admin.get_by_text("Email báo có người nạp đang TẮT", exact=False).wait_for()
             admin.get_by_text(USER["email"], exact=True).first.wait_for()
             assert "55.000" in admin.locator("#paRevenueSummary").inner_text()
             assert "255.000" in admin.locator("#paRevenueSummary").inner_text()
