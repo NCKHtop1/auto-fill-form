@@ -733,6 +733,25 @@
 <link rel="stylesheet" href="/billing.css?v=20261022-user-table">
 <link rel="stylesheet" href="/auth-gate.css?v=20261020-cohesive5">
 <link rel="stylesheet" href="/motion-ui.css?v=20261022-panda-v13">
+<style id="ps-contact-additions">
+  .ps-feedback-card{display:flex;align-items:flex-start;gap:18px;max-width:810px;margin:0 auto;padding:26px 29px;background:#f5faf3;border:1px solid #d6e8d4;border-radius:19px;box-shadow:0 9px 26px rgba(30,81,48,.04)}
+  .ps-feedback-mark{flex:0 0 46px;width:46px;height:46px;display:grid;place-items:center;border-radius:14px;background:#e3f2dc;color:#2d7944;font-size:25px}
+  .ps-feedback-card h3{margin:0 0 9px;color:#1e5131;font-size:1.16rem;line-height:1.5}
+  .ps-feedback-card p{margin:0 0 13px;color:#566f5b;font-size:.88rem;line-height:1.8}
+  .ps-feedback-email{color:#246e46;font-size:.87rem;font-weight:700;overflow-wrap:anywhere;text-underline-offset:4px}
+  .ps-feedback-email:hover{text-decoration:underline}
+  .ps-zalo-support{position:fixed;right:22px;bottom:24px;z-index:101;display:flex;align-items:center;gap:11px;text-decoration:none}
+  .ps-zalo-badge{flex:0 0 56px;width:56px;height:56px;display:grid;place-items:center;border:3px solid #fff;border-radius:50%;background:#0068ff;box-shadow:0 7px 22px rgba(0,77,191,.28)}
+  .ps-zalo-badge span{position:relative;display:block;padding:6px 5px 5px;border-radius:9px;background:#fff;color:#0068ff;font-size:12px;font-weight:800;letter-spacing:-.045em;line-height:1}
+  .ps-zalo-badge span:after{content:"";position:absolute;left:8px;bottom:-3px;width:7px;height:7px;background:#fff;transform:rotate(45deg)}
+  .ps-zalo-hint{padding:11px 14px;border:1px solid #ddebe4;border-radius:13px;background:#fff;box-shadow:0 8px 26px rgba(20,55,36,.13);color:#315845;font-size:12px;line-height:1.55;white-space:nowrap;opacity:0;transform:translateX(7px);transition:opacity .18s ease,transform .18s ease;pointer-events:none}
+  .ps-zalo-hint strong{display:block;color:#0068ff;font-size:13px}
+  .ps-zalo-support:hover .ps-zalo-hint,.ps-zalo-support:focus-visible .ps-zalo-hint{opacity:1;transform:translateX(0)}
+  .ps-zalo-support:focus-visible{outline:3px solid #245dca;outline-offset:4px;border-radius:30px}
+  body.ps-auth-pending > a#psZaloSupport.ps-zalo-support{display:flex!important}
+  @media(max-width:650px){.ps-feedback-card{padding:21px 19px;gap:12px}.ps-feedback-mark{flex-basis:38px;width:38px;height:38px;font-size:21px}.ps-zalo-support{right:13px;bottom:calc(15px + env(safe-area-inset-bottom))}.ps-zalo-hint{display:none}}
+  @media(prefers-reduced-motion:reduce){.ps-zalo-hint{transition:none}}
+</style>
 </head>
 <body class="ps-auth-pending">
   <section id="psAuthGate" aria-labelledby="psAuthGateTitle">
@@ -1158,6 +1177,14 @@
 
     <section class="section-block hidden" id="about">
       <div class="section-heading"><h2>Về PandaStudy</h2><p>Công cụ Google Form và phân tích dữ liệu.</p></div>
+      <div class="ps-feedback-card">
+        <span class="ps-feedback-mark" aria-hidden="true">✉</span>
+        <div>
+          <h3>Có góp ý cho PandaStudy? 💚</h3>
+          <p>PandaStudy luôn mong được lắng nghe bạn. Nếu có góp ý, phản hồi hoặc ý tưởng để công cụ dễ dùng hơn, hãy gửi email cho chúng mình nhé!</p>
+          <a class="ps-feedback-email" href="mailto:trangnguyen11850.marketing@gmail.com?subject=Gop%20y%20PandaStudy">trangnguyen11850.marketing@gmail.com ↗</a>
+        </div>
+      </div>
     </section>
     <footer>
       <div class="footer-row">
@@ -1169,6 +1196,11 @@
       </div>
     </footer>
   </main>
+
+  <a id="psZaloSupport" class="ps-zalo-support" href="https://zalo.me/0349222590" target="_blank" rel="noopener noreferrer" aria-label="Cần hỗ trợ gấp? Nhắn Zalo 0349 222 590" title="Hỗ trợ gấp qua Zalo: 0349 222 590">
+    <span class="ps-zalo-hint" aria-hidden="true">Cần hỗ trợ gấp?<strong>Zalo · 0349 222 590</strong></span>
+    <span class="ps-zalo-badge" aria-hidden="true"><span>Zalo</span></span>
+  </a>
 
   <div id="toastWrap" class="toast-wrap" aria-live="polite"></div>
 
