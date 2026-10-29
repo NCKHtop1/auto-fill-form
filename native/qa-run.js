@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const wait=ms=>new Promise(done=>setTimeout(done,ms));
-let state={working:false,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',stopped:false,contextChanged:false};
+let state={working:false,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',planToken:null,stopped:false,contextChanged:false};
 let permissionVersion=0,permissionTimer=null;
 
 function node(tag,klass,label){
@@ -67,8 +67,10 @@ function recoverAttempts(){
  const rows=bridge?.getRows()||[];
  if(!rows.length)return;
  const key=makeKey();
- if(!key||key===state.runKey)return;
+ const planToken=bridge.getPlanToken?.();
+ if(!key||(key===state.runKey&&planToken===state.planToken))return;
  state.runKey=key;
+ state.planToken=planToken;
  state.attempted=new Set();state.operations={};state.history=[];
  state.before=null;state.after=null;state.source='';state.stopped=false;state.contextChanged=false;
  try{
