@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const wait=ms=>new Promise(done=>setTimeout(done,ms));
-let state={working:false,preparing:false,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',planToken:null,stopped:false,contextChanged:false};
+let state={working:false,preparing:false,selectedCount:0,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',planToken:null,stopped:false,contextChanged:false};
 let permissionVersion=0,permissionTimer=null;
 
 function node(tag,klass,label){
@@ -49,8 +49,8 @@ function updateCounts(){
   (state.before??'—')+' · Sau: '+(state.after??'—')+
   ' · Tăng: '+delta+' · '+providerLabel();
  $('qaRunExport').disabled=state.history.length===0;
- $('qaRunStartOne').disabled=state.working||state.preparing||state.stopped||$('qaRunStartOne').dataset.allowed!=='true';
- $('qaRunStartAll').disabled=state.working||state.preparing||state.stopped||$('qaRunStartAll').dataset.allowed!=='true';
+ $('qaRunStartOne').disabled=state.working||state.preparing||state.stopped||state.selectedCount===0||$('qaRunStartOne').dataset.allowed!=='true';
+ $('qaRunStartAll').disabled=state.working||state.preparing||state.stopped||state.selectedCount===0||$('qaRunStartAll').dataset.allowed!=='true';
  $('qaRunVerify').disabled=state.working;
 }
 function makeKey(){
@@ -307,7 +307,8 @@ async function run(maxRows){
   editing.forEach(({el,inert})=>{el.inert=inert;});
   state.working=false;updateCounts();
   window.dispatchEvent(new Event('pandastudy:billing-refresh'));
-  if(!state.stopped){const allowedButton=$('qaRunStartOne').dataset.allowed==='true';$('qaRunStartOne').disabled=!allowedButton;$('qaRunStartAll').disabled=!allowedButton;}
+  // All button states are derived from selection, permission and run state.
+  updateCounts();
  }
 }
 function safeCell(v){
@@ -365,7 +366,9 @@ function init(){
  previous.after(panel);
  window.addEventListener('pandastudy:selection-changed', event=>{
   const count=Number(event.detail?.selected||0);
+  state.selectedCount=count;
   $('qaRunStartAll').textContent=count?'6b. Gửi '+count+' dòng đã chọn':'6b. Gửi các dòng đã chọn';
+  updateCounts();
  });
  window.addEventListener('pandastudy:plan-rebuilt',()=>{
   if(state.working){state.contextChanged=true;return;}
