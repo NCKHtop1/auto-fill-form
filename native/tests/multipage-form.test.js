@@ -156,7 +156,7 @@ test('Intermediate section that jumps past answers is still protected',()=>{
  items[0][5]=130; // Jump from page 1 to page 4.
  const form=parsed(respondentHtml(items));
  assert.equal(form.unsupportedNavigation,true);
- assert.throws(()=>qa.prepareFields(form,answers),/không thể gửi|chưa hỗ trợ|điều hướng/i);
+ assert.throws(()=>qa.prepareFields(form,answers),/bỏ qua một số phần/i);
 });
 test('Empty informational section does not become a nonexistent question',()=>{
  const items=surveyItems();
@@ -199,7 +199,7 @@ test('Conditional section branching is blocked before reserving or sending',asyn
  const form=parsed(respondentHtml(items));
  assert.equal(form.unsupportedNavigation,true);
  let hits=0;
- await assert.rejects(()=>qa.sendOne({form,answers,fetchImpl:()=>{hits++;}}),/điều hướng/);
+ await assert.rejects(()=>qa.sendOne({form,answers,fetchImpl:()=>{hits++;}}),/bỏ qua một số phần/i);
  assert.equal(hits,0);
 });
 test('A single-page form still submits with pageHistory zero',()=>{
