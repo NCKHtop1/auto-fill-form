@@ -26,7 +26,15 @@ module.exports=async function handler(req,res){
    publicForm=await forms.loadPublicForm(formUrl);
    if(!publicForm.acceptingResponses)reasons.push('Form chưa mở nhận phản hồi công khai.');
    else if(!publicForm.questions.length)reasons.push('Form chưa có câu hỏi để gửi.');
-   else if(publicForm.unsupportedNavigation)reasons.push('Form có phân nhánh/điều hướng giữa các phần chưa hỗ trợ; chưa gửi để bảo vệ số lượt.');
+   else if(publicForm.unsupportedNavigation){
+    const reason=publicForm.navigationReason;
+    const note=reason==='choice_jump'
+     ?'Form có lựa chọn bỏ qua một số phần. Muốn điền đủ câu hỏi, hãy chọn “Tiếp tục đến phần tiếp theo” cho lựa chọn đó trong Google Forms.'
+     :reason==='section_jump'
+     ?'Một phần của Form đang chuyển thẳng sang phần khác. Hãy đổi “Sau phần này” thành “Tiếp tục đến phần tiếp theo” trong Google Forms.'
+     :'Cấu trúc các phần của Google Form chưa xác định được. Hãy kiểm tra lại thứ tự các phần.';
+    reasons.push(note);
+   }
    else if(publicForm.questions.some(q=>!q.supported))
     reasons.push('Form có câu hỏi chưa hỗ trợ: '+publicForm.questions.filter(q=>!q.supported).slice(0,2).map(q=>q.title).join(', ')+'.');
    else formAllowed=true;

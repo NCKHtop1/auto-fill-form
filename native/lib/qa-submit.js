@@ -33,7 +33,10 @@ function prepareFields(form,answers) {
   if (!form || !Array.isArray(form.questions) || !form.questions.length)
     throw new Error('Không đọc được câu hỏi Google Form.');
   if (!form.acceptingResponses) throw new Error('Google Form hiện không nhận phản hồi.');
-  if (form.unsupportedNavigation) throw new Error('Form có điều hướng giữa các phần hoặc phần rỗng chưa hỗ trợ. Không gửi để tránh mất câu trả lời và mất lượt.');
+  if (form.unsupportedNavigation) throw new Error(
+    form.navigationReason==='choice_jump'
+     ?'Một lựa chọn đang bỏ qua phần khác. Cần chỉnh điều hướng trong Google Forms trước khi gửi.'
+     :'Các phần của Form không chuyển theo thứ tự. Cần chỉnh điều hướng trong Google Forms trước khi gửi.');
   if (form.questions.some(q=>!q.supported||!ALLOWED_TYPES.has(q.type)))
     throw new Error('Google Form có câu hỏi chưa hỗ trợ gửi tự động.');
   const issues=validate.validate(form.questions,answers);

@@ -102,33 +102,68 @@ function fromPublicItem(item,index){
 // respondent page. Collect pages from the form's actual item structure, never
 // guess a number of pages or blindly send pageHistory=0.
 function publicPageLayout(items){
- let pageCount=1,hasQuestionsOnPage=false,emptyPage=false,branching=false;
- const pageById={};
+ const pages=[{header:null,questionCount:0}];
+ const questionPages={};
+ const choiceRoutes=[];
+ let page=pages[0];
  for(const item of items){
   if(!Array.isArray(item)||item.length<4)continue;
   const code=item[3];
   if(code===8){
-   if(hasQuestionsOnPage){pageCount++;hasQuestionsOnPage=false;}
-   else if(pageCount>1)emptyPage=true;
-   // A page-break with a custom destination cannot use linear pageHistory.
-   if(item[5]!=null&&item[5]!==0)branching=true;
+   // The first section header starts page 0, not an empty extra page.
+   // A subsequent header starts the next page, even when a section is empty.
+   if(page.header || page.questionCount){
+    page={header:null,questionCount:0};
+    pages.push(page);
+   }
+   page.header=item;
    continue;
   }
   if(isNonAnswerablePublicItem(item))continue;
   const fields=Array.isArray(item[4])?item[4]:[];
-  if(fields.some(f=>/^[0-9]+$/.test(String(f?.[0]??'')))){
-   hasQuestionsOnPage=true;
-   pageById[String(item[0]??'')]=pageCount-1;
-  }
-  // Choice-level 'Go to section based on answer' overrides linear navigation.
+  if(!fields.some(f=>/^[0-9]+$/.test(String(f?.[0]??''))))continue;
+  page.questionCount++;
+  const pageIndex=pages.length-1;
+  questionPages[String(item[0]??'')]=pageIndex;
   if(code===2||code===3){
    const options=Array.isArray(fields?.[0]?.[1])?fields[0][1]:[];
-   if(options.some(o=>Array.isArray(o)&&o[2]!=null))branching=true;
+   choiceRoutes.push({pageIndex,options});
   }
  }
- if(pageCount>50||emptyPage||!hasQuestionsOnPage)branching=true;
- return {pageCount,pageHistory:Array.from({length:pageCount},(_,i)=>i).join(','),
-  unsupportedNavigation:branching,pageById};
+ const pageIds=pages.map(p=>p.header?.[0]);
+ // Google uses -2 for the ordinary "continue to next section" action.
+ const isDefaultNext=target=>target==null||target===0||target==='0'||target===-2||target==='-2';
+ let navigationReason='';
+ if(pages.length>50)navigationReason='too_many_pages';
+ if(!pages.some(p=>p.questionCount))navigationReason='no_questions';
+ // A destination pointing to the immediately following section is ordinary
+ // navigation, not branching. Earlier code blocked every non-null target.
+ for(let i=0;i<pages.length;i++){
+  const target=pages[i].header?.[5];
+  if(isDefaultNext(target))continue;
+  const expected=pageIds[i+1];
+  const isNext=expected!=null&&String(target)===String(expected);
+  // On the final section Google may encode the submission action as
+  // a target pointing back to its own section ID.
+  const isFinalSubmit=i===pages.length-1 && String(target)===String(pageIds[i]);
+  if(!isNext&&!isFinalSubmit)navigationReason='section_jump';
+ }
+ // A radio or drop-down may explicitly target the NEXT page. That too is
+ // linear; only a skipped section or premature submit is unsupported.
+ for(const {pageIndex,options} of choiceRoutes){
+  const next=pageIds[pageIndex+1];
+  for(const option of options){
+   if(!Array.isArray(option))continue;
+   const target=option[2];
+   if(isDefaultNext(target))continue;
+   if(next!=null&&String(target)===String(next))continue;
+   navigationReason='choice_jump';
+  }
+ }
+ return {pageCount:pages.length,
+  pageHistory:pages.map((_,index)=>index).join(','),
+  unsupportedNavigation:!!navigationReason,
+  navigationReason, pageById:questionPages};
 }
 function parsePublicFormHtml(html,id,responderUri){
  if(typeof html!=='string'||html.length>4_000_000)throw new Error('Dữ liệu Google Form không hợp lệ.');
@@ -146,7 +181,7 @@ function parsePublicFormHtml(html,id,responderUri){
  return {id,title:textValue(meta[8])||'Google Form',description:textValue(meta[0]),
    acceptingResponses:accepts,collectsEmail:null,limitOneResponsePerUser:null,responseCount:null,
    questions,responderUri,pageCount:layout.pageCount,pageHistory:layout.pageHistory,
-   unsupportedNavigation:layout.unsupportedNavigation,
+   unsupportedNavigation:layout.unsupportedNavigation,navigationReason:layout.navigationReason,
    unsupportedCount:questions.filter(q=>!q.supported).length,
    supportedCount:questions.filter(q=>q.supported).length,accessMode:'public'};
 }
