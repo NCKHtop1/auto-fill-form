@@ -2265,6 +2265,17 @@
       }
       const eligible = state.plan.filter(row=>row.status === 'valid');
       const selected = eligible.filter(row=>state.selectedRows === null || state.selectedRows.has(row.index));
+      let selectionHint = $('planSelectionHint');
+      if (!selectionHint) {
+        selectionHint = document.createElement('p');
+        selectionHint.id = 'planSelectionHint';
+        selectionHint.className = 'small muted';
+        $('planTableWrap').before(selectionHint);
+      }
+      selectionHint.hidden = !hasPlan;
+      if (hasPlan) selectionHint.textContent =
+        'Đã chọn '+selected.length+'/'+eligible.length+
+        ' dòng chưa gửi. Tích nhiều ô trong cột “Chọn” hoặc tích ô trên cùng để chọn tất cả. Dòng đã gửi sẽ không được gửi lại.';
       const selectAll = $('planSelectAll');
       if (selectAll) {
         selectAll.disabled = state.sending || !eligible.length;
