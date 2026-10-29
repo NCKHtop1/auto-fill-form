@@ -138,7 +138,16 @@ try:
     # Rebuild the same deterministic plan to trigger session restoration.
     page.locator('#buildPlanBtn').click()
     page.locator('#validatePlanBtn').click()
-    page.wait_for_function("document.querySelectorAll('#planTableBody tr .status-chip.success').length===40",timeout=20000)
+    page.wait_for_function("document.getElementById('validatePlanBtn').disabled===false",timeout=15000)
+    debug = page.evaluate("""() => ({
+      success:document.querySelectorAll('#planTableBody tr .status-chip.success').length,
+      unknown:[...document.querySelectorAll('#planTableBody tr .status-chip')].filter(n=>n.textContent.includes('Cần đối chiếu')).length,
+      summary:document.getElementById('workflowResult').textContent,
+      warning:document.getElementById('qaRunMessage').textContent,
+      selection:document.getElementById('qaRunStartAll').textContent,
+      sessionKeys:Object.keys(sessionStorage).filter(k=>k.startsWith('pandastudy-qa-attempt:')).length
+    })""")
+    assert debug['success'] == 40 and debug['unknown'] == 30,debug
     assert page.locator('.plan-row-checkbox[data-row-index="1"]').is_disabled()
     assert page.locator('.plan-row-checkbox[data-row-index="30"]').is_disabled()
     assert page.locator('.plan-row-checkbox[data-row-index="31"]').is_checked()
