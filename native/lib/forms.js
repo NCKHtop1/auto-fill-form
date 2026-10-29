@@ -10,7 +10,7 @@ async function publicFormEntries(uri){let u;try{u=new URL(uri)}catch{return []}i
  const r=await fetch(u.href,{headers:{'User-Agent':'Mozilla/5.0 (compatible; PandaStudy/1.0)'},signal:AbortSignal.timeout(15000)});if(!r.ok)return [];
  const raw=await r.text();let data;try{data=readArrayLiteral(raw,'FB_PUBLIC_LOAD_DATA_')}catch{return []}
  const entries=data?.[1]?.[1];if(!Array.isArray(entries))return [];
- return entries.filter(x=>Array.isArray(x)).map((p,index)=>({itemId:String(p[0]??''),title:String(p[1]||''),order:index,publicType:p[3],entryIds:Array.isArray(p[4])?p[4].map(e=>String(e?.[0]??'')).filter(x=>/^\d+$/.test(x)):[]}));
+ return entries.filter(x=>Array.isArray(x)&&![6,8,11,12].includes(x[3])).map((p,index)=>({itemId:String(p[0]??''),title:String(p[1]||''),order:index,publicType:p[3],entryIds:Array.isArray(p[4])?p[4].map(e=>String(e?.[0]??'')).filter(x=>/^\d+$/.test(x)):[]}));
 }
 function fromOfficialItem(item,index){if(!item)return null;const q=item.questionItem?.question;const group=item.questionGroupItem;const base={id:String(item.itemId||index),index,title:item.title||'',helpText:item.description||'',required:!!q?.required,supported:true,options:[]};
  if(group){const questions=group.questions||[];const grid=group.grid||{};const kind=grid.columns?.type||'RADIO';return {...base,type:kind==='CHECKBOX'?'checkbox_grid':'grid',rows:questions.map(x=>x.rowQuestion?.title||''),columns:(grid.columns?.options||[]).map(o=>o.value),options:(grid.columns?.options||[]).map(o=>o.value),required:questions.some(x=>x.required)};}
@@ -47,7 +47,7 @@ function fromPublicItem(item,index){
  if(!Array.isArray(item)||item.length<4)return null;
  const code=item[3],fields=Array.isArray(item[4])?item[4]:[];
  // Informational sections, images and videos do not expect an answer.
- if([8,11,12].includes(code))return null;
+ if([6,8,11,12].includes(code))return null;
  const title=textValue(item[1])||'Câu hỏi '+(index+1);
  const helpText=textValue(item[2]);
  const entryIds=fields.map(f=>textValue(f?.[0])).filter(id=>/^\d+$/.test(id));
@@ -62,9 +62,9 @@ function fromPublicItem(item,index){
   base.allowOther=Array.isArray(fields?.[0]?.[1])&&fields[0][1].some(c=>Array.isArray(c)&&c[4]===1);
  }else if(code===5){
   base.type='linear_scale';base.options=publicChoices(fields[0]);
- }else if(code===7||code===6){
-  // A public grid stores an entry ID and row label for each row.
-  base.type=code===7?'grid':'checkbox_grid';
+ }else if(code===7){
+  // Type 7 is a grid; type 6 is a non-answerable section header (skipped above).
+  base.type='grid';
   base.rows=fields.map((f,i)=>textValue(f?.[3]?.[0])||'Hàng '+(i+1));
   base.columns=publicChoices(fields[0]);
   base.options=base.columns;
