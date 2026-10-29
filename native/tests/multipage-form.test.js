@@ -138,3 +138,96 @@ test('A section header with no entry ID does not increase pageHistory',()=>{
  assert.equal(form.pageCount,5);
  assert.equal(form.questions.length,12);
 });
+
+
+function linearDestinationItems(){
+ const items=surveyItems();
+ const headers=[0,4,7,12,15];
+ for(let i=0;i<headers.length-1;i++)items[headers[i]][5]=items[headers[i+1]][0];
+ // Google's last section may encode its normal Submit action as its own id.
+ items[15][5]=items[15][0];
+ // Explicit 'next section' on a choice is not a conditional skip.
+ items[1][4][0][1][0]=['Nam 1-2',null,items[4][0]];
+ return items;
+}
+test('A normal 5-part survey with explicit NEXT destinations is accepted (regression for blocked paid forms)',async()=>{
+ const items=linearDestinationItems();
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.pageCount,5);
+ assert.equal(form.pageHistory,'0,1,2,3,4');
+ assert.equal(form.questions.length,12);
+ assert.equal(form.supportedCount,12);
+ assert.equal(form.unsupportedCount,0);
+ assert.equal(form.unsupportedNavigation,false);
+ assert.equal(form.navigationReason,'');
+ assert.deepEqual(validation.validate(form.questions,answers),[]);
+ const fields=qa.prepareFields(form,answers);
+ for(let id=1001;id<=1011;id++)
+  assert.equal(fields.has('entry.'+id),true,'missing answer for field '+id);
+ assert.equal(fields.has('entry.1012'),false);
+ let posts=0;
+ const result=await qa.sendOne({form,answers,fetchImpl:async(url,opt)=>{
+  if(opt.method==='GET')
+   return {ok:true,status:200,url:URL,text:async()=>respondentHtml(items)};
+  posts++;
+  const data=new URLSearchParams(opt.body);
+  assert.equal(data.get('pageHistory'),'0,1,2,3,4');
+  assert.equal(data.get('entry.1011'),'Tiet kiem thoi gian');
+  assert.equal(data.has('entry.1012'),false);
+  return {ok:true,status:200,url:ENDPOINT,
+   text:async()=>'<html>Your response has been recorded</html>'};
+ }});
+ assert.equal(result.status,'page-confirmed');
+ assert.equal(result.filledQuestions,11);
+ assert.equal(posts,1);
+});
+test('A sequential Form does not display the unsupported navigation warning or disable paid QA buttons',async()=>{
+ const auth=require('../lib/auth');
+ const statusHandler=require('../api/qa-status');
+ const originals={configured:auth.configured,session:auth.session,load:forms.loadPublicForm};
+ const form=parsed(respondentHtml(linearDestinationItems()));
+ auth.configured=()=>true;
+ auth.session=async()=>({sub:'test-user'});
+ forms.loadPublicForm=async()=>form;
+ const req={method:'GET',query:{formUrl:EDIT},headers:{}};
+ const res={code:200,status(n){this.code=n;return this},
+  setHeader(){},json(x){this.body=x;return this}};
+ try{
+  await statusHandler(req,res);
+  assert.equal(res.code,200);
+  assert.equal(res.body.canSend,true);
+  assert.equal(res.body.formAllowed,true);
+  assert.deepEqual(res.body.reasons,[]);
+ }finally{
+  auth.configured=originals.configured;
+  auth.session=originals.session;
+  forms.loadPublicForm=originals.load;
+ }
+});
+test('A section that skips over another section is blocked before Google or billing',()=>{
+ const items=linearDestinationItems();
+ items[0][5]=items[7][0]; // jump from first section to the third
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.unsupportedNavigation,true);
+ assert.equal(form.navigationReason,'section_jump');
+ assert.throws(()=>qa.prepareFields(form,answers),/chỉnh điều hướng/);
+});
+test('A choice sending respondents straight to part 3 is still a real branch',()=>{
+ const items=linearDestinationItems();
+ items[1][4][0][1][0]=['Nam 1-2',null,items[7][0]];
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.unsupportedNavigation,true);
+ assert.equal(form.navigationReason,'choice_jump');
+ assert.throws(()=>qa.prepareFields(form,answers),/bỏ qua phần khác/);
+});
+test('Consecutive section headings do not lose later questions or create a false branching error',()=>{
+ const items=linearDestinationItems();
+ items.splice(15,0,[777,'Phần hướng dẫn bổ sung',null,8,null]);
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.pageCount,6);
+ assert.equal(form.questions.length,12);
+ assert.equal(form.unsupportedNavigation,true);
+ // The original section 4 still points past the newly inserted page: a real skip,
+ // so the preflight must reject rather than silently submit an incomplete path.
+ assert.equal(form.navigationReason,'section_jump');
+});
