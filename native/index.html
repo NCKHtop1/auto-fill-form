@@ -1288,6 +1288,7 @@
       dataColumns: [],
       questionConfig: {},
       plan: [],
+      selectedRows: null,
       sending: false,
       scheduledRuns: [],
       billing: {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:''},
@@ -1316,6 +1317,11 @@
       getRows() { return state.plan.map(r => ({
         index: r.index, status: r.status, answers: r.answers
       })); },
+      getSelectedRows() {
+        return state.plan.filter(r => r.status === 'valid' &&
+          (state.selectedRows === null || state.selectedRows.has(r.index)))
+          .map(r => ({index:r.index,status:r.status,answers:r.answers}));
+      },
       updateRow(position, status, receivedAt, error) {
         const r = state.plan[position];
         if (!r) return;
@@ -2127,7 +2133,9 @@
         });
       }
       state.plan = plan;
+      state.selectedRows = null;
       renderPlan();
+      window.dispatchEvent(new Event('pandastudy:plan-rebuilt'));
     }
 
     function validateGeneratorConfig() {
@@ -2240,25 +2248,72 @@
       $('planMessage').classList.toggle('hidden', hasPlan);
       $('planTableWrap').classList.toggle('hidden', !hasPlan);
       $('validatePlanBtn').disabled = !hasPlan || state.sending;
-      $('downloadPlanBtn').disabled = !hasPlan || state.sending || !state.plan.every(row=>row.status==='valid');
-      // Button is gated by Google connection and explicit owner authorization.
-      // submitCurrentPlan() will retry billing and show the real server error.
+      $('downloadPlanBtn').disabled = !hasPlan || state.sending ||
+        !state.plan.every(row=>['valid','sent','error','unverified'].includes(row.status));
       $('submitPlanBtn').disabled = !hasPlan || state.sending || $('submitPlanBtn').dataset.submissionEnabled !== 'true';
       updateBillingHint();
       $('downloadReportBtn').disabled = !hasPlan || !state.plan.some(row => row.status === 'sent' || row.status === 'error');
+      const head = $('planTableWrap').querySelector('thead tr');
+      if (head && !head.querySelector('#planSelectAll')) {
+        const th = document.createElement('th');
+        th.innerHTML = '<label class="small"><input id="planSelectAll" type="checkbox" aria-label="Chọn tất cả dòng chưa gửi"> Chọn</label>';
+        head.insertBefore(th,head.firstChild);
+        $('planSelectAll').addEventListener('change', e => {
+          state.selectedRows = e.target.checked ? null : new Set();
+          renderPlan();
+        });
+      }
+      const eligible = state.plan.filter(row=>row.status === 'valid');
+      const selected = eligible.filter(row=>state.selectedRows === null || state.selectedRows.has(row.index));
+      let selectionHint = $('planSelectionHint');
+      if (!selectionHint) {
+        selectionHint = document.createElement('p');
+        selectionHint.id = 'planSelectionHint';
+        selectionHint.className = 'small muted';
+        $('planTableWrap').before(selectionHint);
+      }
+      selectionHint.hidden = !hasPlan;
+      if (hasPlan) selectionHint.textContent =
+        'Đã chọn '+selected.length+'/'+eligible.length+
+        ' dòng chưa gửi. Tích nhiều ô trong cột “Chọn” hoặc tích ô trên cùng để chọn tất cả. Dòng đã gửi sẽ không được gửi lại.';
+      const selectAll = $('planSelectAll');
+      if (selectAll) {
+        selectAll.disabled = state.sending || !eligible.length;
+        selectAll.checked = eligible.length > 0 && selected.length === eligible.length;
+        selectAll.indeterminate = selected.length > 0 && selected.length < eligible.length;
+      }
+      window.dispatchEvent(new CustomEvent('pandastudy:selection-changed',{
+        detail:{selected:selected.length,eligible:eligible.length,sent:state.plan.filter(r=>r.status==='sent').length}
+      }));
       if (!hasPlan) return;
       const visibleRows = state.plan.slice(0, PLAN_RENDER_LIMIT);
       let html = visibleRows.map(row => `
         <tr>
+          <td><input class="plan-row-checkbox" type="checkbox" data-row-index="${row.index}" aria-label="Chọn dòng ${row.index}"
+            ${row.status === 'valid' && (state.selectedRows === null || state.selectedRows.has(row.index)) ? 'checked' : ''}
+            ${row.status !== 'valid' || state.sending ? 'disabled' : ''}></td>
           <td>${row.index}</td>
           <td>${row.dataRow || 'Dữ liệu mẫu'}</td>
           <td class="preview-cell">${escapeHtml(row.preview)}</td>
           <td>${statusChip(row.status, row.error)}</td>
         </tr>`).join('');
       if (state.plan.length > PLAN_RENDER_LIMIT) {
-        html += `<tr><td colspan="4" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng. Toàn bộ ${state.plan.length} dòng sẽ có trong CSV.</td></tr>`;
+        html += `<tr><td colspan="5" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng. Toàn bộ ${state.plan.length} dòng sẽ có trong CSV.</td></tr>`;
       }
       $('planTableBody').innerHTML = html;
+      if (!$('planTableBody').dataset.selectionBound) {
+        $('planTableBody').dataset.selectionBound = 'true';
+        $('planTableBody').addEventListener('change',event=>{
+          const input=event.target.closest('.plan-row-checkbox');
+          if (!input) return;
+          const index=Number(input.dataset.rowIndex);
+          if (state.selectedRows === null)
+            state.selectedRows = new Set(state.plan.filter(row=>row.status==='valid').map(row=>row.index));
+          if (input.checked) state.selectedRows.add(index);
+          else state.selectedRows.delete(index);
+          renderPlan();
+        });
+      }
     }
 
     async function validatePlanBatched(planRows) {
@@ -2287,19 +2342,28 @@
       updateProgress(0, state.plan.length);
       try {
         const result = await validatePlanBatched(state.plan);
-        result.results.forEach((res, index) => {
-          state.plan[index].status = res.valid ? 'valid' : 'invalid';
-          state.plan[index].error = res.issues.join(' | ');
+        result.results.forEach((res,index) => {
+          const row = state.plan[index];
+          // Revalidation must NEVER turn a previously sent or uncertain row
+          // back into a selectable unsent row, even after page re-rendering.
+          if (['sent','error','unverified','sending'].includes(row.status)) return;
+          row.status = res.valid ? 'valid' : 'invalid';
+          row.error = res.issues.join(' | ');
         });
         renderPlan();
-        if (!result.valid) {
+        const pending = state.plan.filter(r=>r.status==='valid').length;
+        const sent = state.plan.filter(r=>r.status==='sent').length;
+        const uncertain = state.plan.filter(r=>['error','unverified'].includes(r.status)).length;
+        const invalid = state.plan.filter(r=>r.status==='invalid').length;
+        if (invalid) {
           $('workflowResult').className='workflow-result is-error';
-          $('workflowResult').textContent=`${result.invalid}/${result.total} dòng có lỗi. Xem cột Kiểm tra, sửa dữ liệu và bấm lại 4b.`;
-          throw new Error(`${result.invalid}/${result.total} dòng chưa hợp lệ.`);
+          $('workflowResult').textContent=`${invalid} dòng chưa hợp lệ; ${sent} đã gửi được giữ nguyên. Hãy sửa dữ liệu lỗi trước khi gửi.`;
+          throw new Error(`${invalid} dòng chưa hợp lệ.`);
         }
         $('workflowResult').className = 'workflow-result is-success';
-        $('workflowResult').textContent = `Đã kiểm tra ${result.total} dòng hợp lệ. Chưa gửi. Bạn có thể tải CSV ở bước 5.`;
-        toast(`Đã kiểm tra ${result.total}/${result.total} dòng. Chưa gửi Google Form/Sheet.`, 'success');
+        $('workflowResult').textContent = `Đã kiểm tra ${result.total} dòng: ${pending} chưa gửi, ${sent} đã gửi, ${uncertain} cần đối chiếu. Chọn các dòng chưa gửi ở bảng bên dưới rồi bấm gửi ở bước 6.`;
+        toast(`Đã kiểm tra: ${pending} dòng chưa gửi, ${sent} đã gửi.`, 'success');
+        window.dispatchEvent(new Event('pandastudy:plan-validated'));
       } catch (error) {
         toast(`${t('err_validate')} ${messageOf(error)}`, 'error');
       } finally {
@@ -2551,7 +2615,7 @@
 
     function statusChip(status, error = '') {
       const map = {
-        ready:['status_ready',''], valid:['status_valid','success'], invalid:['status_invalid','danger'], sending:['status_sending','warning'], sent:['status_sent','success'], error:['status_error','danger'], queued:['status_queued','warning'], canceled:['status_canceled','danger'], completed:['status_completed','success'], completed_with_errors:['status_completed_with_errors','warning'], scheduled:['status_scheduled','warning'], running:['status_running','warning']
+        ready:['status_ready',''], valid:['status_valid','success'], invalid:['status_invalid','danger'], sending:['status_sending','warning'], sent:['status_sent','success'], error:['status_error','danger'], unverified:['Cần đối chiếu','warning'], queued:['status_queued','warning'], canceled:['status_canceled','danger'], completed:['status_completed','success'], completed_with_errors:['status_completed_with_errors','warning'], scheduled:['status_scheduled','warning'], running:['status_running','warning']
       };
       const [key, cls] = map[status] || [status,''];
       const caption=status==='ready'?'Chưa kiểm tra':status==='valid'?'Hợp lệ · chưa gửi':t(key);
