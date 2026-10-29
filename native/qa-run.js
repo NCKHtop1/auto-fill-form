@@ -3,7 +3,7 @@
 'use strict';
 const $=id=>document.getElementById(id);
 const wait=ms=>new Promise(done=>setTimeout(done,ms));
-let state={working:false,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',planToken:null,stopped:false,contextChanged:false};
+let state={working:false,preparing:false,attempted:new Set(),operations:{},history:[],before:null,after:null,source:'',runKey:'',planToken:null,stopped:false,contextChanged:false};
 let permissionVersion=0,permissionTimer=null;
 
 function node(tag,klass,label){
@@ -49,8 +49,8 @@ function updateCounts(){
   (state.before??'—')+' · Sau: '+(state.after??'—')+
   ' · Tăng: '+delta+' · '+providerLabel();
  $('qaRunExport').disabled=state.history.length===0;
- $('qaRunStartOne').disabled=state.working||state.stopped||$('qaRunStartOne').dataset.allowed!=='true';
- $('qaRunStartAll').disabled=state.working||state.stopped||$('qaRunStartAll').dataset.allowed!=='true';
+ $('qaRunStartOne').disabled=state.working||state.preparing||state.stopped||$('qaRunStartOne').dataset.allowed!=='true';
+ $('qaRunStartAll').disabled=state.working||state.preparing||state.stopped||$('qaRunStartAll').dataset.allowed!=='true';
  $('qaRunVerify').disabled=state.working;
 }
 function makeKey(){
@@ -190,7 +190,7 @@ function updateReport(){
  }
 }
 async function run(maxRows){
- if(state.working)return;
+ if(state.working||state.preparing)return;
  if(!$('qaConsent').checked)return status('Hãy xác nhận trước khi gửi.',true);
  const bridge=window.PandaStudyQA;
  if(!bridge)return status('Chưa có bảng dữ liệu. Hãy nhập Form và bấm 4a, 4b.',true);
@@ -204,7 +204,14 @@ async function run(maxRows){
   return status('Chưa chọn dòng chưa gửi nào. Hãy tích một hoặc nhiều ô ở bảng bước 5.',true);
  if(state.stopped)
   return status('Đã dừng do kết quả gửi chưa rõ. Hãy đối chiếu các dòng đã thử gửi; không tự gửi lại.',true);
- const allowed=await permission();
+ // Guard immediately before the first network wait: two rapid clicks must
+ // not create two overlapping paid batches for the same selected rows.
+ state.preparing=true;
+ updateCounts();
+ let allowed=false;
+ try{allowed=await permission();}
+ catch{allowed=false;}
+ finally{state.preparing=false;updateCounts();}
  if(!allowed)return status('Chưa thể gửi. Xem trạng thái ở bước 6.',true);
  if(!sameContext())
   return status('Form hoặc bảng dữ liệu vừa thay đổi. Kiểm tra lại rồi chủ động bấm gửi.',true);
