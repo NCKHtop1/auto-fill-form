@@ -131,6 +131,8 @@ function publicPageLayout(items){
   }
  }
  const pageIds=pages.map(p=>p.header?.[0]);
+ // Google uses -2 for the ordinary "continue to next section" action.
+ const isDefaultNext=target=>target==null||target===0||target==='0'||target===-2||target==='-2';
  let navigationReason='';
  if(pages.length>50)navigationReason='too_many_pages';
  if(!pages.some(p=>p.questionCount))navigationReason='no_questions';
@@ -138,7 +140,7 @@ function publicPageLayout(items){
  // navigation, not branching. Earlier code blocked every non-null target.
  for(let i=0;i<pages.length;i++){
   const target=pages[i].header?.[5];
-  if(target==null || target===0 || target==='0')continue;
+  if(isDefaultNext(target))continue;
   const expected=pageIds[i+1];
   const isNext=expected!=null&&String(target)===String(expected);
   // On the final section Google may encode the submission action as
@@ -153,7 +155,7 @@ function publicPageLayout(items){
   for(const option of options){
    if(!Array.isArray(option))continue;
    const target=option[2];
-   if(target==null || target===0 || target==='0')continue;
+   if(isDefaultNext(target))continue;
    if(next!=null&&String(target)===String(next))continue;
    navigationReason='choice_jump';
   }
