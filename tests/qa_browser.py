@@ -96,7 +96,7 @@ try:
     # Rechecking the plan must preserve its already-confirmed row as sent.
     page.locator('#validatePlanBtn').click()
     page.wait_for_function("document.querySelectorAll('#planTableBody tr')[0].innerText.includes('Đã gửi')",timeout=15000)
-    assert '1 đã gửi' in page.locator('#workflowResult').inner_text()
+    page.wait_for_function("document.getElementById('workflowResult').textContent.includes('1 đã gửi')",timeout=15000)
     page.locator('#qaRunStartAll').click()
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 2')",timeout=15000)
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Tăng: 2')",timeout=15000)
