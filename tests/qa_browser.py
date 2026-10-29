@@ -96,7 +96,8 @@ try:
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Tăng: 2')",timeout=15000)
     assert len(submitted)==2
     assert 'Tăng: 2' in page.locator('#qaRunCounters').inner_text()
-    assert 'Đối chiếu tổng khớp' in page.locator('#qaRunMessage').inner_text()
+    assert 'Đối chiếu số lượng khớp' in page.locator('#qaRunMessage').inner_text()
+    assert 'KHÔNG xác minh từng câu trả lời' in page.locator('#qaRunMessage').inner_text()
     assert page.locator('#qaRunExport').is_enabled()
     with page.expect_download(timeout=15000) as received:
       page.locator('#qaRunExport').click()
