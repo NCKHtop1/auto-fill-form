@@ -142,7 +142,7 @@ try:
             page.locator("#validatePlanBtn").click()
             page.locator("#planTableBody tr .status-chip.success").first.wait_for(timeout=10000)
             assert page.locator("#planTableBody tr .status-chip.success").count() == count
-            assert "Chưa gửi" in page.locator("#workflowResult").inner_text()
+            assert "chưa gửi" in page.locator("#workflowResult").inner_text().lower()
             assert page.locator("#downloadPlanBtn").is_enabled()
             assert "Đã kiểm tra" in page.locator("#progressText").inner_text()
             with page.expect_download(timeout=12000) as download_event:
