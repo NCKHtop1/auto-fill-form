@@ -116,7 +116,7 @@ function publicPageLayout(items){
   }
   if(isNonAnswerablePublicItem(item))continue;
   const fields=Array.isArray(item[4])?item[4]:[];
-  if(fields.some(f=>/^\\d+$/.test(String(f?.[0]??'')))){
+  if(fields.some(f=>/^[0-9]+$/.test(String(f?.[0]??'')))){
    hasQuestionsOnPage=true;
    pageById[String(item[0]??'')]=pageCount-1;
   }
