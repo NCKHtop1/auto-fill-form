@@ -30,6 +30,7 @@ try:
     page=context.new_page()
     errors=[]
     submitted=[]
+    submitted_operations=[]
     page.on('pageerror',lambda error:errors.append(str(error)))
     page.route('**/api/auth/status',lambda r:r.fulfill(
         status=200,content_type='application/json',
@@ -65,6 +66,7 @@ try:
       assert request['confirmedTestOnly'] is True
       assert request['formUrl']==form_url
       submitted.append(request['answers'])
+      submitted_operations.append(request['operationId'])
       route.fulfill(status=200,content_type='application/json',
                     body=json.dumps({'ok':True,'status':'page-confirmed',
                       'receivedAt':'2026-10-13T00:00:00Z','note':'Fake Google confirmation'}))
@@ -91,6 +93,10 @@ try:
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 1')")
     page.wait_for_function("document.getElementById('qaRunStartAll').disabled===false")
     assert len(submitted)==1
+    # Rechecking the plan must preserve its already-confirmed row as sent.
+    page.locator('#validatePlanBtn').click()
+    page.wait_for_function("document.querySelectorAll('#planTableBody tr')[0].innerText.includes('Đã gửi')",timeout=15000)
+    assert '1 đã gửi' in page.locator('#workflowResult').inner_text()
     page.locator('#qaRunStartAll').click()
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 2')",timeout=15000)
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Tăng: 2')",timeout=15000)
@@ -106,6 +112,58 @@ try:
     assert len(rows)==3
     assert rows[0]==['STT','Kết quả Google','Thời điểm trang xác nhận','Ghi chú','Câu trả lời (JSON)']
     assert all(r[1]=='page-confirmed' for r in rows[1:])
+    # Regression for a paid user with 70 verified rows and 30 historic attempts:
+    # all 40 fresh rows must remain eligible, with arbitrary multi-selection.
+    page.locator('.generator-mode[value="fixed"]').first.check()
+    page.locator('.fixed-select').first.select_option(label='Có')
+    page.locator('#responseCount').fill('70')
+    page.locator('#buildPlanBtn').click()
+    page.locator('#validatePlanBtn').click()
+    page.wait_for_function("document.querySelectorAll('#planTableBody tr .status-chip.success').length===70",timeout=20000)
+    # Simulate a saved session record from an earlier version (attempted IDs
+    # were persisted, but individual result metadata was not).
+    page.evaluate("""() => {
+      const bridge=window.PandaStudyQA;
+      const raw=JSON.stringify({url:bridge.getUrl(),rows:bridge.getRows().map(row=>row.answers)});
+      let hash=2166136261;
+      for(let i=0;i<raw.length;i++){
+        hash^=raw.charCodeAt(i);hash=Math.imul(hash,16777619);
+      }
+      const key='pandastudy-qa-attempt:'+((hash>>>0).toString(16));
+      const attempted=Array.from({length:30},(_,i)=>i+1);
+      sessionStorage.setItem(key,JSON.stringify({
+        attempted,operations:{},at:new Date().toISOString()
+      }));
+    }""")
+    # Rebuild the same deterministic plan to trigger session restoration.
+    page.locator('#buildPlanBtn').click()
+    page.locator('#validatePlanBtn').click()
+    page.wait_for_function("document.querySelectorAll('#planTableBody tr .status-chip.success').length===40",timeout=20000)
+    assert page.locator('.plan-row-checkbox[data-row-index="1"]').is_disabled()
+    assert page.locator('.plan-row-checkbox[data-row-index="30"]').is_disabled()
+    assert page.locator('.plan-row-checkbox[data-row-index="31"]').is_checked()
+    assert page.locator('.plan-row-checkbox[data-row-index="70"]').is_checked()
+    assert '40 dòng' in page.locator('#qaRunStartAll').inner_text()
+    assert '40 chưa gửi' in page.locator('#workflowResult').inner_text()
+    page.locator('#planSelectAll').uncheck()
+    assert 'Chưa chọn' not in page.locator('#qaRunStartAll').inner_text()
+    page.locator('.plan-row-checkbox[data-row-index="31"]').check()
+    page.locator('.plan-row-checkbox[data-row-index="32"]').check()
+    assert '2 dòng đã chọn' in page.locator('#qaRunStartAll').inner_text()
+    page.locator('#qaRunStartAll').click()
+    page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 2')",timeout=20000)
+    assert len(submitted)==4
+    assert len(set(submitted_operations))==4,submitted_operations
+    assert page.locator('.plan-row-checkbox[data-row-index="31"]').is_disabled()
+    assert page.locator('.plan-row-checkbox[data-row-index="32"]').is_disabled()
+    # Re-checking again must not offer the confirmed rows for re-submission.
+    page.locator('#validatePlanBtn').click()
+    page.wait_for_function("document.querySelectorAll('#planTableBody tr .status-chip.success').length===40",timeout=20000)
+    assert page.locator('.plan-row-checkbox[data-row-index="31"]').is_disabled()
+    assert 'Đã gửi' in page.locator('#planTableBody tr').nth(30).inner_text()
+    page.locator('#planSelectAll').check()
+    assert '38 dòng đã chọn' in page.locator('#qaRunStartAll').inner_text()
+    assert len(submitted)==4,'Selecting remaining rows must not dispatch until clicked'
     assert not errors,errors
     browser.close()
     print('PASS: QA 1-row + remaining rows, Sheet count delta, CSV, confirmation, no real Google writes.')
