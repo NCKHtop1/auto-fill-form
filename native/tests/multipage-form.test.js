@@ -231,3 +231,29 @@ test('Consecutive section headings do not lose later questions or create a false
  // so the preflight must reject rather than silently submit an incomplete path.
  assert.equal(form.navigationReason,'section_jump');
 });
+
+test('Google public navigation sentinel -2 means CONTINUE, not unsupported branching',async()=>{
+ const items=linearDestinationItems();
+ for(const index of [0,4,7,12])items[index][5]=-2;
+ items[1][4][0][1][0]=['Nam 1-2',null,-2];
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.pageCount,5);
+ assert.equal(form.pageHistory,'0,1,2,3,4');
+ assert.equal(form.questions.length,12);
+ assert.equal(form.unsupportedNavigation,false);
+ assert.equal(form.navigationReason,'');
+ let posts=0;
+ const result=await qa.sendOne({form,answers,fetchImpl:async(url,opt)=>{
+  if(opt.method==='GET')return {ok:true,status:200,url:URL,text:async()=>respondentHtml(items)};
+  posts++;
+  const body=new URLSearchParams(opt.body);
+  assert.equal(body.get('pageHistory'),'0,1,2,3,4');
+  for(let n=1001;n<=1011;n++)assert(body.has('entry.'+n));
+  assert.equal(body.has('entry.1012'),false);
+  return {ok:true,status:200,url:ENDPOINT,
+   text:async()=>'<html>Your response has been recorded</html>'};
+ }});
+ assert.equal(result.status,'page-confirmed');
+ assert.equal(result.filledQuestions,11);
+ assert.equal(posts,1);
+});
