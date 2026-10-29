@@ -33,6 +33,7 @@ function prepareFields(form,answers) {
   if (!form || !Array.isArray(form.questions) || !form.questions.length)
     throw new Error('Không đọc được câu hỏi Google Form.');
   if (!form.acceptingResponses) throw new Error('Google Form hiện không nhận phản hồi.');
+  if (form.unsupportedNavigation) throw new Error('Form có điều hướng giữa các phần hoặc phần rỗng chưa hỗ trợ. Không gửi để tránh mất câu trả lời và mất lượt.');
   if (form.questions.some(q=>!q.supported||!ALLOWED_TYPES.has(q.type)))
     throw new Error('Google Form có câu hỏi chưa hỗ trợ gửi tự động.');
   const issues=validate.validate(form.questions,answers);
@@ -96,6 +97,11 @@ function confirmationPage(html){
    .trim();
  return CONFIRMATION.test(visible);
 }
+function samePublicQuestionSchema(expected,actual){
+ const compact=q=>({id:q.id,type:q.type,entryIds:q.entryIds,required:q.required,
+  options:q.options,rows:q.rows,columns:q.columns,pageIndex:q.pageIndex});
+ return JSON.stringify((expected||[]).map(compact))===JSON.stringify((actual||[]).map(compact));
+}
 async function sendOne({form,answers,fetchImpl=fetch}) {
  const body=prepareFields(form,answers);
  const destination=responseUrl(form.responderUri);
@@ -110,11 +116,27 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
  if(!context.ok||!googleRespondentPage(context.url||form.responderUri))
    return {status:'failed',delivery:'not_sent',note:'Biểu mẫu yêu cầu quyền truy cập hoặc không mở cho người trả lời công khai. Chưa gửi câu trả lời.'};
  let hidden;
- try{hidden=hiddenFormValues(await context.text());}
- catch(e){return {status:'failed',delivery:'not_sent',note:e.message};}
+ try{
+  const respondentHtml=await context.text();
+  hidden=hiddenFormValues(respondentHtml);
+  if(form.pageHistory){
+   // The imported model may be cached; re-check the live Form immediately
+   // before dispatch. Never use a stale page count or stale entry IDs.
+   const current=forms.parsePublicFormHtml(respondentHtml,form.id,form.responderUri);
+   if(current.unsupportedNavigation || current.pageHistory!==form.pageHistory ||
+       !samePublicQuestionSchema(form.questions,current.questions))
+    return {status:'failed',delivery:'not_sent',note:'Google Form đã đổi câu hỏi, mã trường hoặc cấu trúc phần. Nhập lại Form rồi kiểm tra dữ liệu trước khi gửi.'};
+  }
+ }catch(e){return {status:'failed',delivery:'not_sent',note:e.message};}
  for(const [key,value] of hidden.entries())body.set(key,value);
  if(!body.has('fvv'))body.set('fvv','1');
- if(!body.has('pageHistory'))body.set('pageHistory','0');
+ // The first page's hidden value is commonly "0", even when the Form has
+ // many pages. Posting it unchanged silently drops later page answers.
+ const pageHistory=form.pageHistory||hidden.get('pageHistory')||'0';
+ if(!/^0(?:,[1-9]\\d*)*$/.test(pageHistory) ||
+    (form.pageCount && pageHistory.split(',').length!==form.pageCount))
+  return {status:'failed',delivery:'not_sent',note:'Không xác định được đầy đủ các phần của Form. Chưa gửi và không trừ lượt.'};
+ body.set('pageHistory',pageHistory);
  body.set('submit','Submit');
  let response;
  try{
@@ -139,8 +161,11 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
  catch{return {status:'unverified',delivery:'unknown',note:'Không đọc được trang xác nhận. Không tự gửi lại.'};}
  if(!confirmationPage(resultHtml))
    return {status:'unverified',delivery:'unknown',note:'Không thấy bằng chứng xác nhận độc lập rằng Google đã nhận. Kiểm tra Form/Sheet trước khi thử lại.'};
+ const filledQuestions=form.questions.filter(q=>!validate.isEmpty(answers[q.id])).length;
  return {status:'page-confirmed',delivery:'confirmed',receivedAt:new Date().toISOString(),
-   note:'Google Form hiện trang xác nhận đã nhận. Hãy đối chiếu tổng phản hồi trước và sau.'};
+   filledQuestions,totalQuestions:form.questions.length,pageCount:form.pageCount||1,
+   note:'Google đã xác nhận nhận phản hồi. Đã gửi giá trị cho '+filledQuestions+'/'+form.questions.length+
+    ' câu trên '+(form.pageCount||1)+' phần; cần kiểm tra các cột trên Sheet để xác nhận từng câu đã được lưu.'};
 }
 
 module.exports={parseAllowlist,allowedAdmin,canTest,sendingConfigured,responseUrl,prepareFields,hiddenFormValues,confirmationPage,sendOne};
