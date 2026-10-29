@@ -49,6 +49,21 @@ test('Google Forms type 6 section heading is not an answerable checkbox grid',()
  assert.equal(f.unsupportedCount,0);
  assert.equal(f.supportedCount,2);
  assert.equal(f.questions[1].type,'grid');
+
+ // Type 6 also denotes a genuine checkbox grid when it contains answer rows.
+ // Removing all type-6 items would silently break paid users' surveys.
+ const checkboxGrid=[104,'Chọn phương án theo hàng',null,6,[
+  [903,[['Có'],['Không']],1,['Hàng 1']],
+  [904,[['Có'],['Không']],1,['Hàng 2']]
+ ]];
+ const parsed=form.fromPublicItem(checkboxGrid,4);
+ assert.equal(parsed.type,'checkbox_grid');
+ assert.equal(parsed.supported,true);
+ assert.deepEqual(parsed.entryIds,['903','904']);
+ assert.deepEqual(parsed.rows,['Hàng 1','Hàng 2']);
+ assert.deepEqual(parsed.columns,['Có','Không']);
+ assert.deepEqual(validation.validate([parsed],{'104':[['Có'],['Không']]}),[]);
+ assert.deepEqual(validation.fields([parsed],{'104':[['Có'],['Không']]}).getAll('entry.903'),['Có']);
 });
 
 test('Published public form is accessible without OAuth, and validations batch to 50/100', async ()=>{
