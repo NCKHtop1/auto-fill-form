@@ -11,6 +11,7 @@ function exampleHtml(){
  info[1]=[
   [100,'Giới tính',null,2,[[900,[['Nam'],['Nữ']],1]]],
   [101,'Tiêu đề nhóm',null,8,null],
+  [103,'PHẦN 1: CHÂN DUNG NGƯỜI THAM GIA', 'Giúp nhóm phân khúc đối tượng',6,null],
   [102,'Bảng mức độ hài lòng',null,7,[
    [901,[['Không đồng ý'],['Đồng ý']],1,['Câu 1']],
    [902,[['Không đồng ý'],['Đồng ý']],1,['Câu 2']]
@@ -39,6 +40,17 @@ test('Parse published questions and skip headings',()=>{
  assert.deepEqual(f.questions[1].entryIds,['901','902']);
  assert.equal(f.responseCount,null);
 });
+test('Google Forms type 6 section heading is not an answerable checkbox grid',()=>{
+ const title='PHẦN 1: CHÂN DUNG NGƯỜI THAM GIA';
+ const heading=[999,title,'Giúp nhóm phân khúc đối tượng',6,null];
+ assert.equal(form.fromPublicItem(heading,0),null);
+ const f=form.parsePublicFormHtml(exampleHtml(),'Unit_test_form_123',PUBLISHED);
+ assert.equal(f.questions.some(q=>q.title===title),false);
+ assert.equal(f.unsupportedCount,0);
+ assert.equal(f.supportedCount,2);
+ assert.equal(f.questions[1].type,'grid');
+});
+
 test('Published public form is accessible without OAuth, and validations batch to 50/100', async ()=>{
  const original=global.fetch;
  const before=process.env.GOOGLE_CLIENT_ID;
