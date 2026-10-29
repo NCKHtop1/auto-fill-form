@@ -159,7 +159,8 @@ try:
     page.locator('.plan-row-checkbox[data-row-index="31"]').check()
     page.locator('.plan-row-checkbox[data-row-index="32"]').check()
     assert '2 dòng đã chọn' in page.locator('#qaRunStartAll').inner_text()
-    page.locator('#qaRunStartAll').click()
+    # Two rapid clicks must reserve/dispatch only the same two selected rows once.
+    page.evaluate("() => {const b=document.getElementById('qaRunStartAll');b.click();b.click();}")
     page.wait_for_function("document.getElementById('qaRunCounters').textContent.includes('Đã nhận: 2')",timeout=20000)
     assert len(submitted)==4
     assert len(set(submitted_operations))==4,submitted_operations
