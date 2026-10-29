@@ -167,6 +167,32 @@ test('Empty informational section does not become a nonexistent question',()=>{
  assert.equal(form.pageHistory,'0,1,2,3,4,5');
  assert.equal(form.unsupportedNavigation,false);
 });
+test('Submission status is enabled for a 5-part linear form with explicit next-section markers',async()=>{
+ const auth=require('../lib/auth');
+ const handler=require('../api/qa-status');
+ const initial={configured:auth.configured,session:auth.session,loadPublicForm:forms.loadPublicForm};
+ const items=surveyItems();
+ items[0][5]=110;items[4][5]=120;items[7][5]=130;items[12][5]=140;
+ items[1][4][0][1][0]=['Nam 1-2',null,110];
+ try{
+  auth.configured=()=>true;
+  auth.session=async()=>({sub:'test-user',email:'test@example.org'});
+  forms.loadPublicForm=async()=>parsed(respondentHtml(items));
+  const res={
+   statusCode:200,setHeader(){},status(code){this.statusCode=code;return this;},
+   json(body){this.body=body;return this;}
+  };
+  await handler({method:'GET',headers:{},query:{formUrl:EDIT}},res);
+  assert.equal(res.statusCode,200);
+  assert.equal(res.body.canSend,true);
+  assert.equal(res.body.formAllowed,true);
+  assert.deepEqual(res.body.reasons,[]);
+ }finally{
+  auth.configured=initial.configured;
+  auth.session=initial.session;
+  forms.loadPublicForm=initial.loadPublicForm;
+ }
+});
 test('Conditional section branching is blocked before reserving or sending',async()=>{
  const items=surveyItems();
  items[1][4][0][1][0]=['Nam 1-2',null,120]; // radio choice routes to another section
