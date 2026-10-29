@@ -146,7 +146,7 @@ test('Ordinary next-section metadata is not confused with branching or blocked',
 });
 test('The last section can explicitly finish the form without disabling submission',()=>{
  const items=surveyItems();
- items[16][5]=140; // Last section submitting is normal.
+ items[15][5]=140; // Last section submitting is normal.
  const form=parsed(respondentHtml(items));
  assert.equal(form.pageCount,5);
  assert.equal(form.unsupportedNavigation,false);
