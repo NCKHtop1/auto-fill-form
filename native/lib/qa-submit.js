@@ -133,7 +133,7 @@ async function sendOne({form,answers,fetchImpl=fetch}) {
  // The first page's hidden value is commonly "0", even when the Form has
  // many pages. Posting it unchanged silently drops later page answers.
  const pageHistory=form.pageHistory||hidden.get('pageHistory')||'0';
- if(!/^0(?:,[1-9]\\d*)*$/.test(pageHistory) ||
+ if(!/^0(?:,[1-9][0-9]*)*$/.test(pageHistory) ||
     (form.pageCount && pageHistory.split(',').length!==form.pageCount))
   return {status:'failed',delivery:'not_sent',note:'Không xác định được đầy đủ các phần của Form. Chưa gửi và không trừ lượt.'};
  body.set('pageHistory',pageHistory);
