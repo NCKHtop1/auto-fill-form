@@ -6,11 +6,17 @@ async function googleApi(path,token){const r=await fetch('https://forms.googleap
 function readArrayLiteral(raw,assignment){const startAt=raw.indexOf(assignment);if(startAt<0)throw new Error('Google Form không cung cấp dữ liệu câu hỏi công khai.');const first=raw.indexOf('[',startAt+assignment.length);if(first<0)throw new Error('Không tìm thấy danh sách câu hỏi.');let depth=0,quoted=false,escaped=false;
  for(let i=first;i<raw.length;i++){let c=raw[i];if(quoted){if(escaped)escaped=false;else if(c==='\\')escaped=true;else if(c==='"')quoted=false;continue}if(c==='"'){quoted=true;continue}if(c==='[')depth++;if(c===']'){depth--;if(depth===0)return JSON.parse(raw.slice(first,i+1))}}
  throw new Error('Google Form trả về dữ liệu không đầy đủ.')}
+// Public type 6 can describe an informational header (no answer fields) or a real
+// checkbox grid (with answer rows). Distinguish them by structure, not code alone.
+function isNonAnswerablePublicItem(item){
+ const code=item?.[3];
+ return [8,11,12].includes(code) || (code===6 && (!Array.isArray(item?.[4]) || item[4].length===0));
+}
 async function publicFormEntries(uri){let u;try{u=new URL(uri)}catch{return []}if(u.hostname!=='docs.google.com'||!u.pathname.includes('/forms/'))return [];
  const r=await fetch(u.href,{headers:{'User-Agent':'Mozilla/5.0 (compatible; PandaStudy/1.0)'},signal:AbortSignal.timeout(15000)});if(!r.ok)return [];
  const raw=await r.text();let data;try{data=readArrayLiteral(raw,'FB_PUBLIC_LOAD_DATA_')}catch{return []}
  const entries=data?.[1]?.[1];if(!Array.isArray(entries))return [];
- return entries.filter(x=>Array.isArray(x)&&![6,8,11,12].includes(x[3])).map((p,index)=>({itemId:String(p[0]??''),title:String(p[1]||''),order:index,publicType:p[3],entryIds:Array.isArray(p[4])?p[4].map(e=>String(e?.[0]??'')).filter(x=>/^\d+$/.test(x)):[]}));
+ return entries.filter(x=>Array.isArray(x)&&!isNonAnswerablePublicItem(x)).map((p,index)=>({itemId:String(p[0]??''),title:String(p[1]||''),order:index,publicType:p[3],entryIds:Array.isArray(p[4])?p[4].map(e=>String(e?.[0]??'')).filter(x=>/^\d+$/.test(x)):[]}));
 }
 function fromOfficialItem(item,index){if(!item)return null;const q=item.questionItem?.question;const group=item.questionGroupItem;const base={id:String(item.itemId||index),index,title:item.title||'',helpText:item.description||'',required:!!q?.required,supported:true,options:[]};
  if(group){const questions=group.questions||[];const grid=group.grid||{};const kind=grid.columns?.type||'RADIO';return {...base,type:kind==='CHECKBOX'?'checkbox_grid':'grid',rows:questions.map(x=>x.rowQuestion?.title||''),columns:(grid.columns?.options||[]).map(o=>o.value),options:(grid.columns?.options||[]).map(o=>o.value),required:questions.some(x=>x.required)};}
@@ -47,7 +53,7 @@ function fromPublicItem(item,index){
  if(!Array.isArray(item)||item.length<4)return null;
  const code=item[3],fields=Array.isArray(item[4])?item[4]:[];
  // Informational sections, images and videos do not expect an answer.
- if([6,8,11,12].includes(code))return null;
+ if(isNonAnswerablePublicItem(item))return null;
  const title=textValue(item[1])||'Câu hỏi '+(index+1);
  const helpText=textValue(item[2]);
  const entryIds=fields.map(f=>textValue(f?.[0])).filter(id=>/^\d+$/.test(id));
@@ -62,9 +68,9 @@ function fromPublicItem(item,index){
   base.allowOther=Array.isArray(fields?.[0]?.[1])&&fields[0][1].some(c=>Array.isArray(c)&&c[4]===1);
  }else if(code===5){
   base.type='linear_scale';base.options=publicChoices(fields[0]);
- }else if(code===7){
-  // Type 7 is a grid; type 6 is a non-answerable section header (skipped above).
-  base.type='grid';
+ }else if(code===7||code===6){
+  // Type 6 with entry rows is a checkbox grid; type 7 is a radio grid.
+  base.type=code===7?'grid':'checkbox_grid';
   base.rows=fields.map((f,i)=>textValue(f?.[3]?.[0])||'Hàng '+(i+1));
   base.columns=publicChoices(fields[0]);
   base.options=base.columns;
