@@ -63,14 +63,53 @@ function makeKey(){
  return 'pandastudy-qa-attempt:'+((hash>>>0).toString(16));
 }
 function recoverAttempts(){
- state.runKey=makeKey();
+ const bridge=window.PandaStudyQA;
+ const rows=bridge?.getRows()||[];
+ if(!rows.length)return;
+ const key=makeKey();
+ if(!key||key===state.runKey)return;
+ state.runKey=key;
+ state.attempted=new Set();state.operations={};state.history=[];
+ state.before=null;state.after=null;state.source='';state.stopped=false;state.contextChanged=false;
  try{
-  const record=JSON.parse(sessionStorage.getItem(state.runKey)||'{}');
+  const record=JSON.parse(sessionStorage.getItem(key)||'{}');
+  if(record.at&&Date.now()-Date.parse(record.at)>2*24*60*60*1000)return;
+  const positions=new Map(rows.map((r,i)=>[r.index,i]));
+  const attempted=Array.isArray(record.attempted)?record.attempted:[];
+  attempted.forEach(value=>{
+   const index=Number(value);
+   if(Number.isSafeInteger(index)&&positions.has(index))state.attempted.add(index);
+  });
   state.operations=record.operations&&typeof record.operations==='object'?record.operations:{};
-  const old=Array.isArray(record.attempted)?record.attempted:[];
-  old.forEach(n=>state.attempted.add(Number(n)));
-  if(old.length)status('Đã thực hiện '+old.length+' lượt gửi trong phiên này. Kiểm tra kết quả trước khi gửi tiếp.',true);
- }catch{}
+  if(Number.isSafeInteger(record.before)&&record.before>=0)state.before=record.before;
+  if(Number.isSafeInteger(record.after)&&record.after>=0)state.after=record.after;
+  if(typeof record.source==='string')state.source=record.source;
+  for(const item of (Array.isArray(record.history)?record.history:[])){
+   const idx=positions.get(Number(item.index));
+   if(idx===undefined||!state.attempted.has(Number(item.index))||
+      !['page-confirmed','failed','unverified'].includes(item.status))continue;
+   const result={index:Number(item.index),status:item.status,
+    note:String(item.note||''),receivedAt:String(item.receivedAt||''),
+    operationId:String(item.operationId||''),answers:rows[idx].answers};
+   state.history.push(result);
+   bridge.updateRow(idx,item.status==='page-confirmed'?'sent':'unverified',result.receivedAt,result.note);
+  }
+  const resolved=new Set(state.history.map(x=>x.index));
+  const uncertain=Array.from(state.attempted).filter(n=>!resolved.has(n));
+  for(const index of uncertain){
+   const idx=positions.get(index);
+   bridge.updateRow(idx,'unverified','',
+    'Lượt này đã từng được thử gửi, chưa xác minh kết quả. Không tự gửi lại.');
+  }
+  if(uncertain.length){
+   status('Có '+uncertain.length+' dòng đã thử gửi trước đó nhưng chưa xác minh. Các dòng này được giữ lại; bạn vẫn có thể chọn những dòng khác chưa từng gửi.',true);
+  }else if(state.history.length){
+   status('Đã khôi phục '+state.history.length+' lượt gửi của kế hoạch này. Chỉ chọn những dòng còn lại, không gửi trùng.');
+  }
+  updateCounts();
+ }catch{
+  status('Không khôi phục được lịch sử gửi. Hãy kiểm tra Form/Sheet trước khi tiếp tục.',true);
+ }
 }
 function rememberAttempt(index){
  state.attempted.add(index);
@@ -86,8 +125,14 @@ function rememberAttempt(index){
  return state.operations[index];
 }
 function saveAttempts(){
- try{sessionStorage.setItem(state.runKey,
-  JSON.stringify({attempted:Array.from(state.attempted),operations:state.operations,at:new Date().toISOString()}));}catch{}
+ if(!state.runKey)return;
+ try{sessionStorage.setItem(state.runKey,JSON.stringify({
+  attempted:Array.from(state.attempted),operations:state.operations,
+  history:state.history.map(({index,status,note,receivedAt,operationId})=>({
+   index,status,note,receivedAt,operationId
+  })),before:state.before,after:state.after,source:state.source,
+  at:new Date().toISOString()
+ }));}catch{}
 }
 async function permission(){
  const version=++permissionVersion;
@@ -124,6 +169,7 @@ async function verify(isInitial=false,formUrl){
   formUrl:formUrl||bridge.getUrl(),sheetUrl:$('qaSheetUrl').value.trim()||undefined});
  if(isInitial){state.before=result.count;state.source=result.source;}
  else{state.after=result.count;state.source=result.source;}
+ saveAttempts();
  updateCounts();
  return result;
 }
@@ -144,22 +190,25 @@ async function run(maxRows){
  if(!$('qaConsent').checked)return status('Hãy xác nhận trước khi gửi.',true);
  const bridge=window.PandaStudyQA;
  if(!bridge)return status('Chưa có bảng dữ liệu. Hãy nhập Form và bấm 4a, 4b.',true);
+ recoverAttempts();
  const rows=bridge.getRows();
  const formUrl=bridge.getUrl(),planToken=bridge.getPlanToken?.();
  const sameContext=()=>bridge.getUrl()===formUrl&&bridge.getPlanToken?.()===planToken&&!state.contextChanged;
  if(!rows.length)return status('Chưa có dữ liệu để gửi. Hãy bấm 4a và 4b.',true);
- if(rows.some(r=>!['valid','sent','error'].includes(r.status)))
-  return status('Còn dòng chưa kiểm tra. Bấm 4b trước khi gửi.',true);
- if(state.stopped)return status('Đã dừng vì có lỗi hoặc kết quả chưa rõ. Kiểm tra số phản hồi trước.',true);
+ const selected=bridge.getSelectedRows?.()||rows.filter(r=>r.status==='valid');
+ if(!selected.length)
+  return status('Chưa chọn dòng chưa gửi nào. Hãy tích một hoặc nhiều ô ở bảng bước 5.',true);
+ if(state.stopped)
+  return status('Đã dừng do kết quả gửi chưa rõ. Hãy đối chiếu các dòng đã thử gửi; không tự gửi lại.',true);
  const allowed=await permission();
- if(!allowed)return status('Chưa thể gửi. Xem thông báo về trang trả lời Form ở Bước 6.',true);
- if(bridge.getUrl()!==formUrl||bridge.getPlanToken?.()!==planToken)
+ if(!allowed)return status('Chưa thể gửi. Xem trạng thái ở bước 6.',true);
+ if(!sameContext())
   return status('Form hoặc bảng dữ liệu vừa thay đổi. Kiểm tra lại rồi chủ động bấm gửi.',true);
- if(state.history.length===0){state.attempted=new Set();recoverAttempts();}
- const unsent=rows.filter(r=>r.status==='valid'&&!state.attempted.has(r.index));
- if(!unsent.length)return status('Không có dòng hợp lệ chưa gửi; tránh gửi trùng.',true);
- if(state.attempted.size && unsent.length<rows.filter(r=>r.status==='valid').length)
-  return status('Một số dòng đã gửi trong phiên này. Kiểm tra kết quả trước khi gửi tiếp.',true);
+ // Previously attempted indices are held permanently for this plan; only
+ // genuinely unattempted, explicitly selected and validated rows can dispatch.
+ const unsent=selected.filter(r=>r.status==='valid'&&!state.attempted.has(r.index));
+ if(!unsent.length)
+  return status('Các dòng đã chọn đã được gửi hoặc đang cần đối chiếu. Hãy chọn dòng chưa từng gửi.',true);
  state.working=true;state.contextChanged=false;
  // Keep the active Form and plan stable while requests are in flight. Tokens
  // also detect an import/build that was already pending when this run began.
@@ -205,7 +254,8 @@ async function run(maxRows){
     if(e.delivery==='not_sent'){
      // The server confirms that Google was never called. Preserve the row for
      // a later explicit click; approval and balance refresh never resume it.
-     state.attempted.delete(r.index);saveAttempts();blockedBeforeDispatch=true;
+     state.attempted.delete(r.index);delete state.operations[r.index];
+     saveAttempts();blockedBeforeDispatch=true;
      status('Chưa gửi dòng '+r.index+': '+e.message+'. Dữ liệu vẫn được giữ để bạn chủ động gửi lại.',true);
      if(e.status===402)window.PandaBilling?.openPurchase();
      break;
@@ -215,6 +265,7 @@ async function run(maxRows){
    const result={index:r.index,status:answer.status,note:(answer.note||'')+(answer.operationId?' Mã lượt gửi: '+answer.operationId+'.':''),
      receivedAt:answer.receivedAt||'',operationId:answer.operationId||operationId,answers:r.answers};
    state.history.push(result);
+   saveAttempts();
    const idx=rows.findIndex(item=>item.index===r.index);
    if(sameContext())bridge.updateRow(idx,answer.status==='page-confirmed'?'sent':'error',answer.receivedAt||'',result.note);
    else{
@@ -291,7 +342,7 @@ function init(){
  const actions=node('div','action-row');
  const names=[
   ['qaRunStartOne','6a. Gửi 1 dòng','btn btn-primary'],
-  ['qaRunStartAll','6b. Gửi các dòng còn lại','btn btn-secondary'],
+  ['qaRunStartAll','6b. Gửi các dòng đã chọn','btn btn-secondary'],
   ['qaRunVerify','6c. Đối chiếu Form/Sheet','btn btn-outline'],
   ['qaRunExport','6d. Tải kết quả','btn btn-soft']
  ];
@@ -301,7 +352,20 @@ function init(){
  message.id='qaRunMessage';message.hidden=true;message.setAttribute('role','status');panel.appendChild(message);
  const counter=node('p','small muted','');counter.id='qaRunCounters';counter.hidden=true;panel.appendChild(counter);
  previous.after(panel);
- $('qaRunStartOne').addEventListener('click',()=>run(1));
+ document.addEventListener('pandastudy:selection-changed', event=>{
+  const count=Number(event.detail?.selected||0);
+  $('qaRunStartAll').textContent=count?'6b. Gửi '+count+' dòng đã chọn':'6b. Gửi các dòng đã chọn';
+ });
+ document.addEventListener('pandastudy:plan-rebuilt',()=>{
+  if(state.working){state.contextChanged=true;return;}
+  recoverAttempts();
+  updateCounts();
+ });
+ document.addEventListener('pandastudy:plan-validated',()=>{
+  recoverAttempts();
+  updateCounts();
+ });
+  $('qaRunStartOne').addEventListener('click',()=>run(1));
  $('qaRunStartAll').addEventListener('click',()=>run(Number.MAX_SAFE_INTEGER));
  $('qaRunVerify').addEventListener('click',async()=>{
   try{const result=await verify(false);status('Tổng hiện tại: '+result.count+' phản hồi/dòng ('+providerLabel()+'). '+result.note);}
