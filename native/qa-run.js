@@ -354,16 +354,16 @@ function init(){
  message.id='qaRunMessage';message.hidden=true;message.setAttribute('role','status');panel.appendChild(message);
  const counter=node('p','small muted','');counter.id='qaRunCounters';counter.hidden=true;panel.appendChild(counter);
  previous.after(panel);
- document.addEventListener('pandastudy:selection-changed', event=>{
+ window.addEventListener('pandastudy:selection-changed', event=>{
   const count=Number(event.detail?.selected||0);
   $('qaRunStartAll').textContent=count?'6b. Gửi '+count+' dòng đã chọn':'6b. Gửi các dòng đã chọn';
  });
- document.addEventListener('pandastudy:plan-rebuilt',()=>{
+ window.addEventListener('pandastudy:plan-rebuilt',()=>{
   if(state.working){state.contextChanged=true;return;}
   recoverAttempts();
   updateCounts();
  });
- document.addEventListener('pandastudy:plan-validated',()=>{
+ window.addEventListener('pandastudy:plan-validated',()=>{
   recoverAttempts();
   updateCounts();
  });
