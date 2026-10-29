@@ -92,6 +92,47 @@ try:
         assert page.locator("#downloadPlanBtn").is_disabled()
         assert page.locator("#refreshCountBtn").is_disabled()
         assert "Chưa cấu hình Google" not in page.locator("#googleStatus").inner_text()
+        # Plain-language text answers UX: required text must be provided;
+        # optional contact stays empty without manufacturing personal details.
+        sample_form["questions"] = sample_questions + [
+            {"id": "200", "index": 2, "title": "Trải nghiệm của người tham gia",
+             "helpText": "", "required": True, "supported": True,
+             "type": "paragraph", "options": [], "entryIds": ["950"]},
+            {"id": "201", "index": 3, "title": "Họ tên & SĐT/Zalo/Email (tùy chọn)",
+             "helpText": "", "required": False, "supported": True,
+             "type": "short_text", "options": [], "entryIds": ["951"]}
+        ]
+        sample_form["supportedCount"] = 4
+        page.locator("#importFormBtn").click()
+        required_text = page.locator('.text-samples[data-qid="200"]')
+        optional_text = page.locator('.text-samples[data-qid="201"]')
+        required_text.wait_for(timeout=10000)
+        assert optional_text.is_visible()
+        assert required_text.input_value() == ""
+        assert optional_text.input_value() == ""
+        assert required_text.get_attribute("placeholder") == "Dán câu trả lời vào đây…"
+        assert page.locator('label[for="text-samples-200"]').count() == 1
+        plain_ui = page.locator("#questionList").inner_text()
+        assert "Khi Excel không có dữ liệu" in plain_ui
+        assert "Câu trả lời có sẵn (mỗi dòng một câu)" in plain_ui
+        assert "Câu bắt buộc: cần dữ liệu Excel" in plain_ui
+        assert "Câu không bắt buộc: nếu không có dữ liệu" in plain_ui
+        assert "Thông tin liên hệ chỉ được điền khi" in plain_ui
+        assert "Quy tắc tạo dự phòng" not in plain_ui
+        assert "{{n}}" not in plain_ui and "{{timestamp}}" not in plain_ui
+        page.locator("#responseCount").fill("1")
+        page.locator("#buildPlanBtn").click()
+        assert "Câu bắt buộc" in page.locator("#workflowResult").inner_text()
+        required_text.fill("Nội dung do người trả lời cung cấp")
+        page.locator("#buildPlanBtn").click()
+        page.wait_for_function("document.querySelectorAll('#planTableBody tr').length===1")
+        generated = page.evaluate("window.PandaStudyQA.getRows()[0].answers")
+        assert generated["200"] == "Nội dung do người trả lời cung cấp"
+        assert "201" not in generated, "Optional contact cannot be invented"
+        sample_form["questions"] = sample_questions
+        sample_form["supportedCount"] = 2
+        page.locator("#importFormBtn").click()
+        page.wait_for_function("document.querySelectorAll('#questionList .question-card').length===2")
         for count in (50, 100):
             page.locator("#responseCount").fill(str(count))
             page.locator("#buildPlanBtn").click()
