@@ -133,8 +133,8 @@ function updateReport(){
  if(state.before!=null&&state.after!=null){
   const delta=state.after-state.before;
   if(delta===confirmed && confirmed>0)status(
-   'Đối chiếu tổng khớp: '+confirmed+' lượt có trang Google xác nhận, '+providerLabel()+' tăng '+delta+
-   '. Nếu biểu mẫu đang có người trả lời khác, số tăng có thể bao gồm phản hồi của họ.');
+   'Đối chiếu số lượng khớp: '+confirmed+' lượt có trang Google xác nhận, '+providerLabel()+' tăng '+delta+
+   '. Đây chỉ là số phiếu, KHÔNG xác minh từng câu trả lời. Kiểm tra các cột trên Google Sheet trước khi gửi hàng loạt; lượt tăng có thể đến từ người khác.');
   else status('Cần đối chiếu lại: Google xác nhận '+confirmed+
    ', nhưng tổng phản hồi tăng '+delta+'.',true);
  }

@@ -1770,7 +1770,7 @@
       const f = state.form;
       $('formSummary').innerHTML = `
         <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
-          <div style="flex:1;min-width:240px"><b>${escapeHtml(f.title)}</b><div class="small muted">${escapeHtml(f.description || '')}</div></div>
+          <div style="flex:1;min-width:240px"><b>${escapeHtml(f.title)}</b><div class="small muted">${escapeHtml(f.description || '')}</div><div class="small muted">${f.pageCount > 1 ? 'Biểu mẫu gồm ' + f.pageCount + ' phần; hệ thống sẽ gửi dữ liệu tất cả phần theo thứ tự.' : ''}</div></div>
           <span class="status-chip ${f.acceptingResponses ? 'success' : 'danger'}">${f.acceptingResponses ? t('accepting') : t('not_accepting')}</span>
         </div>
         <div class="summary-grid">
@@ -2064,7 +2064,15 @@
         buildPlan();
         $('progressWrap').classList.add('hidden');
         $('workflowResult').className = 'workflow-result';
-        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa kiểm tra. Chưa gửi. Bấm 4b.`;
+        const optionalEmpty = state.form.questions.filter(q => q.supported && !q.required &&
+          state.plan.some(row => isEmpty(row.answers[q.id])));
+        const caution = optionalEmpty.length
+          ? ' Có ' + optionalEmpty.length + ' câu tùy chọn đang trống: ' +
+            optionalEmpty.slice(0, 3).map(q => q.title).join('; ') +
+            (optionalEmpty.length > 3 ? '...' : '') +
+            '. Nếu muốn điền, hãy ghép cột hoặc thêm giá trị mẫu. Thông tin liên hệ có thể để trống.'
+          : '';
+        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa kiểm tra. Chưa gửi. Bấm 4b.` + caution;
         $('previewSection').scrollIntoView({behavior:'smooth',block:'start'});
         toast(`Đã tạo ${state.plan.length} dòng xem trước. Bấm 4b để kiểm tra.`, 'success');
       } catch (error) {
