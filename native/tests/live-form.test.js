@@ -17,6 +17,7 @@ test('Real published Google Form: import and validate 50/100 rows without OAuth 
  assert.equal(f.questions.filter(q=>q.type==='grid').length,3);
  assert.equal(f.supportedCount,11);
  assert.equal(f.unsupportedCount,0);
+ assert.equal(f.unsupportedNavigation,false,'Ordinary published Forms must not trigger a false navigation block');
  assert(f.responderUri.startsWith('https://docs.google.com/forms/d/e/'));
  assert(f.questions.every(q=>q.entryIds.length>=1));
  const answers={};
