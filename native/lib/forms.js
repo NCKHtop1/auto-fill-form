@@ -97,6 +97,39 @@ function fromPublicItem(item,index){
  }
  return base;
 }
+// Google Forms only persists answers from pages named in pageHistory. Type 8
+// denotes a page break; unlike type 6 informational headers, it changes the
+// respondent page. Collect pages from the form's actual item structure, never
+// guess a number of pages or blindly send pageHistory=0.
+function publicPageLayout(items){
+ let pageCount=1,hasQuestionsOnPage=false,emptyPage=false,branching=false;
+ const pageById={};
+ for(const item of items){
+  if(!Array.isArray(item)||item.length<4)continue;
+  const code=item[3];
+  if(code===8){
+   if(hasQuestionsOnPage){pageCount++;hasQuestionsOnPage=false;}
+   else if(pageCount>1)emptyPage=true;
+   // A page-break with a custom destination cannot use linear pageHistory.
+   if(item[5]!=null&&item[5]!==0)branching=true;
+   continue;
+  }
+  if(isNonAnswerablePublicItem(item))continue;
+  const fields=Array.isArray(item[4])?item[4]:[];
+  if(fields.some(f=>/^\\d+$/.test(String(f?.[0]??'')))){
+   hasQuestionsOnPage=true;
+   pageById[String(item[0]??'')]=pageCount-1;
+  }
+  // Choice-level 'Go to section based on answer' overrides linear navigation.
+  if(code===2||code===3){
+   const options=Array.isArray(fields?.[0]?.[1])?fields[0][1]:[];
+   if(options.some(o=>Array.isArray(o)&&o[2]!=null))branching=true;
+  }
+ }
+ if(pageCount>50||emptyPage||!hasQuestionsOnPage)branching=true;
+ return {pageCount,pageHistory:Array.from({length:pageCount},(_,i)=>i).join(','),
+  unsupportedNavigation:branching,pageById};
+}
 function parsePublicFormHtml(html,id,responderUri){
  if(typeof html!=='string'||html.length>4_000_000)throw new Error('Dữ liệu Google Form không hợp lệ.');
  let data;
@@ -107,11 +140,13 @@ function parsePublicFormHtml(html,id,responderUri){
  }
  const meta=data?.[1];
  if(!Array.isArray(meta)||!Array.isArray(meta[1]))throw new Error('Google thay đổi cấu trúc biểu mẫu. Không đọc được danh sách câu hỏi.');
- const questions=meta[1].map(fromPublicItem).filter(Boolean);
+ const layout=publicPageLayout(meta[1]);
+ const questions=meta[1].map(fromPublicItem).filter(Boolean).map(q=>({...q,pageIndex:layout.pageById[q.id]??0}));
  const accepts=/<form\b[^>]*\baction=["'][^"']*\/formResponse(?:["'?])/i.test(html);
  return {id,title:textValue(meta[8])||'Google Form',description:textValue(meta[0]),
    acceptingResponses:accepts,collectsEmail:null,limitOneResponsePerUser:null,responseCount:null,
-   questions,responderUri,
+   questions,responderUri,pageCount:layout.pageCount,pageHistory:layout.pageHistory,
+   unsupportedNavigation:layout.unsupportedNavigation,
    unsupportedCount:questions.filter(q=>!q.supported).length,
    supportedCount:questions.filter(q=>q.supported).length,accessMode:'public'};
 }
@@ -145,4 +180,4 @@ async function loadPublicForm(url){
  return info;
 }
 
-module.exports={formIdFromUrl,readArrayLiteral,publicFormEntries,fromOfficialItem,mergeEntries,loadOwnedForm,responseCount,fromPublicItem,parsePublicFormHtml,loadPublicForm};
+module.exports={formIdFromUrl,readArrayLiteral,publicFormEntries,fromOfficialItem,mergeEntries,loadOwnedForm,responseCount,fromPublicItem,publicPageLayout,parsePublicFormHtml,loadPublicForm};
