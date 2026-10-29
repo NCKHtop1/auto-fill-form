@@ -113,7 +113,7 @@ test('A form change between import and POST is blocked before any charged dispat
 });
 test('Conditional section branching is blocked before reserving or sending',async()=>{
  const items=surveyItems();
- items[3][4][0][1][0]=['Hoc bong',null,120]; // choice routes to another section
+ items[1][4][0][1][0]=['Nam 1-2',null,120]; // radio choice routes to another section
  const form=parsed(respondentHtml(items));
  assert.equal(form.unsupportedNavigation,true);
  let hits=0;
