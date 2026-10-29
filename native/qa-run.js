@@ -73,6 +73,8 @@ function recoverAttempts(){
  state.planToken=planToken;
  state.attempted=new Set();state.operations={};state.history=[];
  state.before=null;state.after=null;state.source='';state.stopped=false;state.contextChanged=false;
+ status('');
+ updateCounts();
  try{
   const record=JSON.parse(sessionStorage.getItem(key)||'{}');
   if(record.at&&Date.now()-Date.parse(record.at)>2*24*60*60*1000)return;
