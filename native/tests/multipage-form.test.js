@@ -111,6 +111,62 @@ test('A form change between import and POST is blocked before any charged dispat
  assert.equal(posts,0);
  assert.match(result.note,/đổi câu hỏi|cấu trúc/);
 });
+test('Ordinary next-section metadata is not confused with branching or blocked',async()=>{
+ const items=surveyItems();
+ // Google may encode an explicit destination for the NEXT section. This is
+ // a normal linear multi-page form, not a reason to deny paying users.
+ items[0][5]=110;
+ items[4][5]=120;
+ items[7][5]=130;
+ items[12][5]=140;
+ items[1][4][0][1][0]=['Nam 1-2',null,110];
+ items[1][4][0][1][1]=['Nam 3-4',null,110];
+ items[2][4][0][1][0]=['Kinh te',null,0];
+ const html=respondentHtml(items);
+ const form=parsed(html);
+ assert.equal(form.questions.length,12);
+ assert.equal(form.supportedCount,12);
+ assert.equal(form.pageCount,5);
+ assert.equal(form.pageHistory,'0,1,2,3,4');
+ assert.equal(form.unsupportedNavigation,false);
+ assert.doesNotThrow(()=>qa.prepareFields(form,answers));
+ let postCount=0;
+ const result=await qa.sendOne({form,answers,fetchImpl:async(url,opts)=>{
+  if(opts.method==='GET')return {ok:true,status:200,url:URL,text:async()=>html};
+  postCount++;
+  const fields=new URLSearchParams(opts.body);
+  assert.equal(fields.get('pageHistory'),'0,1,2,3,4');
+  for(let n=1001;n<=1011;n++)assert(fields.has('entry.'+n));
+  assert.equal(fields.has('entry.1012'),false);
+  return {ok:true,status:200,url:ENDPOINT,text:async()=>'<html>Your response has been recorded</html>'};
+ }});
+ assert.equal(result.status,'page-confirmed');
+ assert.equal(result.filledQuestions,11);
+ assert.equal(postCount,1);
+});
+test('The last section can explicitly finish the form without disabling submission',()=>{
+ const items=surveyItems();
+ items[16][5]=140; // Last section submitting is normal.
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.pageCount,5);
+ assert.equal(form.unsupportedNavigation,false);
+});
+test('Intermediate section that jumps past answers is still protected',()=>{
+ const items=surveyItems();
+ items[0][5]=130; // Jump from page 1 to page 4.
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.unsupportedNavigation,true);
+ assert.throws(()=>qa.prepareFields(form,answers),/không thể gửi|chưa hỗ trợ|điều hướng/i);
+});
+test('Empty informational section does not become a nonexistent question',()=>{
+ const items=surveyItems();
+ items.splice(12,0,[501,'Thông tin bổ sung',null,8,null]);
+ const form=parsed(respondentHtml(items));
+ assert.equal(form.questions.length,12);
+ assert.equal(form.pageCount,6);
+ assert.equal(form.pageHistory,'0,1,2,3,4,5');
+ assert.equal(form.unsupportedNavigation,false);
+});
 test('Conditional section branching is blocked before reserving or sending',async()=>{
  const items=surveyItems();
  items[1][4][0][1][0]=['Nam 1-2',null,120]; // radio choice routes to another section
