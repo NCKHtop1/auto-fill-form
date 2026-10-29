@@ -102,33 +102,57 @@ function fromPublicItem(item,index){
 // respondent page. Collect pages from the form's actual item structure, never
 // guess a number of pages or blindly send pageHistory=0.
 function publicPageLayout(items){
- let pageCount=1,hasQuestionsOnPage=false,emptyPage=false,branching=false;
- const pageById={};
- for(const item of items){
+ let pageCount=1,seenSection=false,seenQuestionBeforeSection=false;
+ const pageById={},sections=[],choiceItems=[];
+ const published=Array.isArray(items)?items:[];
+ for(const item of published){
   if(!Array.isArray(item)||item.length<4)continue;
   const code=item[3];
   if(code===8){
-   if(hasQuestionsOnPage){pageCount++;hasQuestionsOnPage=false;}
-   else if(pageCount>1)emptyPage=true;
-   // A page-break with a custom destination cannot use linear pageHistory.
-   if(item[5]!=null&&item[5]!==0)branching=true;
+   // The first section header names page 0. Every later section starts a
+   // new page, including informational/empty pages.
+   if(seenSection||seenQuestionBeforeSection)pageCount++;
+   seenSection=true;
+   sections.push({id:String(item[0]??''),index:pageCount-1,next:item[5]});
    continue;
   }
   if(isNonAnswerablePublicItem(item))continue;
   const fields=Array.isArray(item[4])?item[4]:[];
   if(fields.some(f=>/^[0-9]+$/.test(String(f?.[0]??'')))){
-   hasQuestionsOnPage=true;
    pageById[String(item[0]??'')]=pageCount-1;
+   if(!seenSection)seenQuestionBeforeSection=true;
   }
-  // Choice-level 'Go to section based on answer' overrides linear navigation.
   if(code===2||code===3){
    const options=Array.isArray(fields?.[0]?.[1])?fields[0][1]:[];
-   if(options.some(o=>Array.isArray(o)&&o[2]!=null))branching=true;
+   choiceItems.push({page:pageCount-1,options});
   }
  }
- if(pageCount>50||emptyPage||!hasQuestionsOnPage)branching=true;
+ const pageForSection=new Map(sections.map(x=>[x.id,x.index]));
+ // A navigation ID does not by itself mean a branch: a Form may explicitly
+ // say "continue to next section". Only a confirmed jump to a nonadjacent
+ // published section (or an early section submit) is a nonlinear path.
+ let nonLinear=false;
+ for(const section of sections){
+  if(section.next==null)continue;
+  const target=String(section.next);
+  if(target===section.id){
+   if(section.index<pageCount-1)nonLinear=true;
+  }else if(pageForSection.has(target)&&pageForSection.get(target)!==section.index+1){
+   nonLinear=true;
+  }
+ }
+ for(const item of choiceItems){
+  for(const option of item.options){
+   const destination=Array.isArray(option)?option[2]:null;
+   if(destination==null)continue;
+   const target=String(destination);
+   if(pageForSection.has(target) && pageForSection.get(target)!==item.page+1){
+    nonLinear=true;
+   }
+  }
+ }
  return {pageCount,pageHistory:Array.from({length:pageCount},(_,i)=>i).join(','),
-  unsupportedNavigation:branching,pageById};
+  unsupportedNavigation:nonLinear||pageCount>75,pageById};
 }
 function parsePublicFormHtml(html,id,responderUri){
  if(typeof html!=='string'||html.length>4_000_000)throw new Error('Dữ liệu Google Form không hợp lệ.');
