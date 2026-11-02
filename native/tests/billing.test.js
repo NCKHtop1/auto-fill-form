@@ -397,8 +397,10 @@ test('admin user directory exposes persistent Google accounts without raw Google
   await billing.getProfile(buyer);
   await billing.getProfile(admin);
   await fund(2,buyer);
-  const users=await billing.listAdminUsers(admin,{search:'buyer@'});
+  const {users,pagination}=await billing.listAdminUsers(admin,{search:'buyer@'});
   assert.equal(users.length,1);
+  assert.equal(pagination.total,1);
+  assert.equal(pagination.page,1);
   assert.equal(users[0].email,buyer.email);
   assert.equal(users[0].role,'user');
   assert.equal(users[0].purchasedCredits,2);
@@ -409,7 +411,7 @@ test('admin user directory exposes persistent Google accounts without raw Google
   assert.equal(Object.hasOwn(users[0],'google_sub'),false);
   assert.equal(Object.hasOwn(users[0],'googleSub'),false);
 
-  const admins=await billing.listAdminUsers(admin,{search:'admin@example.test'});
+  const {users:admins}=await billing.listAdminUsers(admin,{search:'admin@example.test'});
   assert.equal(admins.length,1);
   assert.equal(admins[0].role,'admin');
 
@@ -417,6 +419,40 @@ test('admin user directory exposes persistent Google accounts without raw Google
   const response=await request(adminApi,{identity:admin,query:{resource:'users',search:'buyer@'}});
   assert.equal(response.statusCode,200);
   assert.equal(response.data.users[0].email,buyer.email);
+});
+
+test('admin directory pagination returns all accounts beyond 200, stable latest-first order and filtered totals',async () => {
+  const start = new Date('2026-01-01T00:00:00Z').getTime();
+  for (let i=0; i<225; i++) {
+    const identity = {sub:'paged-'+i,email:'paged-'+String(i).padStart(3,'0')+'@example.test',email_verified:true};
+    const customer = await billing.ensureCustomer(identity);
+    await db.query('UPDATE ps_billing_customers SET created_at=$1 WHERE id=$2',[new Date(start+i*1000).toISOString(),customer.id]);
+  }
+  const first = await billing.listAdminUsers(admin,{page:1,pageSize:10,search:'paged-'});
+  assert.equal(first.pagination.total,225);
+  assert.equal(first.pagination.totalPages,23);
+  assert.equal(first.users.length,10);
+  assert.equal(first.users[0].email,'paged-224@example.test');
+  const second = await billing.listAdminUsers(admin,{page:2,pageSize:10,search:'paged-'});
+  assert.equal(second.users[0].email,'paged-214@example.test');
+  assert.equal(new Set([...first.users,...second.users].map(u=>u.id)).size,20);
+  const fifty = await billing.listAdminUsers(admin,{page:5,pageSize:50,search:'paged-'});
+  assert.equal(fifty.users.length,25);
+  assert.equal(fifty.pagination.totalPages,5);
+  const hundred = await billing.listAdminUsers(admin,{page:2,pageSize:100,search:'paged-'});
+  assert.equal(hundred.users.length,100);
+  const beyond = await billing.listAdminUsers(admin,{page:1000,pageSize:100,search:'paged-'});
+  assert.equal(beyond.pagination.page,3);
+  assert.equal(beyond.users.length,25);
+  const filtered = await billing.listAdminUsers(admin,{page:1,pageSize:10,search:'paged-00'});
+  assert.equal(filtered.pagination.total,10);
+  await assert.rejects(billing.listAdminUsers(admin,{page:0}),{code:'INVALID_PAGE'});
+  await assert.rejects(billing.listAdminUsers(admin,{pageSize:200}),{code:'INVALID_PAGE_SIZE'});
+  const api = await request(adminApi,{identity:admin,query:{resource:'users',page:'3',pageSize:'100',search:'paged-'}});
+  assert.equal(api.statusCode,200);
+  assert.equal(api.data.pagination.total,225);
+  assert.equal(api.data.users.length,25);
+  assert.equal((await request(adminApi,{identity:buyer,query:{resource:'users'}})).statusCode,403);
 });
 
 test('a fault after updating balance rolls back approval, bank allocation and audit together',async () => {
