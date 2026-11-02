@@ -138,7 +138,15 @@ def main():
                     search = query.get("search", "").lower()
                     users = [item for item in state["users"]
                              if not search or search in item["email"].lower() or search in item["id"].lower()]
-                    response = {"ok": True, "users": users}
+                    page_size = int(query.get("pageSize", "10"))
+                    page = int(query.get("page", "1"))
+                    total = len(users)
+                    total_pages = max(1, (total + page_size - 1) // page_size)
+                    page = min(page, total_pages)
+                    offset = (page - 1) * page_size
+                    response = {"ok": True, "users": users[offset:offset + page_size],
+                                "pagination": {"page": page, "pageSize": page_size,
+                                               "total": total, "totalPages": total_pages}}
                 elif query.get("resource") == "commerce":
                     response = {"ok": True, "commerce": state["commerce"]}
                 elif query.get("resource") == "metrics":
@@ -396,7 +404,13 @@ def main():
             assert ADMIN["email"] not in admin.locator("#paUsers").inner_text()
             admin.get_by_role("button", name="Xóa lọc", exact=True).click()
             admin.get_by_text("Danh sách gần nhất: 2 tài khoản", exact=False).wait_for()
-            print("PASS admin accounts: persistent Google users, balances, roles and search visible only to admin")
+            assert admin.locator("#paUserPageSize").input_value() == "10"
+            assert admin.locator("#paUserPagination button").count() == 0
+            admin.locator("#paUserPageSize").select_option("50")
+            admin.get_by_text("Danh sách gần nhất: 2 tài khoản", exact=False).wait_for()
+            assert any(call["path"] == "/api/admin-topups" and call["query"].get("pageSize") == "50"
+                       for call in state["calls"])
+            print("PASS admin accounts: pagination defaults 10, supports 50 and preserves search/roles")
             assert admin.locator("#paReceivedAmount").count() == 0
             assert admin.locator("#paBankReference").count() == 0
             assert admin.locator("#paConfirmedBank").count() == 0

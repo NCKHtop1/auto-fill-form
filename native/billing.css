@@ -196,6 +196,20 @@
 .pb-admin-user-search { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
 .pb-admin-user-search .pb-field { margin: 0; min-width: min(320px, 100%); }
 .pb-admin-users { margin-top: 14px; }
+.pb-admin-users-toolbar { display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+.pb-admin-users-toolbar label { color: var(--pb-muted, #526655); font-size: 13px; font-weight: 600; }
+.pb-admin-users-toolbar select { min-height: 39px; padding: 7px 28px 7px 10px; border: 1px solid var(--pb-line); border-radius: 10px; background: #fff; color: var(--pb-text, #193e25); font: inherit; }
+.pb-admin-users-toolbar select:focus-visible { outline: 2px solid #4f8a55; outline-offset: 2px; }
+.pb-admin-user-pagination { display: flex; justify-content: flex-end; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 14px; }
+.pb-user-page-numbers { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.pb-admin-user-pagination .pb-user-page-button { min-width: 38px; min-height: 38px; padding: 7px 10px; }
+.pb-admin-user-pagination .pb-user-page-button.is-active { background: #246d3c; border-color: #246d3c; color: #fff; }
+.pb-user-page-ellipsis { padding: 0 3px; color: #637566; }
+@media (max-width: 440px) {
+  .pb-admin-users-toolbar { justify-content: flex-start; }
+  .pb-admin-user-pagination { justify-content: center; }
+  .pb-admin-user-pagination .pb-user-page-button { padding: 6px 9px; }
+}
 .pb-user-table-wrap {
   margin-top: 12px;
   overflow: auto;

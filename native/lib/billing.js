@@ -633,7 +633,26 @@ async function listAdminUsers(identity, input = {}) {
   requireAdmin(identity); assertReady();
   const search = typeof input.search === 'string' ? input.search.trim().toLowerCase() : '';
   if (search.length > 120) fail(400,'INVALID_SEARCH','Từ khóa tìm kiếm quá dài.');
-  const result = await db.query(`SELECT c.id,c.email,c.available_credits,c.reserved_credits,c.created_at,c.updated_at,
+  const requestedPage = Number(input.page ?? 1);
+  const pageSize = Number(input.pageSize ?? 10);
+  if (!Number.isSafeInteger(requestedPage) || requestedPage < 1)
+    fail(400,'INVALID_PAGE','Số trang không hợp lệ.');
+  if (![10,50,100].includes(pageSize))
+    fail(400,'INVALID_PAGE_SIZE','Số tài khoản mỗi trang không hợp lệ.');
+  const searchSql = "($1='' OR lower(c.email) LIKE '%'||$1||'%' OR lower(c.id::text) LIKE '%'||$1||'%')";
+  const countResult = await db.query(`SELECT count(*) AS total FROM ps_billing_customers c WHERE ${searchSql}`,[search]);
+  const total = Number(countResult.rows[0]?.total || 0);
+  const totalPages = Math.max(1,Math.ceil(total/pageSize));
+  const page = Math.min(requestedPage,totalPages);
+  // Only aggregate billing history for the requested page, never for all registered accounts.
+  const result = await db.query(`WITH page_customers AS (
+      SELECT c.id,c.email,c.available_credits,c.reserved_credits,c.created_at,c.updated_at
+      FROM ps_billing_customers c
+      WHERE ${searchSql}
+      ORDER BY c.created_at DESC,c.id DESC
+      LIMIT $2 OFFSET $3
+    )
+    SELECT c.id,c.email,c.available_credits,c.reserved_credits,c.created_at,c.updated_at,
       COALESCE(ord.total_orders,0) AS total_orders,
       COALESCE(ord.pending_orders,0) AS pending_orders,
       COALESCE(ord.approved_orders,0) AS approved_orders,
@@ -647,7 +666,7 @@ async function listAdminUsers(identity, input = {}) {
       COALESCE(pr.promotion_credits,0) AS promotion_credits,
       COALESCE(pr.promotion_grants,0) AS promotion_grants,
       pr.last_promotion_at
-    FROM ps_billing_customers c
+    FROM page_customers c
     LEFT JOIN LATERAL (
       SELECT count(*) AS total_orders,
         count(*) FILTER (WHERE status IN ('pending_payment','pending_review')) AS pending_orders,
@@ -668,11 +687,8 @@ async function listAdminUsers(identity, input = {}) {
       SELECT COALESCE(sum(credits),0) AS promotion_credits,count(*) AS promotion_grants,max(granted_at) AS last_promotion_at
       FROM ps_billing_promotion_grants WHERE customer_id=c.id
     ) pr ON true
-    WHERE ($1='' OR lower(c.email) LIKE '%'||$1||'%' OR lower(c.id::text) LIKE '%'||$1||'%')
-    ORDER BY GREATEST(c.updated_at,COALESCE(ord.last_order_at,c.updated_at),COALESCE(op.last_operation_at,c.updated_at)) DESC,
-      c.created_at DESC
-    LIMIT 200`,[search]);
-  return result.rows.map(row => ({
+    ORDER BY c.created_at DESC,c.id DESC`,[search,pageSize,(page-1)*pageSize]);
+  const users = result.rows.map(row => ({
     id: row.id,
     email: row.email,
     role: adminEmails().includes(String(row.email || '').toLowerCase()) ? 'admin' : 'user',
@@ -692,6 +708,7 @@ async function listAdminUsers(identity, input = {}) {
     promotionCredits: number(row.promotion_credits),
     promotionGrants: number(row.promotion_grants)
   }));
+  return {users,pagination:{page,pageSize,total,totalPages}};
 }
 
 async function listAdminMetrics(identity) {

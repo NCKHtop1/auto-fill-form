@@ -3,7 +3,9 @@
   'use strict';
   const $ = id => document.getElementById(id);
   const state = { profile: null, orders: [], operations: [], users: [], metrics: null, commerce: null, selected: null, selectedUser: null,
-    loading: false, usersLoading: false, metricsLoading: false, commerceLoading: false, busy: false,
+    loading: false, usersLoading: false, usersReloadQueued: false, userPage: 1, userPageSize: 10,
+    userPagination: {page:1,pageSize:10,total:0,totalPages:1},
+    metricsLoading: false, commerceLoading: false, busy: false,
     initialOrder: new URLSearchParams(location.search).get('orderId'), keys: new Map() };
   const labels = { pending_payment: 'Chờ chuyển khoản', pending_review: 'Chờ duyệt', approved: 'Đã cộng phiếu', rejected: 'Đã từ chối' };
   const number = value => Number(value || 0).toLocaleString('vi-VN');
@@ -54,8 +56,10 @@
       $('paWorkspace').hidden = !allowed;
       if (!allowed) {
         state.orders = []; state.operations = []; state.users = []; state.metrics = null; state.commerce = null; state.selected = null;
+        state.selectedUser = null; state.userPage = 1; state.userPagination = {page:1,pageSize:state.userPageSize,total:0,totalPages:1};
         $('paOrders').replaceChildren(); $('paOperations').replaceChildren(); $('paDetail').replaceChildren();
-        $('paUsers')?.replaceChildren(); if ($('paUsersSummary')) $('paUsersSummary').textContent = '';
+        $('paUsers')?.replaceChildren(); $('paUserPagination')?.replaceChildren();
+        if ($('paUsersSummary')) $('paUsersSummary').textContent = '';
         $('paRevenueSummary')?.replaceChildren(); $('paRevenueMonthly')?.replaceChildren(); $('paRevenuePackages')?.replaceChildren();
         $('paPackages')?.replaceChildren(); $('paPromotions')?.replaceChildren();
       }
@@ -127,23 +131,79 @@
     } finally { state.loading = false; $('paRefresh').disabled = false; }
   }
   async function loadUsers(options = {}) {
-    if (state.usersLoading || !state.profile?.user?.isAdmin || !$('paUsers')) return;
+    if (!state.profile?.user?.isAdmin || !$('paUsers')) return;
+    if (state.usersLoading) { state.usersReloadQueued = true; return; }
     state.usersLoading = true;
     const search = $('paUserSearch')?.value?.trim() || '';
+    const requestedPage = state.userPage;
+    const pageSize = state.userPageSize;
     if (!options.quiet) $('paUsersSummary').textContent = 'Đang tải tài khoản…';
     try {
-      const result = await request('/api/admin-topups?resource=users&search=' + encodeURIComponent(search));
+      const params = new URLSearchParams({resource:'users',search,page:String(requestedPage),pageSize:String(pageSize)});
+      const result = await request('/api/admin-topups?' + params);
+      if (search !== ($('paUserSearch')?.value?.trim() || '') ||
+          requestedPage !== state.userPage || pageSize !== state.userPageSize) {
+        state.usersReloadQueued = true;
+        return;
+      }
       state.users = Array.isArray(result.users) ? result.users : [];
+      state.userPagination = result.pagination || {page:requestedPage,pageSize,total:state.users.length,totalPages:1};
+      state.userPage = state.userPagination.page;
       renderUsers();
+      renderUserPagination();
+      const {page,total,totalPages} = state.userPagination;
+      const first = total ? (page-1)*pageSize+1 : 0;
+      const last = total ? first+state.users.length-1 : 0;
       $('paUsersSummary').textContent = (search ? 'Kết quả tìm kiếm: ' : 'Danh sách gần nhất: ') +
-        state.users.length + ' tài khoản' + (state.users.length >= 200 ? ' (giới hạn 200; dùng ô tìm kiếm để lọc).' : '.');
+        number(total) + ' tài khoản · Hiển thị ' + number(first) + '–' + number(last) +
+        ' / ' + number(total) + ' · Trang ' + number(page) + '/' + number(totalPages) + '.';
     } catch (error) {
       $('paUsersSummary').textContent = '';
       $('paUsers').replaceChildren(node('p', 'pb-notice pb-notice-error', error.message));
+      $('paUserPagination')?.replaceChildren();
       if (error.status === 401 || error.status === 403) await checkSession();
     } finally {
       state.usersLoading = false;
+      if (state.usersReloadQueued) {
+        state.usersReloadQueued = false;
+        loadUsers({quiet:false});
+      }
     }
+  }
+  function renderUserPagination() {
+    const nav = $('paUserPagination'); if (!nav) return;
+    nav.replaceChildren();
+    const {page,totalPages} = state.userPagination;
+    if (totalPages <= 1) return;
+    const go = (target,label) => {
+      const control = button(label, () => {
+        if (target < 1 || target > totalPages || target === state.userPage) return;
+        state.userPage = target;
+        state.selectedUser = null;
+        loadUsers();
+      });
+      control.classList.add('pb-user-page-button');
+      if (target === page) {
+        control.classList.add('is-active');
+        control.setAttribute('aria-current','page');
+        control.disabled = true;
+      }
+      return control;
+    };
+    const previous = go(page-1,'‹ Trước'); previous.disabled = page <= 1;
+    const next = go(page+1,'Sau ›'); next.disabled = page >= totalPages;
+    const pages = node('div','pb-user-page-numbers');
+    const visible = [...new Set([1,page-1,page,page+1,totalPages]
+      .filter(item => item >= 1 && item <= totalPages))].sort((a,b) => a-b);
+    let last = 0;
+    for (const current of visible) {
+      if (current-last > 1) pages.append(node('span','pb-user-page-ellipsis','…'));
+      const control = go(current,String(current));
+      control.setAttribute('aria-label','Trang ' + current);
+      pages.append(control);
+      last = current;
+    }
+    nav.append(previous,pages,next);
   }
   function monthLabel(value) {
     const match = /^(\d{4})-(\d{2})$/.exec(String(value || ''));
@@ -631,12 +691,21 @@
   $('paRetryEmail').addEventListener('click', retryEmail);
   $('paUserSearchForm')?.addEventListener('submit', event => {
     event.preventDefault();
-    if (!state.busy) loadUsers();
+    if (!state.busy) { state.userPage = 1; state.selectedUser = null; loadUsers(); }
+  });
+  $('paUserPageSize')?.addEventListener('change', event => {
+    const pageSize = Number(event.target.value);
+    if (!state.busy && [10,50,100].includes(pageSize)) {
+      state.userPageSize = pageSize;
+      state.userPage = 1;
+      state.selectedUser = null;
+      loadUsers();
+    }
   });
   $('paUserSearchClear')?.addEventListener('click', () => {
     if (!$('paUserSearch')) return;
     $('paUserSearch').value = '';
-    if (!state.busy) loadUsers();
+    if (!state.busy) { state.userPage = 1; state.selectedUser = null; loadUsers(); }
   });
   window.addEventListener('focus', () => {
     if (state.busy || $('paDetail').querySelector('form')) return;

@@ -10,7 +10,9 @@ module.exports = async function handler(req,res) {
     billing.requireAdmin(current);
     if (req.method === 'GET') {
       if (req.query?.resource === 'users')
-        return res.json({ok:true,users:await billing.listAdminUsers(current,{search:req.query?.search || ''})});
+        return res.json({ok:true,...await billing.listAdminUsers(current,{
+          search:req.query?.search || '',page:req.query?.page ?? 1,pageSize:req.query?.pageSize ?? 10
+        })});
       if (req.query?.resource === 'metrics')
         return res.json({ok:true,metrics:await billing.listAdminMetrics(current)});
       if (req.query?.resource === 'commerce')

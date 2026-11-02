@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/billing.css?v=20261022-user-table">
-  <script src="/admin-topups.js?v=20261022-mail-health" defer></script>
+  <link rel="stylesheet" href="/billing.css?v=20261102-user-pagination">
+  <script src="/admin-topups.js?v=20261102-user-pagination" defer></script>
 </head>
 <body class="pb-admin">
   <header class="pb-admin-header">
@@ -113,8 +113,17 @@
             <button class="pb-button" id="paUserSearchClear" type="button">Xóa lọc</button>
           </form>
         </div>
+        <div class="pb-admin-users-toolbar">
+          <label for="paUserPageSize">Hiển thị mỗi trang</label>
+          <select id="paUserPageSize" aria-label="Hiển thị mỗi trang">
+            <option value="10" selected>10 người</option>
+            <option value="50">50 người</option>
+            <option value="100">100 người</option>
+          </select>
+        </div>
         <div id="paUsersSummary" class="pb-small pb-muted" aria-live="polite"></div>
         <div id="paUsers" class="pb-admin-users" aria-live="polite"></div>
+        <nav id="paUserPagination" class="pb-admin-user-pagination" aria-label="Phân trang tài khoản"></nav>
       </section>
     </div>
   </main>
