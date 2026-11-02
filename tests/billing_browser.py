@@ -408,7 +408,7 @@ def main():
             assert admin.locator("#paUserPagination button").count() == 0
             admin.locator("#paUserPageSize").select_option("50")
             admin.get_by_text("Danh sách gần nhất: 2 tài khoản", exact=False).wait_for()
-            assert any(call["path"] == "/api/admin-topups" and "pageSize=50" in call["query"]
+            assert any(call["path"] == "/api/admin-topups" and call["query"].get("pageSize") == "50"
                        for call in state["calls"])
             print("PASS admin accounts: pagination defaults 10, supports 50 and preserves search/roles")
             assert admin.locator("#paReceivedAmount").count() == 0
