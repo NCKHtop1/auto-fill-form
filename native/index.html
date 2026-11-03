@@ -629,6 +629,7 @@
       right: 20px;
       bottom: 20px;
       z-index: 100;
+      pointer-events: none; /* Informational toasts must not block form inputs. */
       display: grid;
       gap: 10px;
       width: min(380px, calc(100% - 40px));
