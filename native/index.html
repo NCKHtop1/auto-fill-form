@@ -2337,6 +2337,24 @@
             if (q.required) throw new Error(`${q.title}: ${t('unsupported_question')}`);
             return;
           }
+          const cfg = state.questionConfig[q.id];
+          if (dataIndex >= 0) {
+            // Once a column is mapped, a blank cell cannot silently become
+            // a fabricated random answer. Unmapped questions may still use
+            // intentionally configured generation rules.
+            const mappedColumns = ['grid', 'checkbox_grid'].includes(q.type)
+              ? Object.values(cfg.gridMappings || {}).filter(Boolean)
+              : (cfg.mapping ? [cfg.mapping] : []);
+            const emptyMapped = mappedColumns.find(col => isEmpty(row[col]));
+            if (emptyMapped) {
+              if (q.required) {
+                throw new Error('Câu bắt buộc “' + q.title + '”: dòng dữ liệu ' +
+                  (dataIndex + 1) + ', cột “' + emptyMapped +
+                  '” đang trống. Bổ sung dữ liệu hoặc bỏ ghép cột để dùng quy tắc tạo mẫu.');
+              }
+              return;
+            }
+          }
           const answer = generateAnswer(q, row, i + 1);
           if (isEmpty(answer)) {
             if (q.required) {
