@@ -103,7 +103,7 @@ test('ambiguous fuzzy labels never silently auto-map to the wrong question', () 
   assert.equal(suggestColumn('Mã:', ['Mã đặt hàng', 'Mã khách hàng']), '');
   assert.equal(suggestColumn('Tên người trả lời', ['Họ tên','Tên người trả lời']), 'Tên người trả lời');
   assert.equal(suggestColumn('Khảo sát nhân sự', ['Tuổi','Giới tính']), '');
-  assert.equal(suggestColumn('Bảng Likert','Bảng Likert / Hài lòng',['Bảng Likert / Hài lòng']), '');
+  assert.equal(suggestColumn('Bảng Likert', ['Bảng Likert / Hài lòng','Khác']), '');
   assert.equal(suggestColumn('Lưới',['Lưới / Chất lượng','Khác'], 'Chất lượng'), 'Lưới / Chất lượng');
 });
 
