@@ -473,7 +473,11 @@ def main():
             run_page.locator("#formUrl").fill(FORM_URL)
             run_page.locator("#importFormBtn").click()
             run_page.locator("#questionList .mapping-select").wait_for()
+            # The second UAT page also requires explicit opt-in to uploaded rows.
+            assert not run_page.locator("#fillFromUploadedFile").is_checked()
+            run_page.locator("#fillFromUploadedFile").check()
             run_page.locator("#questionList .mapping-select").select_option("LuaChon")
+            run_page.locator("#rowStrategy").select_option("sequential")
             run_page.locator("#responseCount").fill("3")
             run_page.locator("#buildPlanBtn").click()
             run_page.locator("#validatePlanBtn").click()
