@@ -129,6 +129,31 @@ try:
         generated = page.evaluate("window.PandaStudyQA.getRows()[0].answers")
         assert generated["200"] == "Nội dung do người trả lời cung cấp"
         assert "201" not in generated, "Optional contact cannot be invented"
+        # Regression: DOM text may be present without an 'input' event (autofill,
+        # restored form values, or script-based restoration). Preview must sync it.
+        required_text.evaluate("(node) => { node.value = 'HS214\\nHS215\\nHS216'; }")
+        page.locator("#responseCount").fill("3")
+        page.locator('.text-sample-mode[data-qid="200"]').select_option("ordered")
+        page.locator("#buildPlanBtn").click()
+        page.wait_for_function("window.PandaStudyQA.getRows().length === 3")
+        sample_answers = [row["answers"]["200"] for row in page.evaluate("window.PandaStudyQA.getRows()")]
+        assert sample_answers == ["HS214", "HS215", "HS216"], sample_answers
+        # A render cycle must preserve visible manual entries.
+        page.evaluate("setLanguage('vi')")
+        assert page.locator('.text-samples[data-qid="200"]').input_value() == "HS214\nHS215\nHS216"
+        page.locator("#buildPlanBtn").click()
+        assert [row["answers"]["200"] for row in page.evaluate("window.PandaStudyQA.getRows()")] == sample_answers
+        page.locator("#responseCount").fill("4")
+        page.locator("#buildPlanBtn").click()
+        assert "không đủ điền dòng 4" in page.locator("#workflowResult").inner_text()
+        page.locator("#responseCount").fill("3")
+        page.locator('.text-samples[data-qid="200"]').fill("HS214\nHS214\nHS216")
+        page.locator("#buildPlanBtn").click()
+        assert "giá trị trùng" in page.locator("#workflowResult").inner_text()
+        page.locator('.text-sample-mode[data-qid="200"]').select_option("random")
+        page.locator("#buildPlanBtn").click()
+        assert len(page.evaluate("window.PandaStudyQA.getRows()")) == 3
+        assert all(row["answers"]["200"] in ["HS214", "HS216"] for row in page.evaluate("window.PandaStudyQA.getRows()"))
         sample_form["questions"] = sample_questions
         sample_form["supportedCount"] = 2
         page.locator("#importFormBtn").click()
