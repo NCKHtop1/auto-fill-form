@@ -286,6 +286,7 @@ try:
         assert page.locator('.mapping-select[data-qid="511"]').input_value() == ""
         assert "Câu bắt buộc" in page.locator("#workflowResult").inner_text()
         assert "submitOneResponse" not in bridge_operations
+        page.locator("#clearDataBtn").click()
         sample_form["questions"] = sample_questions
         sample_form["supportedCount"] = 2
         click_import_form()
