@@ -14,6 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
   <script src="/ui-navigation.js?v=20261013c" defer></script>
+  <script src="/pasted-table.js?v=20261103a" defer></script>
   <script src="/blog.js?v=20261019-admin2" defer></script>
   <script src="/qa-run.js?v=20261013d" defer></script>
   <script src="/auth-gate.js?v=20261019a" defer></script>
@@ -874,6 +875,13 @@
             <div class="muted small" data-i18n="drop_desc">Excel, CSV hoặc JSON</div>
           </div>
         </label>
+        <div class="field" style="margin-top:14px">
+          <label for="pasteDataInput"><b>Dán bảng trực tiếp từ Excel / Google Sheets</b></label>
+          <textarea id="pasteDataInput" class="text-samples" rows="4" placeholder="Mã học sinh    Khối&#10;HS001    10&#10;HS002    12" aria-describedby="pasteDataHelp"></textarea>
+          <p id="pasteDataHelp" class="small muted">Dán cả hàng tiêu đề và các dòng dữ liệu (2 cột trở lên). Chấp nhận bảng Markdown, các cột cách nhau bằng Tab từ Excel/Sheets hoặc CSV. Không cần chọn tệp.</p>
+          <button id="loadPastedDataBtn" class="btn btn-outline btn-sm" type="button">Đọc bảng đã dán và tự ghép cột</button>
+          <div id="pasteDataStatus" class="small muted" role="status" aria-live="polite"></div>
+        </div>
         <div id="dataSummary" class="data-summary hidden"></div>
       </div>
 
@@ -923,6 +931,7 @@
             <label for="rowStrategy" data-i18n="row_strategy">Cách lấy dòng dữ liệu</label>
             <select id="rowStrategy">
               <option value="sequential" data-i18n="row_sequential">Tuần tự, lặp lại khi hết dòng</option>
+              <option value="sequential_no_repeat">Tuần tự, không lặp dòng / mã học sinh</option>
               <option value="random" data-i18n="row_random">Ngẫu nhiên</option>
             </select>
           </div>
@@ -1286,6 +1295,7 @@
       dataFileName: '',
       dataRows: [],
       dataColumns: [],
+      lastImportedPaste: '',
       questionConfig: {},
       plan: [],
       selectedRows: null,
@@ -1349,6 +1359,19 @@
     function bindEvents() {
       $('importFormBtn').addEventListener('click', importForm);
       $('dataFile').addEventListener('change', event => event.target.files[0] && loadDataFile(event.target.files[0]));
+      $('loadPastedDataBtn').addEventListener('click', () => {
+        try { loadPastedData(); }
+        catch (error) { showPasteError(error); }
+      });
+      // Clipboard paste is imported automatically; the button supports manual edits too.
+      $('pasteDataInput').addEventListener('paste', () => {
+        setTimeout(() => {
+          if (window.PandaStudyTable?.looksTabular($('pasteDataInput').value)) {
+            try { loadPastedData(); }
+            catch (error) { showPasteError(error); }
+          }
+        }, 0);
+      });
       $('dropZone').addEventListener('dragover', event => { event.preventDefault(); $('dropZone').classList.add('dragover'); });
       $('dropZone').addEventListener('dragleave', () => $('dropZone').classList.remove('dragover'));
       $('dropZone').addEventListener('drop', event => {
@@ -1815,17 +1838,84 @@
           rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
         }
         if (!Array.isArray(rows) || !rows.length) throw new Error('No data rows found.');
-        state.dataFileName = file.name;
-        state.dataRows = rows.map(normalizeRowObject);
-        state.dataColumns = Array.from(new Set(state.dataRows.flatMap(row => Object.keys(row))));
-        renderDataSummary();
-        autoMapAll();
-        renderQuestions();
-        state.plan = [];
-        renderPlan();
+        $('pasteDataInput').value = '';
+        state.lastImportedPaste = '';
+        $('pasteDataStatus').textContent = '';
+        applyDataRows(rows, file.name, false);
         toast(t('toast_file_loaded'), 'success');
       } catch (error) {
         toast(`${t('err_file')} ${messageOf(error)}`, 'error');
+      }
+    }
+
+    function showPasteError(error) {
+      const msg = messageOf(error);
+      $('pasteDataStatus').textContent = msg;
+      $('pasteDataStatus').style.color = '#b3261e';
+      toast(msg, 'error');
+    }
+
+    function applyDataRows(rows, source, selectAllRows) {
+      if (!Array.isArray(rows) || !rows.length) throw new Error('Không có dòng dữ liệu hợp lệ.');
+      state.dataFileName = source;
+      state.dataRows = rows.map(normalizeRowObject);
+      state.dataColumns = Array.from(new Set(state.dataRows.flatMap(row => Object.keys(row))));
+      Object.values(state.questionConfig).forEach(cfg => {
+        if (!state.dataColumns.includes(cfg.mapping)) cfg.mapping = '';
+        Object.keys(cfg.gridMappings || {}).forEach(index => {
+          if (!state.dataColumns.includes(cfg.gridMappings[index])) delete cfg.gridMappings[index];
+        });
+      });
+      autoMapAll();
+      renderDataSummary();
+      renderQuestions();
+      if (selectAllRows) $('responseCount').value = String(state.dataRows.length);
+      if (state.dataColumns.some(col =>
+        ['ma hoc sinh', 'ma hs', 'student id', 'student code'].includes(
+          window.PandaStudyTable.normalizeHeader(col)))) {
+        $('rowStrategy').value = 'sequential_no_repeat';
+      }
+      updateRunCost();
+      state.plan = [];
+      renderPlan();
+    }
+
+    function loadPastedData() {
+      const raw = $('pasteDataInput').value;
+      const parsed = window.PandaStudyTable.parse(raw);
+      applyDataRows(parsed.rows, 'Bảng dữ liệu đã dán', true);
+      state.lastImportedPaste = raw.trim();
+      $('pasteDataStatus').style.color = '';
+      $('pasteDataStatus').textContent =
+        'Đã nhận ' + parsed.rows.length + ' dòng và ' + parsed.columns.length +
+        ' cột. Đã ghép theo tên câu hỏi nếu Google Form được nhập.';
+      toast('Đã đọc ' + parsed.rows.length + ' dòng bảng, có thể tạo xem trước.', 'success');
+    }
+
+    function importTableFromQuestionBox() {
+      if (!state.form || state.dataRows.length) return;
+      for (const q of state.form.questions) {
+        const cfg = state.questionConfig[q.id];
+        if (!cfg || !['short_text', 'paragraph'].includes(q.type)) continue;
+        const raw = String(cfg.textSamples || '');
+        if (!window.PandaStudyTable.looksTabular(raw)) continue;
+        let parsed;
+        try { parsed = window.PandaStudyTable.parse(raw); }
+        catch (_) { continue; }
+        const match = parsed.columns.some(col => window.PandaStudyTable.normalizeHeader(col) ===
+          window.PandaStudyTable.normalizeHeader(q.title));
+        if (!match) continue;
+        // A two-column table pasted into a one-question answer box is dataset input.
+        // Move it to step 1 and keep the column relationship intact.
+        $('pasteDataInput').value = raw;
+        cfg.textSamples = '';
+        const input = document.querySelector('.text-samples[data-qid="' +
+          CSS.escape(String(q.id)) + '"]');
+        if (input) input.value = '';
+        loadPastedData();
+        $('pasteDataStatus').textContent +=
+          ' Tự nhận diện bảng dán tại câu “' + q.title + '” và chuyển sang nguồn dữ liệu.';
+        return;
       }
     }
 
@@ -1858,6 +1948,9 @@
       state.dataFileName = '';
       state.dataRows = [];
       state.dataColumns = [];
+      state.lastImportedPaste = '';
+      $('pasteDataInput').value = '';
+      $('pasteDataStatus').textContent = '';
       Object.values(state.questionConfig).forEach(config => { config.mapping = ''; config.gridMappings = {}; });
       $('dataFile').value = '';
       $('dataSummary').classList.add('hidden');
@@ -2128,12 +2221,20 @@
 
     function buildPlan() {
       syncTextSamplesFromUi();
+      const currentPaste = $('pasteDataInput').value.trim();
+      if (currentPaste && currentPaste !== state.lastImportedPaste) loadPastedData();
+      importTableFromQuestionBox();
       if (!state.form) throw new Error(t('err_no_form'));
       const supported = state.form.questions.filter(q => q.supported);
       if (!supported.length) throw new Error(t('err_no_questions'));
       const count = Number($('responseCount').value);
       if (!Number.isInteger(count) || count < 1 || count > MAX_UI_RESPONSES) throw new Error(t('err_count'));
       if ($('scheduleMode').value !== 'now') throw new Error('Lịch chạy nền chưa được bật trên bản Vercel.');
+      if ($('rowStrategy').value === 'sequential_no_repeat' && state.dataRows.length &&
+          count > state.dataRows.length) {
+        throw new Error('Chỉ có ' + state.dataRows.length + ' dòng dữ liệu, không thể tạo ' +
+          count + ' dòng khi chọn tuần tự không lặp. Hãy giảm số dòng hoặc bổ sung dữ liệu.');
+      }
       validateGeneratorConfig();
       const scheduleTimes = buildScheduleTimes(count);
       const plan = [];
@@ -2185,7 +2286,9 @@
       state.form.questions.forEach(q => {
         if (!q.supported) return;
         const cfg = state.questionConfig[q.id];
-        if (['short_text','paragraph'].includes(q.type) && cfg.textSampleMode === 'ordered') {
+        if (['short_text','paragraph'].includes(q.type) && cfg.textSampleMode === 'ordered' &&
+            (!cfg.mapping || !state.dataRows.length ||
+              state.dataRows.some(row => isEmpty(row[cfg.mapping])))) {
           const values = parseTextSamples(cfg.textSamples);
           if (new Set(values).size !== values.length) throw new Error(t('err_text_samples_duplicate', {title:q.title}));
         }
@@ -2202,6 +2305,7 @@
     function chooseDataRowIndex(i) {
       if (!state.dataRows.length) return -1;
       if ($('rowStrategy').value === 'random') return randomInt(0, state.dataRows.length - 1);
+      if ($('rowStrategy').value === 'sequential_no_repeat') return i;
       return i % state.dataRows.length;
     }
 

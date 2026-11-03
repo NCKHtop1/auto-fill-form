@@ -154,6 +154,67 @@ try:
         page.locator("#buildPlanBtn").click()
         assert len(page.evaluate("window.PandaStudyQA.getRows()")) == 3
         assert all(row["answers"]["200"] in ["HS214", "HS216"] for row in page.evaluate("window.PandaStudyQA.getRows()"))
+        # Full 216-row paste regression (data supplied as Markdown/Sheets clipboard),
+        # including both columns, student ID uniqueness and exact row alignment.
+        sample_form["questions"] = [
+            {"id": "211", "index": 0, "title": "Mã học sinh:", "helpText": "",
+             "required": True, "supported": True, "type": "short_text",
+             "options": [], "entryIds": ["971"]},
+            {"id": "212", "index": 1, "title": "Khối", "helpText": "",
+             "required": True, "supported": True, "type": "multiple_choice",
+             "options": ["10", "11", "12"], "entryIds": ["972"]}
+        ]
+        sample_form["supportedCount"] = 2
+        page.locator("#importFormBtn").click()
+        page.wait_for_function("document.querySelectorAll('#questionList .question-card').length===2")
+        grades = [12 if i in (7, 8, 214, 215) else
+                  10 if i == 216 else (10, 11, 12)[i % 3] for i in range(1, 217)]
+        markdown = "| Mã học   sinh | Khối |\n| --- | --- |\n" + "".join(
+            "| HS%03d | %d |\n" % (i, grades[i - 1]) for i in range(1, 217))
+        page.locator("#pasteDataInput").fill(markdown)
+        # Must work even when a user goes straight to 4a without pressing 'Read pasted table'.
+        page.locator("#buildPlanBtn").click()
+        page.wait_for_function("window.PandaStudyQA.getRows().length === 216")
+        assert page.locator("#responseCount").input_value() == "216"
+        assert page.locator("#rowStrategy").input_value() == "sequential_no_repeat"
+        assert page.locator('.mapping-select[data-qid="211"]').input_value() == "Mã học   sinh"
+        assert page.locator('.mapping-select[data-qid="212"]').input_value() == "Khối"
+        student_rows = page.evaluate("window.PandaStudyQA.getRows()")
+        assert student_rows[0]["answers"] == {"211": "HS001", "212": str(grades[0])}
+        assert student_rows[213]["answers"] == {"211": "HS214", "212": "12"}
+        assert student_rows[214]["answers"] == {"211": "HS215", "212": "12"}
+        assert student_rows[215]["answers"] == {"211": "HS216", "212": "10"}
+        assert len({row["answers"]["211"] for row in student_rows}) == 216
+        assert [int(row["answers"]["212"]) for row in student_rows] == grades
+        page.locator("#validatePlanBtn").click()
+        page.wait_for_function("window.PandaStudyQA.getRows().every(x => x.status === 'valid')")
+        with page.expect_download(timeout=20000) as saved:
+            page.locator("#downloadPlanBtn").click()
+        with open(saved.value.path(), encoding="utf-8-sig", newline="") as f:
+            csv_out = list(csv.reader(f))
+        assert len(csv_out) == 217, len(csv_out)
+        assert "Mã học sinh:" in csv_out[0] and "Khối" in csv_out[0]
+        assert csv_out[1][csv_out[0].index("Mã học sinh:")] == "HS001"
+        assert csv_out[216][csv_out[0].index("Mã học sinh:")] == "HS216"
+        assert csv_out[216][csv_out[0].index("Khối")] == "10"
+
+        # No ID should be silently reused if requested count exceeds the dataset.
+        page.locator("#responseCount").fill("217")
+        page.locator("#buildPlanBtn").click()
+        assert "không thể tạo 217 dòng" in page.locator("#workflowResult").inner_text()
+
+        # TSV from Sheets and direct pasted table inside a question must also work.
+        page.locator("#pasteDataInput").fill("Mã học sinh\tKhối\nHS001\t10\nHS002\t12")
+        page.locator("#buildPlanBtn").click()
+        assert [row["answers"] for row in page.evaluate("window.PandaStudyQA.getRows()")] == [
+            {"211": "HS001", "212": "10"}, {"211": "HS002", "212": "12"}]
+        page.locator("#clearDataBtn").click()
+        page.locator('.text-samples[data-qid="211"]').fill(markdown)
+        page.locator("#buildPlanBtn").click()
+        assert len(page.evaluate("window.PandaStudyQA.getRows()")) == 216
+        assert page.evaluate("window.PandaStudyQA.getRows()[215].answers['211']") == "HS216"
+        assert "Tự nhận diện bảng dán" in page.locator("#pasteDataStatus").inner_text()
+        assert "submitOneResponse" not in bridge_operations
         sample_form["questions"] = sample_questions
         sample_form["supportedCount"] = 2
         page.locator("#importFormBtn").click()
