@@ -1909,7 +1909,15 @@
         applyDataRows(rows, file.name, false, 'file');
         toast('Đã đọc ' + rows.length + ' dòng. Tích “Điền theo file đã tải lên” nếu muốn sử dụng dữ liệu này.', 'success');
       } catch (error) {
-        toast(`${t('err_file')} ${messageOf(error)}`, 'error');
+        // Fail closed: an invalid replacement file must never leave a previous
+        // imported dataset checked and active. Preserve manually typed samples.
+        const reason = messageOf(error);
+        clearData();
+        $('uploadedFileFillHint').textContent =
+          'Không thể đọc “' + String(file?.name || 'file') +
+          '”: ' + reason + '. Dữ liệu file trước đã ngừng sử dụng. Chọn file hợp lệ để thử lại.';
+        $('uploadedFileFillHint').style.color = '#b3261e';
+        toast(`${t('err_file')} ${reason}`, 'error');
       }
     }
 
@@ -1943,6 +1951,7 @@
     }
 
     function updateUploadedFileControl() {
+      $('uploadedFileFillHint').style.color = '';
       const isFile = state.dataSourceKind === 'file' && state.dataRows.length > 0;
       $('fillFromUploadedFile').disabled = !isFile;
       $('fillFromUploadedFile').checked = isFile && state.useUploadedFile;
@@ -2110,6 +2119,7 @@
     }
 
     function clearData() {
+      const restorePreviousStrategy = Boolean(state.manualPlanSettings);
       restoreManualPlanSettings();
       state.dataSourceKind = '';
       state.useUploadedFile = false;
@@ -2121,7 +2131,7 @@
       $('pasteDataStatus').textContent = '';
       $('uniqueKeyColumn').innerHTML = '<option value="">Không kiểm tra trùng theo cột khóa</option>';
       updateUploadedFileControl();
-      $('rowStrategy').value = 'sequential';
+      if (!restorePreviousStrategy) $('rowStrategy').value = 'sequential';
       Object.values(state.questionConfig).forEach(config => { config.mapping = ''; config.gridMappings = {}; });
       $('dataFile').value = '';
       $('dataSummary').classList.add('hidden');
