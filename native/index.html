@@ -876,6 +876,15 @@
             <div class="muted small" data-i18n="drop_desc">Excel, CSV hoặc JSON</div>
           </div>
         </label>
+        <div class="mapping-box" id="uploadedFileFillPanel" style="margin-top:12px">
+          <label for="fillFromUploadedFile" style="display:flex;gap:10px;align-items:flex-start;cursor:pointer">
+            <input id="fillFromUploadedFile" type="checkbox" disabled style="margin-top:3px">
+            <span><b>Điền theo file đã tải lên (tùy chọn)</b></span>
+          </label>
+          <p id="uploadedFileFillHint" class="small muted" style="margin:7px 0 0" role="status" aria-live="polite">
+            Chưa có tệp. Bạn vẫn có thể tạo câu trả lời ở bước 3 mà không cần tải file.
+          </p>
+        </div>
         <div class="field" style="margin-top:14px">
           <label for="pasteDataInput"><b>Dán dữ liệu từ Excel, Google Sheets hoặc văn bản</b></label>
           <textarea id="pasteDataInput" class="text-samples" rows="5" placeholder="Họ tên&#9;Tuổi&#10;Nguyễn An&#9;21&#10;Trần Bình&#9;25" aria-describedby="pasteDataHelp"></textarea>
@@ -959,7 +968,7 @@
             <label for="rowStrategy" data-i18n="row_strategy">Cách lấy dòng dữ liệu</label>
             <select id="rowStrategy">
               <option value="sequential" data-i18n="row_sequential">Tuần tự, lặp lại khi hết dòng</option>
-              <option value="sequential_no_repeat">Tuần tự, không lặp dòng / mã học sinh</option>
+              <option value="sequential_no_repeat">Tuần tự, không lặp dòng dữ liệu</option>
               <option value="random" data-i18n="row_random">Ngẫu nhiên</option>
             </select>
           </div>
@@ -1251,7 +1260,7 @@
         hero_notice:'Chỉ sử dụng với biểu mẫu bạn sở hữu hoặc được cho phép kiểm thử. Không dùng để giả mạo người tham gia, né kiểm soát hoặc làm sai lệch kết quả khảo sát.',
         workspace_title:'Bảng điều khiển', workspace_subtitle:'Thực hiện theo các bước bên dưới.', workspace_chip:'Không dùng Apps Script',
         step1_title:'Nhập Google Form', step1_desc:'Dán đường dẫn /edit để nhập Google Form.', import_btn:'Nhập biểu mẫu', importing:'Đang nhập...',
-        step2_title:'Tải dữ liệu (tùy chọn)', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Mỗi dòng dữ liệu sẽ trở thành một bộ câu trả lời.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel, CSV hoặc JSON',
+        step2_title:'Tải dữ liệu (tùy chọn)', step2_desc:'Hỗ trợ XLSX, XLS, CSV và JSON. Chỉ dùng dữ liệu trong file khi bạn tích vào tùy chọn bên dưới.', drop_title:'Chọn hoặc kéo tệp vào đây', drop_desc:'Excel, CSV hoặc JSON',
         step3_title:'Ánh xạ dữ liệu và quy tắc tạo câu trả lời', step3_desc:'Chọn cột dữ liệu cho từng câu hỏi. Nếu không chọn cột, hệ thống dùng quy tắc tạo bên dưới.', mapping_explain:'“Cột Excel / dữ liệu” dùng để nối một cột trong tệp với câu hỏi Google Form. Ví dụ cột “Giới tính” nối với câu hỏi “Giới tính của Anh/Chị là gì?”.', question_empty:'Nhập Google Form ở Bước 2 để hiển thị câu hỏi và tiếp tục ghép dữ liệu.',
         step4_title:'Số lượng và thời gian gửi', step4_desc:'Gửi ngay với khoảng nghỉ ngắn hoặc tạo lịch chạy nền cho các thời điểm trong tương lai.', response_count:'Số phản hồi', estimated_cost:'Chi phí dự kiến', row_strategy:'Cách lấy dòng dữ liệu', row_sequential:'Tuần tự, lặp lại khi hết dòng', row_random:'Ngẫu nhiên', schedule_mode:'Chế độ gửi', mode_now:'Gửi ngay trên trang', mode_interval:'Gửi theo khoảng thời gian', mode_daily_random:'Phân bổ ngẫu nhiên theo ngày', min_delay:'Khoảng nghỉ tối thiểu (giây)', max_delay:'Khoảng nghỉ tối đa (giây)', delay_explain:'Hai ô này chỉ tạo khoảng nghỉ giữa các phản hồi khi “Gửi ngay”. Trang web phải được mở trong suốt quá trình. Với lịch 1 giờ/lần hoặc nhiều giờ, hãy chọn chế độ chạy nền.', start_time:'Bắt đầu lúc', repeat_every:'Lặp lại mỗi', unit:'Đơn vị', minutes:'Phút', hours:'Giờ', days:'Ngày', from_date:'Từ ngày', to_date:'Đến ngày', window_start:'Khung giờ từ', window_end:'Khung giờ đến', per_day:'Số phản hồi tối đa mỗi ngày', daily_note_title:'Mục đích', daily_note:'Chức năng này phân bổ lịch QA trong một khung giờ để kiểm thử tải và quy trình. Không dùng để che giấu tự động hóa hoặc giả danh người trả lời thật.', authorization_ack:'Tôi xác nhận mình sở hữu biểu mẫu này hoặc đã được chủ sở hữu cho phép gửi dữ liệu QA; dữ liệu không được dùng để giả mạo người tham gia hoặc làm sai lệch nghiên cứu.', build_plan:'Tạo kế hoạch xem trước', validate_plan:'Kiểm tra kế hoạch',
         billing_hint:'Bạn cần đủ số dư trước khi gửi. Chỉ các phản hồi gửi thành công mới bị tính phí.', step5_title:'Xem trước, gửi và tải báo cáo', step5_desc:'Kiểm tra từng dòng trước khi gửi. Trạng thái và timestamp sẽ được cập nhật trong bảng.', plan_empty:'Chưa có dữ liệu xem trước. Bấm “Tạo kế hoạch xem trước”.', th_scheduled:'Thời điểm', th_data_row:'Dòng dữ liệu', th_preview:'Xem trước câu trả lời', th_status:'Trạng thái', th_google_time:'Google timestamp', download_plan:'Tải kế hoạch CSV', submit_plan:'Gửi vào Google Form', schedule_plan:'Tạo lịch chạy nền', download_report:'Tải báo cáo CSV', refresh_count:'Cập nhật tổng phản hồi',
@@ -1262,7 +1271,7 @@
         faq_desc:'Giải thích các phần dễ gây nhầm lẫn trong giao diện.', faq_mapping_q:'“Excel / data column” dùng để làm gì?', faq_mapping_a:'Đây là bước nối cột trong tệp dữ liệu với câu hỏi Google Form. Khi chọn cột, mỗi dòng trong cột sẽ được đưa vào câu hỏi tương ứng. Khi để “Không chọn cột”, hệ thống dùng quy tắc tạo dữ liệu ở dưới.', faq_100_q:'Tại sao có tổng 100%?', faq_100_a:'Tổng 100% chỉ xuất hiện khi chọn “Tỷ lệ tùy chỉnh”. Nó xác định tỷ lệ kỳ vọng của từng lựa chọn. Chế độ “Random đều” không cần chỉnh thanh kéo hay nhập tổng 100%.', faq_delay_q:'6a và 6b khác nhau thế nào?', faq_delay_a:'6a gửi 1 dòng để kiểm tra; 6b gửi các dòng còn lại. Dùng 6c để đối chiếu kết quả.', faq_likert_q:'Dữ liệu Likert có bắt buộc mã hóa 1–5 không?', faq_likert_a:'Không. Bạn có thể dùng đúng nhãn chữ trên Google Form như “Đồng ý”, “Hoàn toàn đồng ý”. Ngoài ra mã 1, 2, 3… được hiểu theo thứ tự lựa chọn từ trên xuống hoặc từ trái sang phải. Với lưới Likert, ánh xạ từng hàng lưới vào từng cột dữ liệu.', faq_url_q:'Có dùng đường dẫn /viewform được không?', faq_url_a:'Hiện chỉ nhận URL /edit để nhập Form.', faq_upload_q:'Câu hỏi tải tệp có được hỗ trợ không?', faq_upload_a:'Chưa hỗ trợ gửi câu trả lời cho câu hỏi tải tệp. Nếu câu hỏi bắt buộc, hệ thống sẽ báo lỗi trước khi gửi.',
         contact_title:'Cần tùy biến biểu mẫu hoặc dịch vụ dữ liệu?', contact_desc:'Gửi cấu trúc biểu mẫu, tệp mẫu và yêu cầu đầu ra để được tư vấn phạm vi triển khai.', footer_note:'Chỉ dùng cho QA có ủy quyền.', terms:'Điều khoản sử dụng', privacy:'Chính sách bảo mật', terms_h1:'1. Phạm vi được phép', terms_p1:'Chỉ gửi phản hồi vào biểu mẫu do bạn sở hữu hoặc được chủ sở hữu cho phép kiểm thử. Không sử dụng để giả mạo người tham gia, can thiệp khảo sát, tạo đánh giá giả, né giới hạn hoặc gây quá tải dịch vụ.', terms_h2:'2. Trách nhiệm dữ liệu', terms_p2:'Bạn chịu trách nhiệm về tính hợp pháp, độ chính xác, quyền sử dụng và thời hạn lưu trữ của dữ liệu được nhập hoặc tạo.', terms_h3:'3. Giới hạn kỹ thuật', terms_p3:'Các lượt gửi ngay lớn được tự động chia thành lô kỹ thuật 50 phản hồi. Lịch chạy nền vẫn giới hạn 50 phản hồi cho mỗi lịch để phù hợp hạn mức Apps Script. Câu hỏi tải tệp và một số quy tắc đặc biệt của Google Forms có thể không được hỗ trợ.', terms_h4:'4. Thanh toán', terms_p4:'Đơn giá là 500 đồng cho một phản hồi gửi thành công. Phản hồi lỗi được hoàn lại số dư tự động. Quản trị viên chỉ cộng số dư sau khi đối chiếu giao dịch ngân hàng. Khoản nạp đã được cộng vào số dư không quy đổi thành tiền mặt, trừ trường hợp pháp luật yêu cầu.', privacy_h1:'Dữ liệu tệp', privacy_p1:'Tệp Excel, CSV và JSON được đọc trong trình duyệt. Khi bạn tạo lịch chạy nền, các câu trả lời trong kế hoạch được lưu nén vào User Properties của chính tài khoản Apps Script đang sử dụng.', privacy_h2:'Quyền Google', privacy_p2:'Ứng dụng yêu cầu quyền truy cập Google Forms và quyền tạo trigger để thực hiện chức năng bạn chọn. Google quyết định tài khoản có được mở và gửi vào biểu mẫu hay không.', privacy_h3:'Dữ liệu cá nhân', privacy_p3:'Không nhập dữ liệu nhạy cảm hoặc dữ liệu cá nhân khi chưa có căn cứ xử lý phù hợp. Không bán hoặc chia sẻ dữ liệu cá nhân nếu chưa có quyền và sự đồng ý cần thiết.',
         form_title:'Tên biểu mẫu', responses:'Phản hồi hiện có', questions:'Câu hỏi hỗ trợ', unsupported:'Không hỗ trợ', accepting:'Đang nhận phản hồi', not_accepting:'Đã đóng phản hồi', collects_email:'Thu email', limit_one:'Giới hạn 1 phản hồi', yes:'Có', no:'Không',
-        file_rows:'Dòng dữ liệu', file_columns:'Cột dữ liệu', file_name:'Tệp', clear_data:'Xóa dữ liệu', no_column:'Không chọn cột (dùng phần bên dưới)', data_column:'Cột Excel / dữ liệu', mapping_help:'Ưu tiên nội dung từ cột Excel đã chọn. Nếu ô trống, hệ thống sử dụng cách điền bên dưới.', question_type:'Loại', required:'Bắt buộc', optional:'Không bắt buộc', unsupported_question:'Loại câu hỏi này chưa được hỗ trợ.',
+        file_rows:'Dòng dữ liệu', file_columns:'Cột dữ liệu', file_name:'Tệp', clear_data:'Xóa dữ liệu', no_column:'Không chọn cột (dùng phần bên dưới)', data_column:'Cột Excel / dữ liệu', mapping_help:'Khi bật dùng file, lấy câu trả lời từ cột đã ghép. Ô trống ở câu bắt buộc sẽ báo lỗi; câu chưa ghép cột dùng quy tắc bên dưới.', question_type:'Loại', required:'Bắt buộc', optional:'Không bắt buộc', unsupported_question:'Loại câu hỏi này chưa được hỗ trợ.',
         generator_rule:'Khi Excel không có dữ liệu', uniform:'Chọn ngẫu nhiên đều', weighted:'Tỷ lệ tùy chỉnh', fixed:'Giá trị cố định', total:'Tổng', equalize:'Chia đều', text_samples:'Câu trả lời có sẵn (mỗi dòng một câu)', text_samples_placeholder:'Dán câu trả lời vào đây…', text_samples_help:'Có dữ liệu Excel thì ưu tiên Excel; nếu ô trống, hệ thống chọn một câu trong danh sách này.', text_sample_mode:'Cách phân bổ câu trả lời', text_sample_random:'Chọn ngẫu nhiên (có thể lặp)', text_sample_ordered:'Lần lượt theo từng dòng (không lặp)', text_sample_ordered_help:'Nếu đây là mã học sinh hoặc mã định danh, chọn lần lượt và nhập đủ mã cho số dòng.', err_text_samples_shortage:'Câu “{title}” có {available} giá trị, không đủ điền dòng {row} khi chọn lần lượt. Hãy bổ sung danh sách hoặc đổi cách phân bổ.', err_text_samples_duplicate:'Câu “{title}” có giá trị trùng trong danh sách lần lượt. Hãy kiểm tra lại.', text_required_help:'Câu bắt buộc: cần dữ liệu Excel hoặc ít nhất một câu trả lời tại đây trước khi gửi.', text_optional_help:'Câu không bắt buộc: nếu không có dữ liệu, bạn có thể để trống.', text_contact_help:'Thông tin liên hệ chỉ được điền khi người trả lời đã đồng ý cung cấp.', min_choices:'Số lựa chọn tối thiểu', max_choices:'Số lựa chọn tối đa', active_options:'Các lựa chọn được phép', grid_mapping:'Ánh xạ từng hàng Likert', grid_random_help:'Hàng không được ánh xạ sẽ chọn ngẫu nhiên trong các cột của lưới.',
         status_ready:'Sẵn sàng', status_valid:'Hợp lệ', status_invalid:'Không hợp lệ', status_sending:'Đang gửi', status_sent:'Đã gửi', status_error:'Lỗi', status_queued:'Đã lên lịch', status_canceled:'Đã hủy', status_completed:'Hoàn tất', status_completed_with_errors:'Hoàn tất có lỗi', status_scheduled:'Đã lên lịch', status_running:'Đang chạy',
         toast_form_imported:'Đã nhập biểu mẫu.', toast_file_loaded:'Đã đọc tệp dữ liệu.', toast_plan_built:'Đã tạo kế hoạch xem trước.', toast_plan_valid:'Kế hoạch hợp lệ.', toast_job_created:'Đã tạo lịch chạy nền.', toast_done:'Đã hoàn tất gửi phản hồi.', toast_count:'Tổng phản hồi hiện tại: {count}',
@@ -1324,6 +1333,9 @@
       dataRows: [],
       dataColumns: [],
       lastImportedPaste: '',
+      dataSourceKind: '', // file | paste | empty
+      useUploadedFile: false, // uploading never automatically fills from the file
+      manualPlanSettings: null,
       questionConfig: {},
       plan: [],
       selectedRows: null,
@@ -1387,6 +1399,7 @@
     function bindEvents() {
       $('importFormBtn').addEventListener('click', importForm);
       $('dataFile').addEventListener('change', event => event.target.files[0] && loadDataFile(event.target.files[0]));
+      $('fillFromUploadedFile').addEventListener('change', event => setUploadedFileMode(event.target.checked));
       $('loadPastedDataBtn').addEventListener('click', () => {
         try { loadPastedData(); }
         catch (error) { showPasteError(error); }
@@ -1876,20 +1889,25 @@
         const ext = file.name.split('.').pop().toLowerCase();
         let rows;
         if (ext === 'json') {
-          const parsed = JSON.parse(await file.text());
-          rows = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.data) ? parsed.data : []);
-        } else {
+          rows = window.PandaStudyTable.parse(await file.text(), {format:'json'}).rows;
+        } else if (ext === 'csv') {
+          // CSV stays usable even if the remote spreadsheet library is unavailable.
+          rows = window.PandaStudyTable.parse(await file.text(), {format:'auto'}).rows;
+        } else if (ext === 'xlsx' || ext === 'xls') {
+          if (typeof XLSX === 'undefined') throw new Error('Không tải được thư viện Excel. Hãy thử lại hoặc lưu file dưới dạng CSV.');
           const buffer = await file.arrayBuffer();
           const workbook = XLSX.read(buffer, { type: 'array', cellDates: true });
           const sheet = workbook.Sheets[workbook.SheetNames[0]];
           rows = XLSX.utils.sheet_to_json(sheet, { defval: '', raw: false, dateNF: 'yyyy-mm-dd' });
+        } else {
+          throw new Error('Chỉ hỗ trợ XLSX, XLS, CSV hoặc JSON.');
         }
-        if (!Array.isArray(rows) || !rows.length) throw new Error('No data rows found.');
+        if (!Array.isArray(rows) || !rows.length) throw new Error('File chưa có dòng dữ liệu.');
         $('pasteDataInput').value = '';
         state.lastImportedPaste = '';
         $('pasteDataStatus').textContent = '';
-        applyDataRows(rows, file.name, false);
-        toast(t('toast_file_loaded'), 'success');
+        applyDataRows(rows, file.name, false, 'file');
+        toast('Đã đọc ' + rows.length + ' dòng. Tích “Điền theo file đã tải lên” nếu muốn sử dụng dữ liệu này.', 'success');
       } catch (error) {
         toast(`${t('err_file')} ${messageOf(error)}`, 'error');
       }
@@ -1911,12 +1929,72 @@
       select.value = state.dataColumns.includes(old) ? old : '';
     }
 
-    function applyDataRows(rows, source, selectAllRows) {
+    function usingImportedData() {
+      return state.dataRows.length > 0 &&
+        (state.dataSourceKind === 'paste' ||
+         (state.dataSourceKind === 'file' && state.useUploadedFile));
+    }
+
+    function restoreManualPlanSettings() {
+      if (!state.manualPlanSettings) return;
+      $('responseCount').value = state.manualPlanSettings.count;
+      $('rowStrategy').value = state.manualPlanSettings.strategy;
+      state.manualPlanSettings = null;
+    }
+
+    function updateUploadedFileControl() {
+      const isFile = state.dataSourceKind === 'file' && state.dataRows.length > 0;
+      $('fillFromUploadedFile').disabled = !isFile;
+      $('fillFromUploadedFile').checked = isFile && state.useUploadedFile;
+      $('uploadedFileFillHint').textContent = !isFile
+        ? 'Chưa tải file. Bạn có thể bỏ qua và dùng quy tắc tạo câu trả lời tại bước 3.'
+        : (state.useUploadedFile
+          ? 'Đang dùng ' + state.dataRows.length + ' dòng từ “' + state.dataFileName +
+            '”. Kiểm tra việc ghép cột ở bước 3; dữ liệu bắt buộc bị thiếu sẽ báo lỗi.'
+          : 'Đã đọc file “' + state.dataFileName +
+            '”, nhưng chưa dùng để điền. Tích ô trên nếu muốn dùng dữ liệu file theo từng dòng.');
+      $('uniqueKeyColumn').disabled = !usingImportedData();
+    }
+
+    function setUploadedFileMode(enabled) {
+      if (state.dataSourceKind !== 'file' || !state.dataRows.length) {
+        state.useUploadedFile = false;
+        updateUploadedFileControl();
+        return;
+      }
+      if (state.useUploadedFile === enabled) return;
+      syncTextSamplesFromUi();
+      if (enabled) {
+        state.manualPlanSettings = {
+          count: $('responseCount').value,
+          strategy: $('rowStrategy').value
+        };
+        state.useUploadedFile = true;
+        $('responseCount').value = String(state.dataRows.length);
+        $('rowStrategy').value = 'sequential_no_repeat';
+        autoMapAll();
+      } else {
+        state.useUploadedFile = false;
+        restoreManualPlanSettings();
+      }
+      updateUploadedFileControl();
+      renderQuestions();
+      renderDataSummary();
+      updateRunCost();
+      invalidatePlan();
+    }
+
+    function applyDataRows(rows, source, selectAllRows, sourceKind = 'paste') {
       if (!Array.isArray(rows) || !rows.length) throw new Error('Không có dòng dữ liệu hợp lệ.');
+      syncTextSamplesFromUi();
+      restoreManualPlanSettings();
+      state.dataSourceKind = sourceKind;
+      state.useUploadedFile = false;
       state.dataFileName = source;
       state.dataRows = rows.map(normalizeRowObject);
       state.dataColumns = Array.from(new Set(state.dataRows.flatMap(row => Object.keys(row))));
       updateUniqueKeyOptions();
+      updateUploadedFileControl();
       Object.values(state.questionConfig).forEach(cfg => {
         if (!state.dataColumns.includes(cfg.mapping)) cfg.mapping = '';
         Object.keys(cfg.gridMappings || {}).forEach(index => {
@@ -1941,7 +2019,7 @@
       const parsed = window.PandaStudyTable.parse(raw, {
         format: $('pasteFormat').value, headerMode: $('pasteHeaderMode').value
       });
-      applyDataRows(parsed.rows, 'Dữ liệu đã dán (' + parsed.format + ')', true);
+      applyDataRows(parsed.rows, 'Dữ liệu đã dán (' + parsed.format + ')', true, 'paste');
       state.lastImportedPaste = raw.trim();
       $('pasteDataStatus').style.color = '';
       const mapped = state.form ? state.form.questions.filter(q => {
@@ -2006,7 +2084,7 @@
           '</tr>').join('') + '</tbody></table>' +
         (state.dataColumns.length > 6 ? '<p>Còn ' + (state.dataColumns.length - 6) +
           ' cột; xem ở danh sách ghép cột bên dưới.</p>' : '') + '</div>';
-      const missingMappings = state.form ? state.form.questions.filter(q => {
+      const missingMappings = usingImportedData() && state.form ? state.form.questions.filter(q => {
         const cfg = state.questionConfig[q.id];
         return q.supported && q.required && cfg && q.type !== 'grid' &&
           q.type !== 'checkbox_grid' && !cfg.mapping;
@@ -2021,6 +2099,9 @@
           <div class="summary-stat"><b>${state.dataColumns.length}</b><span>${t('file_columns')}</span></div>
           <div class="summary-stat" style="grid-column:span 2"><b style="font-size:.9rem">${escapeHtml(state.dataFileName)}</b><span>${t('file_name')}</span></div>
         </div>
+        <p class="small muted">${state.dataSourceKind === 'file' && !state.useUploadedFile
+          ? 'File chỉ được xem trước; chưa dùng để điền. Tích “Điền theo file đã tải lên” nếu muốn sử dụng.'
+          : 'Nguồn dữ liệu này đang được sử dụng để ghép câu trả lời theo từng dòng.'}</p>
         ${missingMappings ? '<p class="small" style="color:#9e2f28"><b>Cần kiểm tra:</b> ' +
           missingMappings + ' câu bắt buộc chưa được ghép với cột dữ liệu. Các câu này có thể dùng dữ liệu mẫu; hãy xác nhận ở bước 3.</p>' : ''}
         ${preview}`;
@@ -2029,6 +2110,9 @@
     }
 
     function clearData() {
+      restoreManualPlanSettings();
+      state.dataSourceKind = '';
+      state.useUploadedFile = false;
       state.dataFileName = '';
       state.dataRows = [];
       state.dataColumns = [];
@@ -2036,6 +2120,7 @@
       $('pasteDataInput').value = '';
       $('pasteDataStatus').textContent = '';
       $('uniqueKeyColumn').innerHTML = '<option value="">Không kiểm tra trùng theo cột khóa</option>';
+      updateUploadedFileControl();
       $('rowStrategy').value = 'sequential';
       Object.values(state.questionConfig).forEach(config => { config.mapping = ''; config.gridMappings = {}; });
       $('dataFile').value = '';
@@ -2108,7 +2193,7 @@
             ${(q.rows || []).map((row, i) => `
               <div class="grid-row-map">
                 <div class="row-label">${escapeHtml(row)}</div>
-                <select class="grid-mapping-select" data-qid="${q.id}" data-row-index="${i}">${columnOptions(config.gridMappings[i] || '')}</select>
+                <select class="grid-mapping-select" data-qid="${q.id}" data-row-index="${i}" ${usingImportedData() ? '' : 'disabled'}>${columnOptions(config.gridMappings[i] || '')}</select>
               </div>`).join('')}
             <p class="mapping-help">${t('grid_random_help')}</p>
           </div>`;
@@ -2116,7 +2201,7 @@
         mappingHtml = `
           <div class="mapping-box">
             <label class="small"><b>${t('data_column')}</b></label>
-            <select class="mapping-select" data-qid="${q.id}">${columnOptions(config.mapping)}</select>
+            <select class="mapping-select" data-qid="${q.id}" ${usingImportedData() ? '' : 'disabled'}>${columnOptions(config.mapping)}</select>
             <p class="mapping-help">${t('mapping_help')}</p>
           </div>`;
       }
@@ -2255,7 +2340,7 @@
     }
 
     function autoMapAll() {
-      if (!state.form || !state.dataColumns.length) return;
+      if (!state.form || !usingImportedData() || !state.dataColumns.length) return;
       state.form.questions.forEach(q => {
         const cfg = state.questionConfig[q.id];
         if (!cfg || !q.supported) return;
@@ -2288,7 +2373,7 @@
             (optionalEmpty.length > 3 ? '...' : '') +
             '. Nếu muốn điền, hãy ghép cột hoặc thêm giá trị mẫu. Thông tin liên hệ có thể để trống.'
           : '';
-        const unmapped = state.dataRows.length ? state.form.questions.filter(q => {
+        const unmapped = usingImportedData() ? state.form.questions.filter(q => {
           const cfg = state.questionConfig[q.id];
           return q.supported && q.required && q.type !== 'grid' && q.type !== 'checkbox_grid' && !cfg.mapping;
         }) : [];
@@ -2318,8 +2403,8 @@
       const count = Number($('responseCount').value);
       if (!Number.isInteger(count) || count < 1 || count > MAX_UI_RESPONSES) throw new Error(t('err_count'));
       if ($('scheduleMode').value !== 'now') throw new Error('Lịch chạy nền chưa được bật trên bản Vercel.');
-      window.PandaStudyTable.validateUnique(state.dataRows, $('uniqueKeyColumn').value);
-      if ($('rowStrategy').value === 'sequential_no_repeat' && state.dataRows.length &&
+      if (usingImportedData()) window.PandaStudyTable.validateUnique(state.dataRows, $('uniqueKeyColumn').value);
+      if (usingImportedData() && $('rowStrategy').value === 'sequential_no_repeat' && state.dataRows.length &&
           count > state.dataRows.length) {
         throw new Error('Chỉ có ' + state.dataRows.length + ' dòng dữ liệu, không thể tạo ' +
           count + ' dòng khi chọn tuần tự không lặp. Hãy giảm số dòng hoặc bổ sung dữ liệu.');
@@ -2394,7 +2479,7 @@
         if (!q.supported) return;
         const cfg = state.questionConfig[q.id];
         if (['short_text','paragraph'].includes(q.type) && cfg.textSampleMode === 'ordered' &&
-            (!cfg.mapping || !state.dataRows.length ||
+            (!usingImportedData() || !cfg.mapping ||
               state.dataRows.some(row => isEmpty(row[cfg.mapping])))) {
           const values = parseTextSamples(cfg.textSamples);
           if (new Set(values).size !== values.length) throw new Error(t('err_text_samples_duplicate', {title:q.title}));
@@ -2410,7 +2495,7 @@
     }
 
     function chooseDataRowIndex(i) {
-      if (!state.dataRows.length) return -1;
+      if (!usingImportedData()) return -1;
       if ($('rowStrategy').value === 'random') return randomInt(0, state.dataRows.length - 1);
       if ($('rowStrategy').value === 'sequential_no_repeat') return i;
       return i % state.dataRows.length;

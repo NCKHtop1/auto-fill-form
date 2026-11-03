@@ -160,6 +160,117 @@ try:
         page.locator("#buildPlanBtn").click()
         assert len(page.evaluate("window.PandaStudyQA.getRows()")) == 3
         assert all(row["answers"]["200"] in ["HS214", "HS216"] for row in page.evaluate("window.PandaStudyQA.getRows()"))
+        # Optional uploaded-file mode: merely loading a file must NOT change
+        # preview answers, selected count, or mapping rules until explicitly opted in.
+        sample_form["questions"] = [
+            {"id": "601", "index": 0, "title": "Mã hồ sơ", "helpText": "",
+             "required": True, "supported": True, "type": "short_text",
+             "options": [], "entryIds": ["1011"]},
+            {"id": "602", "index": 1, "title": "Trạng thái", "helpText": "",
+             "required": True, "supported": True, "type": "multiple_choice",
+             "options": ["Đạt", "Chưa đạt"], "entryIds": ["1012"]},
+            {"id": "603", "index": 2, "title": "Ý kiến", "helpText": "",
+             "required": False, "supported": True, "type": "paragraph",
+             "options": [], "entryIds": ["1013"]}
+        ]
+        sample_form["supportedCount"] = 3
+        click_import_form()
+        page.locator("#responseCount").fill("2")
+        page.locator('.text-samples[data-qid="601"]').fill("TAY001\nTAY002")
+        page.locator('.text-sample-mode[data-qid="601"]').select_option("ordered")
+        assert page.locator("#fillFromUploadedFile").is_disabled()
+        assert not page.locator("#fillFromUploadedFile").is_checked()
+        csv_bytes = ("Mã hồ sơ,Trạng thái,Ý kiến\n"
+                     "0001,Đạt,Nội dung Excel 1\n"
+                     "0002,Chưa đạt,Nội dung Excel 2\n"
+                     "0003,Đạt,Nội dung Excel 3\n").encode("utf-8")
+        page.locator("#dataFile").set_input_files({
+            "name": "bo-phieu-khao-sat.csv", "mimeType": "text/csv",
+            "buffer": csv_bytes
+        })
+        page.wait_for_function("!document.querySelector('#dataSummary').classList.contains('hidden')")
+        assert page.locator("#fillFromUploadedFile").is_enabled()
+        assert not page.locator("#fillFromUploadedFile").is_checked()
+        assert page.locator("#responseCount").input_value() == "2"
+        assert page.locator('.mapping-select[data-qid="601"]').is_disabled()
+        assert "chưa dùng để điền" in page.locator("#uploadedFileFillHint").inner_text().lower()
+        page.locator("#buildPlanBtn").click()
+        assert [r["answers"]["601"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == ["TAY001", "TAY002"]
+        assert all("603" not in r["answers"] for r in page.evaluate("window.PandaStudyQA.getRows()"))
+        page.locator("#fillFromUploadedFile").check()
+        assert page.locator("#responseCount").input_value() == "3"
+        assert page.locator("#rowStrategy").input_value() == "sequential_no_repeat"
+        assert page.locator('.mapping-select[data-qid="601"]').is_enabled()
+        assert page.locator('.mapping-select[data-qid="601"]').input_value() == "Mã hồ sơ"
+        assert page.locator('.mapping-select[data-qid="602"]').input_value() == "Trạng thái"
+        assert page.locator('.mapping-select[data-qid="603"]').input_value() == "Ý kiến"
+        page.locator("#buildPlanBtn").click()
+        csv_mode_rows = page.evaluate("window.PandaStudyQA.getRows()")
+        assert [r["answers"] for r in csv_mode_rows] == [
+            {"601": "0001", "602": "Đạt", "603": "Nội dung Excel 1"},
+            {"601": "0002", "602": "Chưa đạt", "603": "Nội dung Excel 2"},
+            {"601": "0003", "602": "Đạt", "603": "Nội dung Excel 3"}]
+        page.locator("#responseCount").fill("4")
+        page.locator("#buildPlanBtn").click()
+        assert "không thể tạo 4 dòng" in page.locator("#workflowResult").inner_text()
+        page.locator("#fillFromUploadedFile").uncheck()
+        assert page.locator("#responseCount").input_value() == "2"
+        assert page.locator("#rowStrategy").input_value() == "sequential"
+        assert page.locator('.mapping-select[data-qid="601"]').is_disabled()
+        page.locator("#buildPlanBtn").click()
+        assert [r["answers"]["601"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == ["TAY001", "TAY002"]
+        assert all("603" not in r["answers"] for r in page.evaluate("window.PandaStudyQA.getRows()"))
+        assert page.locator('.text-samples[data-qid="601"]').input_value() == "TAY001\nTAY002"
+        # Re-enabling restores file matching without changing the source or manual text.
+        page.locator("#fillFromUploadedFile").check()
+        page.locator("#buildPlanBtn").click()
+        assert page.evaluate("window.PandaStudyQA.getRows()[2].answers['601']") == "0003"
+
+        # Replacing a file must return to opt-in disabled and must not read stale rows.
+        second_csv = "Mã hồ sơ,Trạng thái,Ý kiến\n0009,Chưa đạt,Khác\n".encode("utf-8")
+        page.locator("#dataFile").set_input_files({
+            "name": "bo-phieu-thay-the.csv", "mimeType": "text/csv", "buffer": second_csv
+        })
+        page.wait_for_function("document.querySelector('#dataSummary').textContent.includes('bo-phieu-thay-the.csv')")
+        assert not page.locator("#fillFromUploadedFile").is_checked()
+        assert page.locator("#responseCount").input_value() == "2"
+        page.locator("#buildPlanBtn").click()
+        assert [r["answers"]["601"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == ["TAY001", "TAY002"]
+        page.locator("#fillFromUploadedFile").check()
+        assert page.locator("#responseCount").input_value() == "1"
+        page.locator("#buildPlanBtn").click()
+        assert page.evaluate("window.PandaStudyQA.getRows()[0].answers['601']") == "0009"
+
+        # Actual .xlsx end-to-end if SheetJS is available in this Chromium CI.
+        # If the CDN is blocked, CSV remains available without that dependency.
+        if page.evaluate("typeof XLSX !== 'undefined'"):
+            excel_base64 = page.evaluate("""() => {
+                const book = XLSX.utils.book_new();
+                const sheet = XLSX.utils.aoa_to_sheet([
+                  ['Mã hồ sơ', 'Trạng thái', 'Ý kiến'],
+                  ['0015', 'Đạt', 'Nhập từ XLSX'],
+                  ['0016', 'Chưa đạt', 'Đúng thứ tự']
+                ]);
+                XLSX.utils.book_append_sheet(book, sheet, 'Dữ liệu');
+                return XLSX.write(book, {type:'base64', bookType:'xlsx'});
+            }""")
+            import base64
+            page.locator("#dataFile").set_input_files({
+                "name": "phieu-thu-nghiem.xlsx",
+                "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                "buffer": base64.b64decode(excel_base64)
+            })
+            page.wait_for_function("document.querySelector('#dataSummary').textContent.includes('phieu-thu-nghiem.xlsx')")
+            assert not page.locator("#fillFromUploadedFile").is_checked()
+            page.locator("#fillFromUploadedFile").check()
+            page.locator("#buildPlanBtn").click()
+            assert [r["answers"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == [
+                {"601": "0015", "602": "Đạt", "603": "Nhập từ XLSX"},
+                {"601": "0016", "602": "Chưa đạt", "603": "Đúng thứ tự"}]
+        page.locator("#clearDataBtn").click()
+        assert page.locator("#fillFromUploadedFile").is_disabled()
+        assert not page.locator("#fillFromUploadedFile").is_checked()
+        assert "submitOneResponse" not in bridge_operations
         # Full 216-row paste regression (data supplied as Markdown/Sheets clipboard),
         # including both columns, student ID uniqueness and exact row alignment.
         sample_form["questions"] = [
