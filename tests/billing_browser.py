@@ -269,7 +269,12 @@ def main():
             page.locator("#formUrl").fill(FORM_URL)
             page.locator("#importFormBtn").click()
             page.locator("#questionList .mapping-select").wait_for()
+            # Importing a file is optional. User must explicitly opt in before
+            # the file is used in the Form plan; this UAT deliberately uses it.
+            assert not page.locator("#fillFromUploadedFile").is_checked()
+            page.locator("#fillFromUploadedFile").check()
             page.locator("#questionList .mapping-select").select_option("LuaChon")
+            page.locator("#rowStrategy").select_option("sequential")
             page.locator("#responseCount").fill("7")
             page.locator("#buildPlanBtn").click()
             page.locator("#validatePlanBtn").click()
