@@ -53,6 +53,12 @@ try:
             "questions": sample_questions
         }
         bridge_operations = []
+        def click_import_form():
+            # Keep the input centered below the sticky header. This is a real
+            # Playwright click, not force=True or a synthetic DOM click.
+            page.locator("#importFormBtn").evaluate(
+                "(el) => el.scrollIntoView({block: 'center', behavior: 'instant'})")
+            page.locator("#importFormBtn").click()
         def mock_bridge(route):
             request = route.request.post_data_json
             name = request.get("name")
@@ -78,7 +84,7 @@ try:
         page.route("**/api/bridge", mock_bridge)
         page.goto(base + "/#home", wait_until="domcontentloaded")
         page.locator("#formUrl").fill(form_url)
-        page.locator("#importFormBtn").click()
+        click_import_form()
         page.locator("#questionList .question-card").first.wait_for(timeout=10000)
         assert page.locator("#questionList .question-card").count() == 2
         assert "Google Form thử nghiệm" in page.locator("#formSummary").inner_text()
@@ -103,7 +109,7 @@ try:
              "type": "short_text", "options": [], "entryIds": ["951"]}
         ]
         sample_form["supportedCount"] = 4
-        page.locator("#importFormBtn").click()
+        click_import_form()
         required_text = page.locator('.text-samples[data-qid="200"]')
         optional_text = page.locator('.text-samples[data-qid="201"]')
         required_text.wait_for(timeout=10000)
@@ -165,7 +171,7 @@ try:
              "options": ["10", "11", "12"], "entryIds": ["972"]}
         ]
         sample_form["supportedCount"] = 2
-        page.locator("#importFormBtn").click()
+        click_import_form()
         page.wait_for_function("document.querySelectorAll('#questionList .question-card').length===2")
         grades = json.loads((ROOT / 'tests' / 'fixtures' / 'student-grade-216.json').read_text(encoding='utf-8'))['grades']
         assert len(grades) == 216 and grades[0] == 10 and grades[-1] == 10
@@ -217,7 +223,7 @@ try:
         assert "submitOneResponse" not in bridge_operations
         sample_form["questions"] = sample_questions
         sample_form["supportedCount"] = 2
-        page.locator("#importFormBtn").click()
+        click_import_form()
         page.wait_for_function("document.querySelectorAll('#questionList .question-card').length===2")
         for count in (50, 100):
             page.locator("#responseCount").fill(str(count))
@@ -255,7 +261,7 @@ try:
             "entryIds": ["903"]
         })
         sample_form["supportedCount"] = 3
-        page.locator("#importFormBtn").click()
+        click_import_form()
         page.locator("#formWarning").wait_for(state="visible", timeout=10000)
         assert "Column 1" in page.locator("#formWarning").inner_text()
         # Home keeps the working Form and hides editorial/help content.
