@@ -58,7 +58,7 @@ try:
             # Playwright click, not force=True or a synthetic DOM click.
             page.locator("#importFormBtn").evaluate(
                 "(el) => el.scrollIntoView({block: 'center', behavior: 'instant'})")
-            click_import_form()
+            page.locator("#importFormBtn").click()
         def mock_bridge(route):
             request = route.request.post_data_json
             name = request.get("name")
