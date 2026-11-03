@@ -378,7 +378,9 @@ try:
             "TAY001", "TAY002"]
         print("PASS invalid Excel replacement clears stale data mode")
 
-        page.locator("#clearDataBtn").click()
+        # The invalid-file failure path has already cleared the data summary.
+        # Do not click the now-hidden Clear Data button.
+        assert page.locator("#dataSummary").is_hidden()
         assert page.locator("#fillFromUploadedFile").is_disabled()
         assert not page.locator("#fillFromUploadedFile").is_checked()
         assert "submitOneResponse" not in bridge_operations
