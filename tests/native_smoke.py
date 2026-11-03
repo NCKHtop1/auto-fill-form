@@ -220,7 +220,73 @@ try:
         assert len(page.evaluate("window.PandaStudyQA.getRows()")) == 216
         assert page.evaluate("window.PandaStudyQA.getRows()[215].answers['211']") == "HS216"
         assert "Tự nhận diện bảng dán" in page.locator("#pasteDataStatus").inner_text()
+
+        # Generic use case: invoice identifiers + locale semicolon-CSV.
+        page.locator("#clearDataBtn").click()
+        sample_form["questions"] = [
+            {"id": "311", "index": 0, "title": "Mã đơn hàng", "helpText": "",
+             "required": True, "supported": True, "type": "short_text",
+             "options": [], "entryIds": ["991"]},
+            {"id": "312", "index": 1, "title": "Giá trị", "helpText": "",
+             "required": True, "supported": True, "type": "short_text",
+             "options": [], "entryIds": ["992"]}
+        ]
+        sample_form["supportedCount"] = 2
+        click_import_form()
+        page.locator("#pasteDataInput").fill("Mã đơn hàng;Giá trị\n0001;10,5\n0002;20,0")
+        page.locator("#buildPlanBtn").click()
+        assert page.locator("#pasteDataStatus").inner_text().find("semicolon") != -1
+        assert page.locator('.mapping-select[data-qid="311"]').input_value() == "Mã đơn hàng"
+        assert page.locator('.mapping-select[data-qid="312"]').input_value() == "Giá trị"
+        assert [r["answers"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == [
+            {"311": "0001", "312": "10,5"}, {"311": "0002", "312": "20,0"}]
+        # Blank mapped fields must fail, not be filled with synthetic answers.
+        page.locator("#pasteDataInput").fill("Mã đơn hàng;Giá trị\n0001;10,5\n0002;")
+        page.locator("#buildPlanBtn").click()
+        assert "cột “Giá trị” đang trống" in page.locator("#workflowResult").inner_text()
+        page.locator("#uniqueKeyColumn").select_option("Mã đơn hàng")
+        page.locator("#pasteDataInput").fill("Mã đơn hàng;Giá trị\n0001;10,5\n0001;20,0")
+        page.locator("#buildPlanBtn").click()
+        assert "bị lặp" in page.locator("#workflowResult").inner_text()
+
+        # Generic headerless single column: no specific student-name rule.
+        page.locator("#clearDataBtn").click()
+        sample_form["questions"] = [
+            {"id": "411", "index": 0, "title": "Mã phiếu", "helpText": "",
+             "required": True, "supported": True, "type": "short_text",
+             "options": [], "entryIds": ["993"]}
+        ]
+        sample_form["supportedCount"] = 1
+        click_import_form()
+        page.locator("#pasteFormat").select_option("lines")
+        page.locator("#pasteHeaderMode").select_option("none")
+        page.locator("#pasteDataInput").fill("0001\n0002\n0003")
+        page.locator("#loadPastedDataBtn").click()
+        assert page.locator("#pasteDataStatus").inner_text().find("không có tiêu đề") != -1
+        assert page.locator("#responseCount").input_value() == "3"
+        page.locator('.mapping-select[data-qid="411"]').select_option("Cột 1")
+        page.locator("#buildPlanBtn").click()
+        assert [r["answers"]["411"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == [
+            "0001", "0002", "0003"]
+        assert page.locator("#rowStrategy").input_value() == "sequential_no_repeat"
+
+        # Strict mapping: an ambiguous short title cannot silently select either ID column.
+        page.locator("#clearDataBtn").click()
+        sample_form["questions"] = [
+            {"id": "511", "index": 0, "title": "Mã", "helpText": "",
+             "required": True, "supported": True, "type": "short_text",
+             "options": [], "entryIds": ["994"]}
+        ]
+        sample_form["supportedCount"] = 1
+        click_import_form()
+        page.locator("#pasteFormat").select_option("auto")
+        page.locator("#pasteHeaderMode").select_option("first")
+        page.locator("#pasteDataInput").fill("Mã đơn hàng\tMã khách hàng\nA1\tB1")
+        page.locator("#buildPlanBtn").click()
+        assert page.locator('.mapping-select[data-qid="511"]').input_value() == ""
+        assert "Câu bắt buộc" in page.locator("#workflowResult").inner_text()
         assert "submitOneResponse" not in bridge_operations
+        page.locator("#clearDataBtn").click()
         sample_form["questions"] = sample_questions
         sample_form["supportedCount"] = 2
         click_import_form()
