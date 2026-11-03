@@ -1750,6 +1750,8 @@
         state.form = await serverCall('importOwnedForm', url);
         state.questionConfig = {};
         state.form.questions.forEach(q => state.questionConfig[q.id] = defaultQuestionConfig(q));
+        // Importing the same Form again creates fresh configuration: never copy stale DOM values.
+        delete $('questionList').dataset.renderedFormId;
         state.plan = [];
         renderFormSummary();
         renderQuestions();
