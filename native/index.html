@@ -14,7 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
   <script src="/ui-navigation.js?v=20261013c" defer></script>
-  <script src="/pasted-table.js?v=20261103a" defer></script>
+  <script src="/pasted-table.js?v=20261104-generic" defer></script>
   <script src="/blog.js?v=20261019-admin2" defer></script>
   <script src="/qa-run.js?v=20261013d" defer></script>
   <script src="/auth-gate.js?v=20261019a" defer></script>
@@ -877,11 +877,38 @@
           </div>
         </label>
         <div class="field" style="margin-top:14px">
-          <label for="pasteDataInput"><b>Dán bảng trực tiếp từ Excel / Google Sheets</b></label>
-          <textarea id="pasteDataInput" class="text-samples" rows="4" placeholder="Mã học sinh    Khối&#10;HS001    10&#10;HS002    12" aria-describedby="pasteDataHelp"></textarea>
-          <p id="pasteDataHelp" class="small muted">Dán cả hàng tiêu đề và các dòng dữ liệu (2 cột trở lên). Chấp nhận bảng Markdown, các cột cách nhau bằng Tab từ Excel/Sheets hoặc CSV. Không cần chọn tệp.</p>
-          <button id="loadPastedDataBtn" class="btn btn-outline btn-sm" type="button">Đọc bảng đã dán và tự ghép cột</button>
+          <label for="pasteDataInput"><b>Dán dữ liệu từ Excel, Google Sheets hoặc văn bản</b></label>
+          <textarea id="pasteDataInput" class="text-samples" rows="5" placeholder="Họ tên&#9;Tuổi&#10;Nguyễn An&#9;21&#10;Trần Bình&#9;25" aria-describedby="pasteDataHelp"></textarea>
+          <p id="pasteDataHelp" class="small muted">Hỗ trợ bảng từ 1 cột trở lên: Excel/Sheets (Tab), CSV (dấu phẩy hoặc chấm phẩy), bảng Markdown, JSON hoặc danh sách mỗi dòng một giá trị. Giữ đúng các số 0 ở đầu mã. Không cần chọn tệp.</p>
+          <div class="field-grid" style="display:flex;gap:12px;flex-wrap:wrap;margin:10px 0">
+            <div class="field" style="min-width:180px;flex:1">
+              <label for="pasteFormat">Định dạng dữ liệu dán</label>
+              <select id="pasteFormat">
+                <option value="auto">Tự nhận diện</option>
+                <option value="tsv">Tab (Excel / Sheets)</option>
+                <option value="csv">CSV (dấu phẩy)</option>
+                <option value="semicolon">CSV (chấm phẩy ;)</option>
+                <option value="pipe">Dấu gạch đứng |</option>
+                <option value="markdown">Bảng Markdown</option>
+                <option value="lines">Mỗi dòng một giá trị</option>
+                <option value="json">JSON (mảng bản ghi)</option>
+              </select>
+            </div>
+            <div class="field" style="min-width:190px;flex:1">
+              <label for="pasteHeaderMode">Dòng đầu tiên</label>
+              <select id="pasteHeaderMode">
+                <option value="first">Là tên cột</option>
+                <option value="none">Là dữ liệu (không có tiêu đề)</option>
+              </select>
+            </div>
+          </div>
+          <button id="loadPastedDataBtn" class="btn btn-outline btn-sm" type="button">Đọc và xem trước dữ liệu</button>
           <div id="pasteDataStatus" class="small muted" role="status" aria-live="polite"></div>
+          <div class="field" style="margin-top:10px">
+            <label for="uniqueKeyColumn">Cột khóa không được trùng (tùy chọn)</label>
+            <select id="uniqueKeyColumn"><option value="">Không kiểm tra trùng theo cột khóa</option></select>
+            <p class="small muted">Chỉ chọn nếu một giá trị cần xuất hiện đúng một lần, như mã đơn hàng, mã sinh viên hoặc ID phản hồi. Dữ liệu khảo sát có thể lặp giá trị bình thường.</p>
+          </div>
         </div>
         <div id="dataSummary" class="data-summary hidden"></div>
       </div>
@@ -1363,6 +1390,24 @@
       $('loadPastedDataBtn').addEventListener('click', () => {
         try { loadPastedData(); }
         catch (error) { showPasteError(error); }
+      });
+      ['pasteFormat', 'pasteHeaderMode'].forEach(id => $(id).addEventListener('change', () => {
+        state.lastImportedPaste = '';
+        invalidatePlan();
+        if ($('pasteDataInput').value.trim()) {
+          try { loadPastedData(); } catch (error) { showPasteError(error); }
+        }
+      }));
+      $('pasteDataInput').addEventListener('input', () => {
+        state.lastImportedPaste = '';
+        invalidatePlan();
+      });
+      $('uniqueKeyColumn').addEventListener('change', () => {
+        invalidatePlan();
+        try {
+          window.PandaStudyTable.validateUnique(state.dataRows, $('uniqueKeyColumn').value);
+          $('pasteDataStatus').style.color = '';
+        } catch (error) { showPasteError(error); }
       });
       // Clipboard paste is imported automatically; the button supports manual edits too.
       $('pasteDataInput').addEventListener('paste', () => {
@@ -1856,11 +1901,21 @@
       toast(msg, 'error');
     }
 
+    function updateUniqueKeyOptions() {
+      const select = $('uniqueKeyColumn');
+      const old = select.value;
+      select.innerHTML = '<option value="">Không kiểm tra trùng theo cột khóa</option>' +
+        state.dataColumns.map(col => '<option value="' + escapeAttr(col) + '">' +
+          escapeHtml(col) + '</option>').join('');
+      select.value = state.dataColumns.includes(old) ? old : '';
+    }
+
     function applyDataRows(rows, source, selectAllRows) {
       if (!Array.isArray(rows) || !rows.length) throw new Error('Không có dòng dữ liệu hợp lệ.');
       state.dataFileName = source;
       state.dataRows = rows.map(normalizeRowObject);
       state.dataColumns = Array.from(new Set(state.dataRows.flatMap(row => Object.keys(row))));
+      updateUniqueKeyOptions();
       Object.values(state.questionConfig).forEach(cfg => {
         if (!state.dataColumns.includes(cfg.mapping)) cfg.mapping = '';
         Object.keys(cfg.gridMappings || {}).forEach(index => {
@@ -1870,10 +1925,9 @@
       autoMapAll();
       renderDataSummary();
       renderQuestions();
-      if (selectAllRows) $('responseCount').value = String(state.dataRows.length);
-      if (state.dataColumns.some(col =>
-        ['ma hoc sinh', 'ma hs', 'student id', 'student code'].includes(
-          window.PandaStudyTable.normalizeHeader(col)))) {
+      if (selectAllRows) {
+        $('responseCount').value = String(state.dataRows.length);
+        // Never implicitly repeat any imported record; users may choose repetition explicitly.
         $('rowStrategy').value = 'sequential_no_repeat';
       }
       updateRunCost();
@@ -1883,14 +1937,23 @@
 
     function loadPastedData() {
       const raw = $('pasteDataInput').value;
-      const parsed = window.PandaStudyTable.parse(raw);
-      applyDataRows(parsed.rows, 'Bảng dữ liệu đã dán', true);
+      const parsed = window.PandaStudyTable.parse(raw, {
+        format: $('pasteFormat').value, headerMode: $('pasteHeaderMode').value
+      });
+      applyDataRows(parsed.rows, 'Dữ liệu đã dán (' + parsed.format + ')', true);
       state.lastImportedPaste = raw.trim();
       $('pasteDataStatus').style.color = '';
+      const mapped = state.form ? state.form.questions.filter(q => {
+        const cfg = state.questionConfig[q.id];
+        return q.supported && cfg && (cfg.mapping || Object.values(cfg.gridMappings || {}).some(Boolean));
+      }).length : 0;
       $('pasteDataStatus').textContent =
-        'Đã nhận ' + parsed.rows.length + ' dòng và ' + parsed.columns.length +
-        ' cột. Đã ghép theo tên câu hỏi nếu Google Form được nhập.';
-      toast('Đã đọc ' + parsed.rows.length + ' dòng bảng, có thể tạo xem trước.', 'success');
+        'Đã đọc ' + parsed.rows.length + ' dòng × ' + parsed.columns.length +
+        ' cột (' + parsed.format + ', ' + (parsed.headerMode === 'none' ?
+          'không có tiêu đề' : 'có tiêu đề') + '). ' +
+        (state.form ? 'Tự ghép chính xác ' + mapped + ' câu hỏi; kiểm tra lại tất cả cột ở bước 3.' :
+          'Nhập Google Form tại bước 2 để ghép dữ liệu.');
+      toast('Đã đọc ' + parsed.rows.length + ' dòng. Kiểm tra ghép cột ở bước 3.', 'success');
     }
 
     function importTableFromQuestionBox() {
@@ -1952,6 +2015,8 @@
       state.lastImportedPaste = '';
       $('pasteDataInput').value = '';
       $('pasteDataStatus').textContent = '';
+      $('uniqueKeyColumn').innerHTML = '<option value="">Không kiểm tra trùng theo cột khóa</option>';
+      $('rowStrategy').value = 'sequential';
       Object.values(state.questionConfig).forEach(config => { config.mapping = ''; config.gridMappings = {}; });
       $('dataFile').value = '';
       $('dataSummary').classList.add('hidden');
@@ -2185,16 +2250,9 @@
     }
 
     function findBestColumn(questionTitle, rowTitle) {
-      const candidates = state.dataColumns;
-      const q = normalizeKey(questionTitle);
-      const r = normalizeKey(rowTitle);
-      const combined = normalizeKey(`${questionTitle} ${rowTitle}`);
-      let match = candidates.find(col => normalizeKey(col) === combined);
-      if (!match && r) match = candidates.find(col => normalizeKey(col) === r);
-      if (!match) match = candidates.find(col => normalizeKey(col) === q);
-      if (!match && r) match = candidates.find(col => normalizeKey(col).includes(r) && normalizeKey(col).includes(q.slice(0, Math.min(q.length, 20))));
-      if (!match) match = candidates.find(col => q.includes(normalizeKey(col)) || normalizeKey(col).includes(q));
-      return match || '';
+      // Fuzzy substring matches are deliberately excluded: they can silently
+      // overwrite a different question. Unclear fields stay unselected.
+      return window.PandaStudyTable.suggestColumn(questionTitle, state.dataColumns, rowTitle);
     }
 
     function buildPlanSafe() {
@@ -2210,7 +2268,16 @@
             (optionalEmpty.length > 3 ? '...' : '') +
             '. Nếu muốn điền, hãy ghép cột hoặc thêm giá trị mẫu. Thông tin liên hệ có thể để trống.'
           : '';
-        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa kiểm tra. Chưa gửi. Bấm 4b.` + caution;
+        const unmapped = state.dataRows.length ? state.form.questions.filter(q => {
+          const cfg = state.questionConfig[q.id];
+          return q.supported && q.required && q.type !== 'grid' && q.type !== 'checkbox_grid' && !cfg.mapping;
+        }) : [];
+        const mapCaution = unmapped.length
+          ? ' Cảnh báo: ' + unmapped.length + ' câu bắt buộc chưa ghép cột (' +
+            unmapped.slice(0, 3).map(q => q.title).join('; ') +
+            '). Các câu này sử dụng quy tắc tạo câu trả lời. Hãy kiểm tra kỹ trước bước 4b.'
+          : '';
+        $('workflowResult').textContent = `Đã tạo ${state.plan.length} dòng xem trước. Chưa kiểm tra. Chưa gửi. Bấm 4b.` + caution + mapCaution;
         $('previewSection').scrollIntoView({behavior:'smooth',block:'start'});
         toast(`Đã tạo ${state.plan.length} dòng xem trước. Bấm 4b để kiểm tra.`, 'success');
       } catch (error) {
@@ -2231,6 +2298,7 @@
       const count = Number($('responseCount').value);
       if (!Number.isInteger(count) || count < 1 || count > MAX_UI_RESPONSES) throw new Error(t('err_count'));
       if ($('scheduleMode').value !== 'now') throw new Error('Lịch chạy nền chưa được bật trên bản Vercel.');
+      window.PandaStudyTable.validateUnique(state.dataRows, $('uniqueKeyColumn').value);
       if ($('rowStrategy').value === 'sequential_no_repeat' && state.dataRows.length &&
           count > state.dataRows.length) {
         throw new Error('Chỉ có ' + state.dataRows.length + ' dòng dữ liệu, không thể tạo ' +
