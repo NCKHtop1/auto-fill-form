@@ -1826,6 +1826,7 @@
         renderQuestions();
         autoMapAll();
         renderQuestions();
+        if (state.dataRows.length) renderDataSummary();
         $('questionEmpty').classList.add('hidden');
         $('refreshCountBtn').disabled = state.form.responseCount == null;
         $('refreshCountBtn').title = state.form.responseCount == null ? 'Số phản hồi thật chỉ xem được khi đăng nhập tài khoản có quyền chỉnh sửa.' : '';
@@ -1984,7 +1985,7 @@
     }
 
     function normalizeRowObject(row) {
-      const out = {};
+      const out = Object.create(null);
       Object.keys(row || {}).forEach(key => {
         const value = row[key];
         out[String(key).trim()] = value instanceof Date ? value.toISOString() : (value ?? '');
@@ -1994,6 +1995,22 @@
 
     function renderDataSummary() {
       if (!state.dataRows.length) return $('dataSummary').classList.add('hidden');
+      const columns = state.dataColumns.slice(0, 6);
+      const preview = '<div class="small" style="overflow:auto;margin-top:10px;max-height:240px">' +
+        '<b>Xem nhanh 3 dòng đầu (chưa gửi)</b><table style="border-collapse:collapse;min-width:100%;margin-top:6px">' +
+        '<thead><tr>' + columns.map(col => '<th style="text-align:left;padding:6px;border:1px solid #ddd">' +
+          escapeHtml(col) + '</th>').join('') + '</tr></thead>' +
+        '<tbody>' + state.dataRows.slice(0, 3).map(row => '<tr>' +
+          columns.map(col => '<td style="padding:6px;border:1px solid #ddd">' +
+            escapeHtml(String(row[col] ?? '')) + '</td>').join('') +
+          '</tr>').join('') + '</tbody></table>' +
+        (state.dataColumns.length > 6 ? '<p>Còn ' + (state.dataColumns.length - 6) +
+          ' cột; xem ở danh sách ghép cột bên dưới.</p>' : '') + '</div>';
+      const missingMappings = state.form ? state.form.questions.filter(q => {
+        const cfg = state.questionConfig[q.id];
+        return q.supported && q.required && cfg && q.type !== 'grid' &&
+          q.type !== 'checkbox_grid' && !cfg.mapping;
+      }).length : 0;
       $('dataSummary').innerHTML = `
         <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <div style="flex:1"><b>${escapeHtml(state.dataFileName)}</b><div class="small muted">${state.dataColumns.map(escapeHtml).join(' · ')}</div></div>
@@ -2003,7 +2020,10 @@
           <div class="summary-stat"><b>${state.dataRows.length}</b><span>${t('file_rows')}</span></div>
           <div class="summary-stat"><b>${state.dataColumns.length}</b><span>${t('file_columns')}</span></div>
           <div class="summary-stat" style="grid-column:span 2"><b style="font-size:.9rem">${escapeHtml(state.dataFileName)}</b><span>${t('file_name')}</span></div>
-        </div>`;
+        </div>
+        ${missingMappings ? '<p class="small" style="color:#9e2f28"><b>Cần kiểm tra:</b> ' +
+          missingMappings + ' câu bắt buộc chưa được ghép với cột dữ liệu. Các câu này có thể dùng dữ liệu mẫu; hãy xác nhận ở bước 3.</p>' : ''}
+        ${preview}`;
       $('dataSummary').classList.remove('hidden');
       $('clearDataBtn').addEventListener('click', clearData);
     }
