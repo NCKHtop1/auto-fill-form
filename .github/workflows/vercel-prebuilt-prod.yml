@@ -1,27 +1,40 @@
 name: PandaStudy prebuilt production deploy
 
+# Only a successful push-based main branch CI build can release to production.
+# workflow_dispatch remains available for an authorized manual recovery.
 on:
-  push:
-    branches:
-      - main
-    paths:
-      - .github/workflows/vercel-prebuilt-prod.yml
+  workflow_run:
+    workflows: ["PandaStudy checks"]
+    types: [completed]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: pandastudy-production
+  cancel-in-progress: false
+
 jobs:
   deploy:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.event == 'push' &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.conclusion == 'success')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
       VERCEL_ORG_ID: team_rczIInh7a5toP2TZco1ESojg
       VERCEL_PROJECT_ID: prj_BNL9GBoMnWf4otcPGCG53qIeERcb
+      VERCEL_CLI_VERSION: '65.9.0'
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           persist-credentials: false
+          ref: ${{ github.event_name == 'workflow_run' && github.event.workflow_run.head_sha || github.sha }}
 
       - name: Require Vercel CLI credential
         shell: bash
@@ -40,16 +53,37 @@ jobs:
 
       - name: Verify linked Vercel project
         working-directory: native
-        run: npx --yes vercel@latest project inspect --non-interactive --scope ngochailuong
+        run: npx --yes "vercel@$VERCEL_CLI_VERSION" project inspect --non-interactive --scope ngochailuong
 
       - name: Pull production environment
         working-directory: native
-        run: npx --yes vercel@latest pull --yes --environment=production --scope ngochailuong
+        run: npx --yes "vercel@$VERCEL_CLI_VERSION" pull --yes --environment=production --scope ngochailuong
 
       - name: Build production output locally
         working-directory: native
-        run: npx --yes vercel@latest build --prod --scope ngochailuong
+        run: npx --yes "vercel@$VERCEL_CLI_VERSION" build --prod --scope ngochailuong
 
       - name: Deploy prebuilt output to production
         working-directory: native
-        run: npx --yes vercel@latest deploy --prebuilt --prod --yes --scope ngochailuong
+        run: npx --yes "vercel@$VERCEL_CLI_VERSION" deploy --prebuilt --prod --yes --scope ngochailuong
+
+      - name: Verify updated production HTML (read-only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          for host in www.pandastudy.info.vn pandastudy.info.vn; do
+            found=0
+            for attempt in 1 2 3 4 5 6; do
+              if curl --fail --silent --show-error --location --max-time 20 \
+                "https://$host/" --output /tmp/pandastudy-live.html &&
+                grep -q 'id="pasteDataInput"' /tmp/pandastudy-live.html; then
+                found=1
+                break
+              fi
+              sleep 5
+            done
+            if [ "$found" -ne 1 ]; then
+              echo "::error::Production host $host still lacks the new table-paste UI."
+              exit 1
+            fi
+          done
