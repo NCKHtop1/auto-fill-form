@@ -167,8 +167,8 @@ try:
         sample_form["supportedCount"] = 2
         page.locator("#importFormBtn").click()
         page.wait_for_function("document.querySelectorAll('#questionList .question-card').length===2")
-        grades = [12 if i in (7, 8, 214, 215) else
-                  10 if i == 216 else (10, 11, 12)[i % 3] for i in range(1, 217)]
+        grades = json.loads((ROOT / 'tests' / 'fixtures' / 'student-grade-216.json').read_text(encoding='utf-8'))['grades']
+        assert len(grades) == 216 and grades[0] == 10 and grades[-1] == 10
         markdown = "| Mã học   sinh | Khối |\n| --- | --- |\n" + "".join(
             "| HS%03d | %d |\n" % (i, grades[i - 1]) for i in range(1, 217))
         page.locator("#pasteDataInput").fill(markdown)
