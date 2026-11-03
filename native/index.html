@@ -2084,7 +2084,7 @@
           '</tr>').join('') + '</tbody></table>' +
         (state.dataColumns.length > 6 ? '<p>Còn ' + (state.dataColumns.length - 6) +
           ' cột; xem ở danh sách ghép cột bên dưới.</p>' : '') + '</div>';
-      const missingMappings = state.form ? state.form.questions.filter(q => {
+      const missingMappings = usingImportedData() && state.form ? state.form.questions.filter(q => {
         const cfg = state.questionConfig[q.id];
         return q.supported && q.required && cfg && q.type !== 'grid' &&
           q.type !== 'checkbox_grid' && !cfg.mapping;
@@ -2099,6 +2099,9 @@
           <div class="summary-stat"><b>${state.dataColumns.length}</b><span>${t('file_columns')}</span></div>
           <div class="summary-stat" style="grid-column:span 2"><b style="font-size:.9rem">${escapeHtml(state.dataFileName)}</b><span>${t('file_name')}</span></div>
         </div>
+        <p class="small muted">${state.dataSourceKind === 'file' && !state.useUploadedFile
+          ? 'File chỉ được xem trước; chưa dùng để điền. Tích “Điền theo file đã tải lên” nếu muốn sử dụng.'
+          : 'Nguồn dữ liệu này đang được sử dụng để ghép câu trả lời theo từng dòng.'}</p>
         ${missingMappings ? '<p class="small" style="color:#9e2f28"><b>Cần kiểm tra:</b> ' +
           missingMappings + ' câu bắt buộc chưa được ghép với cột dữ liệu. Các câu này có thể dùng dữ liệu mẫu; hãy xác nhận ở bước 3.</p>' : ''}
         ${preview}`;
@@ -2190,7 +2193,7 @@
             ${(q.rows || []).map((row, i) => `
               <div class="grid-row-map">
                 <div class="row-label">${escapeHtml(row)}</div>
-                <select class="grid-mapping-select" data-qid="${q.id}" data-row-index="${i}">${columnOptions(config.gridMappings[i] || '')}</select>
+                <select class="grid-mapping-select" data-qid="${q.id}" data-row-index="${i}" ${usingImportedData() ? '' : 'disabled'}>${columnOptions(config.gridMappings[i] || '')}</select>
               </div>`).join('')}
             <p class="mapping-help">${t('grid_random_help')}</p>
           </div>`;
@@ -2198,7 +2201,7 @@
         mappingHtml = `
           <div class="mapping-box">
             <label class="small"><b>${t('data_column')}</b></label>
-            <select class="mapping-select" data-qid="${q.id}">${columnOptions(config.mapping)}</select>
+            <select class="mapping-select" data-qid="${q.id}" ${usingImportedData() ? '' : 'disabled'}>${columnOptions(config.mapping)}</select>
             <p class="mapping-help">${t('mapping_help')}</p>
           </div>`;
       }
@@ -2337,7 +2340,7 @@
     }
 
     function autoMapAll() {
-      if (!state.form || !state.dataColumns.length) return;
+      if (!state.form || !usingImportedData() || !state.dataColumns.length) return;
       state.form.questions.forEach(q => {
         const cfg = state.questionConfig[q.id];
         if (!cfg || !q.supported) return;
@@ -2370,7 +2373,7 @@
             (optionalEmpty.length > 3 ? '...' : '') +
             '. Nếu muốn điền, hãy ghép cột hoặc thêm giá trị mẫu. Thông tin liên hệ có thể để trống.'
           : '';
-        const unmapped = state.dataRows.length ? state.form.questions.filter(q => {
+        const unmapped = usingImportedData() ? state.form.questions.filter(q => {
           const cfg = state.questionConfig[q.id];
           return q.supported && q.required && q.type !== 'grid' && q.type !== 'checkbox_grid' && !cfg.mapping;
         }) : [];
@@ -2400,8 +2403,8 @@
       const count = Number($('responseCount').value);
       if (!Number.isInteger(count) || count < 1 || count > MAX_UI_RESPONSES) throw new Error(t('err_count'));
       if ($('scheduleMode').value !== 'now') throw new Error('Lịch chạy nền chưa được bật trên bản Vercel.');
-      window.PandaStudyTable.validateUnique(state.dataRows, $('uniqueKeyColumn').value);
-      if ($('rowStrategy').value === 'sequential_no_repeat' && state.dataRows.length &&
+      if (usingImportedData()) window.PandaStudyTable.validateUnique(state.dataRows, $('uniqueKeyColumn').value);
+      if (usingImportedData() && $('rowStrategy').value === 'sequential_no_repeat' && state.dataRows.length &&
           count > state.dataRows.length) {
         throw new Error('Chỉ có ' + state.dataRows.length + ' dòng dữ liệu, không thể tạo ' +
           count + ' dòng khi chọn tuần tự không lặp. Hãy giảm số dòng hoặc bổ sung dữ liệu.');
@@ -2476,7 +2479,7 @@
         if (!q.supported) return;
         const cfg = state.questionConfig[q.id];
         if (['short_text','paragraph'].includes(q.type) && cfg.textSampleMode === 'ordered' &&
-            (!cfg.mapping || !state.dataRows.length ||
+            (!usingImportedData() || !cfg.mapping ||
               state.dataRows.some(row => isEmpty(row[cfg.mapping])))) {
           const values = parseTextSamples(cfg.textSamples);
           if (new Set(values).size !== values.length) throw new Error(t('err_text_samples_duplicate', {title:q.title}));
@@ -2492,7 +2495,7 @@
     }
 
     function chooseDataRowIndex(i) {
-      if (!state.dataRows.length) return -1;
+      if (!usingImportedData()) return -1;
       if ($('rowStrategy').value === 'random') return randomInt(0, state.dataRows.length - 1);
       if ($('rowStrategy').value === 'sequential_no_repeat') return i;
       return i % state.dataRows.length;
