@@ -240,6 +240,10 @@ try:
         assert page.locator('.mapping-select[data-qid="312"]').input_value() == "Giá trị"
         assert [r["answers"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == [
             {"311": "0001", "312": "10,5"}, {"311": "0002", "312": "20,0"}]
+        # Blank mapped fields must fail, not be filled with synthetic answers.
+        page.locator("#pasteDataInput").fill("Mã đơn hàng;Giá trị\n0001;10,5\n0002;")
+        page.locator("#buildPlanBtn").click()
+        assert "cột “Giá trị” đang trống" in page.locator("#workflowResult").inner_text()
         page.locator("#uniqueKeyColumn").select_option("Mã đơn hàng")
         page.locator("#pasteDataInput").fill("Mã đơn hàng;Giá trị\n0001;10,5\n0001;20,0")
         page.locator("#buildPlanBtn").click()
