@@ -38,3 +38,19 @@ test('calendar validation rejects impossible dates and accepts real leap days',(
  for(const value of ['2026-02-28','2024-02-29','2026-12-31'])
    assert.deepEqual(validate(q,{d:value}),[],value);
 });
+
+test('partially required grid only requires its mandatory rows and explains invalid row choices',()=>{
+ const questions=[{id:'g',title:'Lưới lựa chọn',supported:true,required:true,
+   type:'grid',rows:['Bắt buộc','Tùy chọn'],columns:['Có','Không'],
+   requiredRows:[true,false],entryIds:['1','2']}];
+ assert.deepEqual(validate(questions,{g:['Có','']}),[]);
+ assert.ok(validate(questions,{g:['','Có']}).join(' ').includes('Bắt buộc'));
+ assert.ok(validate(questions,{g:['Có','Khác']}).join(' ').includes('Tùy chọn'));
+ const fieldsOut=fields(questions,{g:['Có','']});
+ assert.equal(fieldsOut.get('entry.1'),'Có');
+ assert.equal(fieldsOut.has('entry.2'),false);
+ const legacy=[{...questions[0],requiredRows:undefined}];
+ assert.ok(validate(legacy,{g:['Có','']}).length>0,'Older full-required grids remain strict');
+ const checkGrid=[{...questions[0],type:'checkbox_grid'}];
+ assert.deepEqual(validate(checkGrid,{g:[['Có'],[]]}),[]);
+});

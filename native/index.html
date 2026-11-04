@@ -1072,6 +1072,20 @@
         </div>
 
         <div id="workflowResult" class="workflow-result" role="status" aria-live="polite">Chưa có dữ liệu xem trước.</div>
+        <div id="validationDiagnostics" class="warning-box" role="region" aria-label="Chi tiết các lỗi kiểm tra dữ liệu" hidden></div>
+        <div id="planViewToolbar" class="action-row hidden" hidden style="gap:8px;flex-wrap:wrap;align-items:center">
+          <label for="planStatusFilter" class="small"><b>Hiển thị dòng</b></label>
+          <select id="planStatusFilter" style="max-width:185px">
+            <option value="all">Tất cả</option>
+            <option value="invalid">Chưa hợp lệ</option>
+            <option value="valid">Hợp lệ</option>
+            <option value="ready">Chưa kiểm tra</option>
+          </select>
+          <button id="downloadValidationErrorsBtn" type="button" class="btn btn-outline btn-sm" disabled>Tải CSV các lỗi</button>
+          <button id="planPrevPageBtn" type="button" class="btn btn-outline btn-sm">Trang trước</button>
+          <span id="planPageLabel" class="small muted">Trang 1/1</span>
+          <button id="planNextPageBtn" type="button" class="btn btn-outline btn-sm">Trang sau</button>
+        </div>
         <div id="formWarning" class="form-warning" hidden></div>
         <div id="planMessage" class="warning-box">Chưa có bảng xem trước. Bấm “4a. Tạo bảng xem trước”.</div>
         <div id="progressWrap" class="hidden">
@@ -1339,6 +1353,8 @@
       questionConfig: {},
       plan: [],
       selectedRows: null,
+      planStatusFilter: 'all',
+      planPage: 0,
       sending: false,
       scheduledRuns: [],
       billing: {configured:true,billingEnabled:false,availableCredits:1000000,unitPriceVnd:0,email:''},
@@ -1440,6 +1456,20 @@
       $('scheduleMode').addEventListener('change', () => { updateSchedulePanels(); state.plan = []; renderPlan(); });
       $('buildPlanBtn').addEventListener('click', buildPlanSafe);
       $('validatePlanBtn').addEventListener('click', validateCurrentPlan);
+      $('planStatusFilter').addEventListener('change', event => {
+        state.planStatusFilter = event.target.value;
+        state.planPage = 0;
+        renderPlan();
+      });
+      $('planPrevPageBtn').addEventListener('click', () => {
+        state.planPage = Math.max(0, state.planPage - 1);
+        renderPlan();
+      });
+      $('planNextPageBtn').addEventListener('click', () => {
+        state.planPage += 1;
+        renderPlan();
+      });
+      $('downloadValidationErrorsBtn').addEventListener('click', downloadValidationErrors);
       $('submitPlanBtn').addEventListener('click', submitCurrentPlan);
       $('downloadPlanBtn').addEventListener('click', () => downloadPlan(false));
       $('downloadReportBtn').addEventListener('click', () => downloadPlan(true));
@@ -1909,7 +1939,15 @@
         applyDataRows(rows, file.name, false, 'file');
         toast('Đã đọc ' + rows.length + ' dòng. Tích “Điền theo file đã tải lên” nếu muốn sử dụng dữ liệu này.', 'success');
       } catch (error) {
-        toast(`${t('err_file')} ${messageOf(error)}`, 'error');
+        // Fail closed: an invalid replacement file must never leave a previous
+        // imported dataset checked and active. Preserve manually typed samples.
+        const reason = messageOf(error);
+        clearData();
+        $('uploadedFileFillHint').textContent =
+          'Không thể đọc “' + String(file?.name || 'file') +
+          '”: ' + reason + '. Dữ liệu file trước đã ngừng sử dụng. Chọn file hợp lệ để thử lại.';
+        $('uploadedFileFillHint').style.color = '#b3261e';
+        toast(`${t('err_file')} ${reason}`, 'error');
       }
     }
 
@@ -1943,6 +1981,7 @@
     }
 
     function updateUploadedFileControl() {
+      $('uploadedFileFillHint').style.color = '';
       const isFile = state.dataSourceKind === 'file' && state.dataRows.length > 0;
       $('fillFromUploadedFile').disabled = !isFile;
       $('fillFromUploadedFile').checked = isFile && state.useUploadedFile;
@@ -2110,6 +2149,7 @@
     }
 
     function clearData() {
+      const restorePreviousStrategy = Boolean(state.manualPlanSettings);
       restoreManualPlanSettings();
       state.dataSourceKind = '';
       state.useUploadedFile = false;
@@ -2121,7 +2161,7 @@
       $('pasteDataStatus').textContent = '';
       $('uniqueKeyColumn').innerHTML = '<option value="">Không kiểm tra trùng theo cột khóa</option>';
       updateUploadedFileControl();
-      $('rowStrategy').value = 'sequential';
+      if (!restorePreviousStrategy) $('rowStrategy').value = 'sequential';
       Object.values(state.questionConfig).forEach(config => { config.mapping = ''; config.gridMappings = {}; });
       $('dataFile').value = '';
       $('dataSummary').classList.add('hidden');
@@ -2427,15 +2467,22 @@
             // Once a column is mapped, a blank cell cannot silently become
             // a fabricated random answer. Unmapped questions may still use
             // intentionally configured generation rules.
-            const mappedColumns = ['grid', 'checkbox_grid'].includes(q.type)
-              ? Object.values(cfg.gridMappings || {}).filter(Boolean)
-              : (cfg.mapping ? [cfg.mapping] : []);
-            const emptyMapped = mappedColumns.find(col => isEmpty(row[col]));
-            if (emptyMapped) {
+            if (q.type === 'grid' || q.type === 'checkbox_grid') {
+              (q.rows || []).forEach((gridRow, rowIndex) => {
+                const col = cfg.gridMappings[rowIndex];
+                const isRequired = Array.isArray(q.requiredRows) &&
+                  q.requiredRows.length === q.rows.length
+                  ? q.requiredRows[rowIndex] : q.required;
+                if (col && isRequired && isEmpty(row[col])) {
+                  throw new Error('Lưới bắt buộc “' + q.title + '”, hàng “' +
+                    gridRow + '”: dòng dữ liệu ' + (dataIndex + 1) +
+                    ', cột “' + col + '” đang trống.');
+                }
+              });
+            } else if (cfg.mapping && isEmpty(row[cfg.mapping])) {
               if (q.required) {
                 throw new Error('Câu bắt buộc “' + q.title + '”: dòng dữ liệu ' +
-                  (dataIndex + 1) + ', cột “' + emptyMapped +
-                  '” đang trống. Bổ sung dữ liệu hoặc bỏ ghép cột để dùng quy tắc tạo mẫu.');
+                  (dataIndex + 1) + ', cột “' + cfg.mapping + '” đang trống.');
               }
               return;
             }
@@ -2470,6 +2517,8 @@
       }
       state.plan = plan;
       state.selectedRows = null;
+      state.planStatusFilter = 'all';
+      state.planPage = 0;
       renderPlan();
       window.dispatchEvent(new Event('pandastudy:plan-rebuilt'));
     }
@@ -2510,12 +2559,13 @@
       if (q.type === 'grid') return q.rows.map((gridRow, index) => {
         const mapped = cfg.gridMappings[index];
         const value = mapped ? row[mapped] : '';
-        return !isEmpty(value) ? String(value).trim() : randomChoice(q.columns);
+        return mapped ? (isEmpty(value) ? '' : String(value).trim()) : randomChoice(q.columns);
       });
       if (q.type === 'checkbox_grid') return q.rows.map((gridRow, index) => {
         const mapped = cfg.gridMappings[index];
         const value = mapped ? row[mapped] : '';
-        return !isEmpty(value) ? splitMulti(value) : randomSubset(cfg.selectedOptions, cfg.minSelect, cfg.maxSelect);
+        return mapped ? (isEmpty(value) ? [] : splitMulti(value)) :
+          randomSubset(cfg.selectedOptions, cfg.minSelect, cfg.maxSelect);
       });
 
       const mappedValue = cfg.mapping ? row[cfg.mapping] : '';
@@ -2591,8 +2641,73 @@
       return slots.slice(0, count);
     }
 
+    function validationRowIssues(row) {
+      if (Array.isArray(row.validationIssues)) return row.validationIssues.filter(Boolean);
+      return row.error ? [String(row.error)] : [];
+    }
+
+    function validationRepairHint(issue) {
+      if (/Không tìm thấy lựa chọn/i.test(issue))
+        return 'Kiểm tra cột đã ghép ở bước 3 và nhãn lựa chọn trong Google Form; không tự đổi đáp án.';
+      if (/Thiếu câu trả lời|Chưa trả lời đủ hàng/i.test(issue))
+        return 'Kiểm tra ô trống và các hàng bắt buộc của câu hỏi này.';
+      if (/Số hàng của lưới/i.test(issue))
+        return 'Kiểm tra số hàng và cách ghép cột cho câu hỏi dạng lưới.';
+      if (/Ngày phải|Giờ phải|Thời lượng phải/i.test(issue))
+        return 'Sửa định dạng ngày/giờ trong file gốc cho phù hợp.';
+      return 'Xem lý do ở từng dòng, đối chiếu cột ghép và quy tắc ở bước 3.';
+    }
+
+    function renderValidationDiagnostics() {
+      const box = $('validationDiagnostics');
+      const rows = state.plan.filter(row => row.status === 'invalid');
+      box.hidden = !rows.length;
+      if (!rows.length) { box.textContent = ''; return; }
+      const groups = new Map();
+      rows.forEach(row => {
+        const distinct = new Set(validationRowIssues(row));
+        if (!distinct.size) distinct.add('Máy chủ chưa cung cấp mô tả lỗi.');
+        distinct.forEach(issue => {
+          if (!groups.has(issue)) groups.set(issue, {count:0,examples:[]});
+          const item = groups.get(issue);
+          item.count++;
+          if (item.examples.length < 5) item.examples.push(row.index);
+        });
+      });
+      const sorted = [...groups.entries()].sort((a,b) => b[1].count - a[1].count);
+      box.innerHTML = '<b>Đã xác định ' + rows.length + '/' + state.plan.length +
+        ' dòng chưa hợp lệ. Những nguyên nhân nhiều nhất:</b>' +
+        '<p class="small" style="margin:5px 0 10px">Lỗi được tổng hợp theo câu hỏi; hệ thống không tự thay dữ liệu người dùng.</p>' +
+        '<ol style="margin:0;padding-left:22px">' +
+        sorted.slice(0,8).map(([issue,data]) =>
+          '<li style="margin:8px 0;overflow-wrap:anywhere"><b>' + data.count + ' dòng:</b> ' +
+          escapeHtml(issue) + ' <span class="small muted">(ví dụ dòng ' +
+          data.examples.join(', ') + ')</span><div class="small muted">' +
+          escapeHtml(validationRepairHint(issue)) + '</div></li>').join('') +
+        '</ol>' +
+        (sorted.length > 8 ? '<p class="small">Còn ' + (sorted.length - 8) +
+          ' loại lỗi khác. Tải CSV để xem đầy đủ.</p>' : '') +
+        '<p class="small" style="margin:8px 0 0">Dòng lỗi không được gửi. Hãy sửa dữ liệu/cách ghép cột rồi thực hiện lại 4a và 4b.</p>';
+    }
+
+    function downloadValidationErrors() {
+      const errors = state.plan.filter(row => row.status === 'invalid')
+        .flatMap(row => {
+          const issues = validationRowIssues(row);
+          return (issues.length ? issues : ['Không có mô tả']).map(issue => ({
+            'Dòng kế hoạch': row.index,
+            'Dòng dữ liệu': row.dataRow || '',
+            'Câu hỏi / lỗi': issue,
+            'Gợi ý kiểm tra': validationRepairHint(issue)
+          }));
+        });
+      if (!errors.length) return toast('Không có dòng lỗi để tải.', 'error');
+      downloadBlob(objectsToCsv(errors), 'pandastudy-loi-kiem-tra.csv', 'text/csv;charset=utf-8');
+    }
+
     function renderPlan() {
       const hasPlan = state.plan.length > 0;
+      renderValidationDiagnostics();
       $('planMessage').classList.toggle('hidden', hasPlan);
       $('planTableWrap').classList.toggle('hidden', !hasPlan);
       $('validatePlanBtn').disabled = !hasPlan || state.sending;
@@ -2633,8 +2748,22 @@
       window.dispatchEvent(new CustomEvent('pandastudy:selection-changed',{
         detail:{selected:selected.length,eligible:eligible.length,sent:state.plan.filter(r=>r.status==='sent').length}
       }));
+      $('planViewToolbar').hidden = !hasPlan;
+      $('planViewToolbar').classList.toggle('hidden', !hasPlan);
+      $('downloadValidationErrorsBtn').disabled =
+        !state.plan.some(row => row.status === 'invalid');
+      const filtered = state.plan.filter(row =>
+        state.planStatusFilter === 'all' || row.status === state.planStatusFilter);
+      const pages = Math.max(1, Math.ceil(filtered.length / PLAN_RENDER_LIMIT));
+      state.planPage = Math.max(0, Math.min(state.planPage, pages - 1));
+      $('planStatusFilter').value = state.planStatusFilter;
+      $('planPageLabel').textContent = 'Trang ' + (state.planPage + 1) +
+        '/' + pages + ' · ' + filtered.length + ' dòng';
+      $('planPrevPageBtn').disabled = !hasPlan || state.planPage === 0;
+      $('planNextPageBtn').disabled = !hasPlan || state.planPage >= pages - 1;
       if (!hasPlan) return;
-      const visibleRows = state.plan.slice(0, PLAN_RENDER_LIMIT);
+      const visibleRows = filtered.slice(state.planPage * PLAN_RENDER_LIMIT,
+        (state.planPage + 1) * PLAN_RENDER_LIMIT);
       let html = visibleRows.map(row => `
         <tr>
           <td><input class="plan-row-checkbox" type="checkbox" data-row-index="${row.index}" aria-label="Chọn dòng ${row.index}"
@@ -2643,10 +2772,14 @@
           <td>${row.index}</td>
           <td>${row.dataRow || 'Dữ liệu mẫu'}</td>
           <td class="preview-cell">${escapeHtml(row.preview)}</td>
-          <td>${statusChip(row.status, row.error)}</td>
+          <td>${statusChip(row.status, row.error)}
+            ${row.status === 'invalid' && row.error ?
+              '<div class="small validation-row-error" style="color:#9d2828;white-space:normal;overflow-wrap:anywhere;margin-top:5px"><b>Lỗi:</b> ' +
+              escapeHtml(row.error) + '</div>' : ''}
+          </td>
         </tr>`).join('');
-      if (state.plan.length > PLAN_RENDER_LIMIT) {
-        html += `<tr><td colspan="5" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng. Toàn bộ ${state.plan.length} dòng sẽ có trong CSV.</td></tr>`;
+      if (filtered.length > PLAN_RENDER_LIMIT) {
+        html += `<tr><td colspan="5" class="muted" style="text-align:center">Đang hiển thị ${visibleRows.length} dòng ở trang ${state.planPage+1}/${pages}. Tổng ${filtered.length} dòng theo bộ lọc.</td></tr>`;
       }
       $('planTableBody').innerHTML = html;
       if (!$('planTableBody').dataset.selectionBound) {
@@ -2696,7 +2829,8 @@
           // back into a selectable unsent row, even after page re-rendering.
           if (['sent','error','unverified','sending'].includes(row.status)) return;
           row.status = res.valid ? 'valid' : 'invalid';
-          row.error = res.issues.join(' | ');
+          row.validationIssues = Array.isArray(res.issues) ? res.issues : [];
+          row.error = row.validationIssues.join(' | ');
         });
         renderPlan();
         const pending = state.plan.filter(r=>r.status==='valid').length;
@@ -2705,7 +2839,7 @@
         const invalid = state.plan.filter(r=>r.status==='invalid').length;
         if (invalid) {
           $('workflowResult').className='workflow-result is-error';
-          $('workflowResult').textContent=`${invalid} dòng chưa hợp lệ; ${sent} đã gửi được giữ nguyên. Hãy sửa dữ liệu lỗi trước khi gửi.`;
+          $('workflowResult').textContent=`${invalid} dòng chưa hợp lệ; ${pending} dòng hợp lệ chưa gửi; ${sent} đã gửi được giữ nguyên. Xem nguyên nhân bên dưới, lọc dòng lỗi hoặc tải CSV lỗi để đối chiếu.`;
           throw new Error(`${invalid} dòng chưa hợp lệ.`);
         }
         $('workflowResult').className = 'workflow-result is-success';
@@ -2958,7 +3092,12 @@
     }
 
     function invalidatePlan() {
-      if (state.plan.length) { state.plan = []; renderPlan(); }
+      if (state.plan.length) {
+        state.plan = [];
+        state.planPage = 0;
+        state.planStatusFilter = 'all';
+        renderPlan();
+      }
     }
 
     function statusChip(status, error = '') {
