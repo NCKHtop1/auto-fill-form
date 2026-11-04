@@ -3274,11 +3274,9 @@
       privacy.className = 'guide-toast-privacy';
       privacy.textContent = 'Không tự gửi file hoặc câu trả lời cho hỗ trợ. Email chỉ có mô tả chung; bạn chọn thông tin cần cung cấp. Thời gian phản hồi phụ thuộc nhân viên hỗ trợ.';
       el.appendChild(privacy);
-      // Keep at most two persistent errors so the alert never covers the page.
-      holder.querySelectorAll('.toast.guide-toast').forEach((old, idx, list) => {
-        if (idx >= Math.max(0, list.length - 1)) return;
-        old.remove();
-      });
+      // Show the most recent error only; older full-size panels should never
+      // cover controls or obscure the latest actionable instructions.
+      holder.querySelectorAll('.toast.guide-toast').forEach(old => old.remove());
       holder.appendChild(el);
     }
 
