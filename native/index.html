@@ -2740,8 +2740,21 @@
       window.dispatchEvent(new CustomEvent('pandastudy:selection-changed',{
         detail:{selected:selected.length,eligible:eligible.length,sent:state.plan.filter(r=>r.status==='sent').length}
       }));
+      $('planViewToolbar').hidden = !hasPlan;
+      $('downloadValidationErrorsBtn').disabled =
+        !state.plan.some(row => row.status === 'invalid');
+      const filtered = state.plan.filter(row =>
+        state.planStatusFilter === 'all' || row.status === state.planStatusFilter);
+      const pages = Math.max(1, Math.ceil(filtered.length / PLAN_RENDER_LIMIT));
+      state.planPage = Math.max(0, Math.min(state.planPage, pages - 1));
+      $('planStatusFilter').value = state.planStatusFilter;
+      $('planPageLabel').textContent = 'Trang ' + (state.planPage + 1) +
+        '/' + pages + ' · ' + filtered.length + ' dòng';
+      $('planPrevPageBtn').disabled = !hasPlan || state.planPage === 0;
+      $('planNextPageBtn').disabled = !hasPlan || state.planPage >= pages - 1;
       if (!hasPlan) return;
-      const visibleRows = state.plan.slice(0, PLAN_RENDER_LIMIT);
+      const visibleRows = filtered.slice(state.planPage * PLAN_RENDER_LIMIT,
+        (state.planPage + 1) * PLAN_RENDER_LIMIT);
       let html = visibleRows.map(row => `
         <tr>
           <td><input class="plan-row-checkbox" type="checkbox" data-row-index="${row.index}" aria-label="Chọn dòng ${row.index}"
@@ -2750,10 +2763,14 @@
           <td>${row.index}</td>
           <td>${row.dataRow || 'Dữ liệu mẫu'}</td>
           <td class="preview-cell">${escapeHtml(row.preview)}</td>
-          <td>${statusChip(row.status, row.error)}</td>
+          <td>${statusChip(row.status, row.error)}
+            ${row.status === 'invalid' && row.error ?
+              '<div class="small validation-row-error" style="color:#9d2828;white-space:normal;overflow-wrap:anywhere;margin-top:5px"><b>Lỗi:</b> ' +
+              escapeHtml(row.error) + '</div>' : ''}
+          </td>
         </tr>`).join('');
-      if (state.plan.length > PLAN_RENDER_LIMIT) {
-        html += `<tr><td colspan="5" class="muted" style="text-align:center">Đang hiển thị ${PLAN_RENDER_LIMIT}/${state.plan.length} dòng. Toàn bộ ${state.plan.length} dòng sẽ có trong CSV.</td></tr>`;
+      if (filtered.length > PLAN_RENDER_LIMIT) {
+        html += `<tr><td colspan="5" class="muted" style="text-align:center">Đang hiển thị ${visibleRows.length} dòng ở trang ${state.planPage+1}/${pages}. Tổng ${filtered.length} dòng theo bộ lọc.</td></tr>`;
       }
       $('planTableBody').innerHTML = html;
       if (!$('planTableBody').dataset.selectionBound) {
@@ -2803,7 +2820,8 @@
           // back into a selectable unsent row, even after page re-rendering.
           if (['sent','error','unverified','sending'].includes(row.status)) return;
           row.status = res.valid ? 'valid' : 'invalid';
-          row.error = res.issues.join(' | ');
+          row.validationIssues = Array.isArray(res.issues) ? res.issues : [];
+          row.error = row.validationIssues.join(' | ');
         });
         renderPlan();
         const pending = state.plan.filter(r=>r.status==='valid').length;
@@ -2812,7 +2830,7 @@
         const invalid = state.plan.filter(r=>r.status==='invalid').length;
         if (invalid) {
           $('workflowResult').className='workflow-result is-error';
-          $('workflowResult').textContent=`${invalid} dòng chưa hợp lệ; ${sent} đã gửi được giữ nguyên. Hãy sửa dữ liệu lỗi trước khi gửi.`;
+          $('workflowResult').textContent=`${invalid} dòng chưa hợp lệ; ${pending} dòng hợp lệ chưa gửi; ${sent} đã gửi được giữ nguyên. Xem nguyên nhân bên dưới, lọc dòng lỗi hoặc tải CSV lỗi để đối chiếu.`;
           throw new Error(`${invalid} dòng chưa hợp lệ.`);
         }
         $('workflowResult').className = 'workflow-result is-success';
@@ -3065,7 +3083,12 @@
     }
 
     function invalidatePlan() {
-      if (state.plan.length) { state.plan = []; renderPlan(); }
+      if (state.plan.length) {
+        state.plan = [];
+        state.planPage = 0;
+        state.planStatusFilter = 'all';
+        renderPlan();
+      }
     }
 
     function statusChip(status, error = '') {
