@@ -115,6 +115,15 @@ try:
             "mailto:trangnguyen11850.marketing@gmail.com?")
         assert data_alert.locator('a[href="https://zalo.me/0349222590"]').count() == 1
         assert "Dòng 4 có 2 cột" not in data_alert.locator('a[href^="mailto:"]').get_attribute("href")
+        page.evaluate("""() => {
+          Object.defineProperty(navigator, 'clipboard', {configurable:true, value:{
+            writeText: async (text) => { window.__pandaCopiedSupport = text; }
+          }});
+        }""")
+        data_alert.get_by_text("Sao chép mô tả lỗi").click()
+        page.wait_for_function("!!window.__pandaCopiedSupport")
+        assert "Tải Excel/CSV/JSON" in page.evaluate("window.__pandaCopiedSupport")
+        assert "Dòng 4 có 2 cột" not in page.evaluate("window.__pandaCopiedSupport")
         page.evaluate("""() => toast(
           '196 dòng chưa hợp lệ.',
           'error', {stage:'validation'}
@@ -428,6 +437,11 @@ try:
             "name": "corrupt.xlsx", "mimeType": xlsx_mime, "buffer": b"not a valid workbook"
         })
         page.wait_for_timeout(500)
+        error_alert = page.locator('#toastWrap .guide-toast[data-issue-kind="data"]')
+        assert error_alert.is_visible(), "Corrupt Excel must raise a detailed data-type alert"
+        assert "Tải Excel/CSV/JSON" in error_alert.inner_text()
+        assert error_alert.locator('a[href^="mailto:"]').count() == 1
+        assert error_alert.locator('a[href="https://zalo.me/0349222590"]').count() == 1
         assert not page.locator("#fillFromUploadedFile").is_checked(), (
             "New corrupt file left the old dataset active; must fail closed")
         page.locator("#buildPlanBtn").click()
