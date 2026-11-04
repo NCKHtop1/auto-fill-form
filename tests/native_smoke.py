@@ -94,6 +94,52 @@ try:
                           body=json.dumps(result, ensure_ascii=False))
         page.route("**/api/bridge", mock_bridge)
         page.goto(base + "/#home", wait_until="domcontentloaded")
+        page.wait_for_function("typeof window.PandaStudyErrorGuide === 'object'")
+        # Error diagnostics must be visible, actionable and safe, not a generic red
+        # message disappearing after 5 seconds. All external help opens only after
+        # explicit user action and must never automatically send private data.
+        page.evaluate("""() => toast(
+          'Dòng 4 có 2 cột, khác 3 cột ở dòng đầu',
+          'error', {stage:'upload'}
+        )""")
+        data_alert = page.locator("#toastWrap .guide-toast")
+        assert data_alert.is_visible()
+        assert data_alert.get_attribute("data-issue-kind") == "data"
+        assert "Tải Excel/CSV/JSON" in data_alert.inner_text()
+        assert "Dòng 4" in data_alert.inner_text()
+        assert "hàng tiêu đề" in data_alert.inner_text()
+        assert "Email hỗ trợ" in data_alert.inner_text()
+        assert "Zalo hỗ trợ" in data_alert.inner_text()
+        assert data_alert.locator('a[href^="mailto:"]').count() == 1
+        assert data_alert.locator('a[href^="mailto:"]').get_attribute("href").startswith(
+            "mailto:trangnguyen11850.marketing@gmail.com?")
+        assert data_alert.locator('a[href="https://zalo.me/0349222590"]').count() == 1
+        assert "Dòng 4 có 2 cột" not in data_alert.locator('a[href^="mailto:"]').get_attribute("href")
+        page.evaluate("""() => toast(
+          '196 dòng chưa hợp lệ.',
+          'error', {stage:'validation'}
+        )""")
+        assert page.locator('#toastWrap .guide-toast[data-issue-kind="validation"]').count() == 1
+        assert "Chưa thể kết luận" in page.locator('#toastWrap .guide-toast').last.inner_text()
+        assert page.locator("#toastWrap .guide-toast").last.get_by_text("Xem lỗi từng dòng").count() == 1
+        page.locator("#toastWrap .guide-toast").last.locator(".guide-toast-close").click()
+        assert page.locator('#toastWrap .guide-toast[data-issue-kind="validation"]').count() == 0
+        page.evaluate("""() => toast(
+          'Internal Server Error', 'error', {stage:'submission',status:500}
+        )""")
+        assert page.locator('#toastWrap .guide-toast[data-issue-kind="system"]').count() == 1
+        assert "Máy chủ PandaStudy" in page.locator('#toastWrap .guide-toast').last.inner_text()
+        # The toast must float above (not over) the fixed Zalo button on mobile.
+        page.set_viewport_size({"width": 390, "height": 800})
+        mobile_alert = page.locator("#toastWrap .guide-toast").last.bounding_box()
+        mobile_zalo = page.locator("#psZaloSupport").bounding_box()
+        assert mobile_alert and mobile_zalo
+        assert mobile_alert["y"] + mobile_alert["height"] <= mobile_zalo["y"] + 2, (
+            mobile_alert, mobile_zalo)
+        assert mobile_alert["x"] >= 0 and mobile_alert["x"] + mobile_alert["width"] <= 391
+        page.locator("#toastWrap .guide-toast").last.locator(".guide-toast-close").click()
+        page.set_viewport_size({"width": 1370, "height": 850})
+        assert not page.locator("#toastWrap .guide-toast").count()
         page.locator("#formUrl").fill(form_url)
         click_import_form()
         page.locator("#questionList .question-card").first.wait_for(timeout=10000)
