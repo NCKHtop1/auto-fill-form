@@ -15,6 +15,7 @@
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js" defer></script>
   <script src="/ui-navigation.js?v=20261013c" defer></script>
   <script src="/pasted-table.js?v=20261104-generic" defer></script>
+  <script src="/error-guide.js?v=20261104-support" defer></script>
   <script src="/blog.js?v=20261019-admin2" defer></script>
   <script src="/qa-run.js?v=20261013d" defer></script>
   <script src="/auth-gate.js?v=20261019a" defer></script>
@@ -626,13 +627,13 @@
 
     .toast-wrap {
       position: fixed;
-      right: 20px;
-      bottom: 20px;
-      z-index: 100;
-      pointer-events: none; /* Informational toasts must not block form inputs. */
+      right: 18px;
+      bottom: calc(100px + env(safe-area-inset-bottom, 0px));
+      z-index: 105;
+      pointer-events: none; /* Never block unrelated fields behind the container. */
       display: grid;
-      gap: 10px;
-      width: min(380px, calc(100% - 40px));
+      gap: 8px;
+      width: min(450px, calc(100% - 30px));
     }
     .toast {
       padding: 13px 15px;
@@ -645,6 +646,32 @@
     }
     .toast.error { background: #9e2f28; }
     .toast.success { background: #16714f; }
+    .toast.guide-toast {
+      pointer-events: auto;
+      padding: 14px 16px;
+      background: #fff;
+      color: #243a2b;
+      border: 1px solid #eab0aa;
+      border-left: 5px solid #a83d32;
+      max-height: min(64dvh, 525px);
+      overflow-y: auto;
+      overscroll-behavior: contain;
+      box-shadow: 0 10px 35px rgba(44,43,38,.2);
+    }
+    .guide-toast-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+    .guide-toast-title{font-weight:800;font-size:.91rem;line-height:1.45}
+    .guide-toast-close{flex:0 0 auto;width:28px;height:28px;border:0;border-radius:7px;background:#f2f3f1;color:#39473e;font-size:19px;cursor:pointer}
+    .guide-toast-detail{margin:8px 0 0;font-size:.81rem;line-height:1.56;overflow-wrap:anywhere}
+    .guide-toast-detail b{color:#234b34}
+    .guide-toast-error{padding:8px 10px;background:#fff6f3;border-radius:7px;max-height:95px;overflow:auto}
+    .guide-toast-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+    .guide-toast-action{display:inline-flex;align-items:center;justify-content:center;padding:7px 9px;border:1px solid #b7d8c2;border-radius:7px;background:#f6faf7;color:#1e603b;text-decoration:none;font-weight:700;font-size:.77rem;cursor:pointer}
+    .guide-toast-action:hover{background:#ebf4ed}
+    .guide-toast-privacy{color:#62726a;font-size:.72rem;margin-top:10px;line-height:1.5}
+    @media(max-width:650px){
+      .toast-wrap{right:10px;bottom:calc(83px + env(safe-area-inset-bottom, 0px));width:calc(100% - 20px)}
+      .toast.guide-toast{max-height:55dvh}
+    }
     @keyframes toastIn { from { transform: translateY(8px); opacity: 0; } }
 
     .spinner {
@@ -1880,7 +1907,7 @@
         state.form = null;
         $('workflowResult').className = 'workflow-result is-error';
         $('workflowResult').textContent = `Chưa nhập được Form: ${messageOf(error)}`;
-        toast(`${t('err_import_form')} ${messageOf(error)}`, 'error');
+        toast(`${t('err_import_form')} ${messageOf(error)}`, 'error', {stage:'importForm',status:error?.status});
       } finally {
         setButtonLoading($('importFormBtn'), false);
       }
@@ -1947,7 +1974,7 @@
           'Không thể đọc “' + String(file?.name || 'file') +
           '”: ' + reason + '. Dữ liệu file trước đã ngừng sử dụng. Chọn file hợp lệ để thử lại.';
         $('uploadedFileFillHint').style.color = '#b3261e';
-        toast(`${t('err_file')} ${reason}`, 'error');
+        toast(`${t('err_file')} ${reason}`, 'error', {stage:'upload'});
       }
     }
 
@@ -1955,7 +1982,7 @@
       const msg = messageOf(error);
       $('pasteDataStatus').textContent = msg;
       $('pasteDataStatus').style.color = '#b3261e';
-      toast(msg, 'error');
+      toast(msg, 'error', {stage:'paste'});
     }
 
     function updateUniqueKeyOptions() {
@@ -2428,7 +2455,7 @@
       } catch (error) {
         $('workflowResult').className = 'workflow-result is-error';
         $('workflowResult').textContent = `Không tạo được bảng: ${messageOf(error)}`;
-        toast(`${t('err_plan')} ${messageOf(error)}`, 'error');
+        toast(`${t('err_plan')} ${messageOf(error)}`, 'error', {stage:'preview',status:error?.status});
       }
     }
 
@@ -2847,7 +2874,7 @@
         toast(`Đã kiểm tra: ${pending} dòng chưa gửi, ${sent} đã gửi.`, 'success');
         window.dispatchEvent(new Event('pandastudy:plan-validated'));
       } catch (error) {
-        toast(`${t('err_validate')} ${messageOf(error)}`, 'error');
+        toast(`${t('err_validate')} ${messageOf(error)}`, 'error', {stage:'validation',status:error?.status});
       } finally {
         setButtonLoading($('validatePlanBtn'), false);
       }
@@ -2951,7 +2978,7 @@
       const sentCount = state.plan.filter(row => row.status === 'sent').length;
       const errorCount = state.plan.filter(row => row.status === 'error').length;
       if (errorCount > 0) {
-        toast(`Đã gửi ${sentCount}/${state.plan.length} phản hồi. Có ${errorCount} phản hồi lỗi — xem cột Lỗi trong bảng hoặc tải Báo cáo CSV.`, 'error');
+        toast(`Đã gửi ${sentCount}/${state.plan.length} phản hồi. Có ${errorCount} phản hồi lỗi — xem cột Lỗi trong bảng hoặc tải Báo cáo CSV.`, 'error', {stage:'submission'});
       } else {
         toast(`Đã gửi thành công ${sentCount}/${state.plan.length} phản hồi.`, 'success');
       }
@@ -3116,7 +3143,11 @@
         body: JSON.stringify({name, args})
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(data.error || `Máy chủ trả về lỗi ${response.status}`);
+      if (!response.ok) {
+        const error = new Error(data.error || `Máy chủ trả về lỗi ${response.status}`);
+        error.status = response.status;
+        throw error;
+      }
       return data;
     }
 
@@ -3158,12 +3189,97 @@
       }
     }
 
-    function toast(message, type = '') {
+    function toast(message, type = '', opts = {}) {
+      const holder = $('toastWrap');
+      const helper = window.PandaStudyErrorGuide;
       const el = document.createElement('div');
       el.className = `toast ${type}`;
-      el.textContent = message;
-      $('toastWrap').appendChild(el);
-      setTimeout(() => el.remove(), 5200);
+      if (type !== 'error' || !helper) {
+        el.textContent = messageOf(message);
+        holder.appendChild(el);
+        setTimeout(() => el.remove(), 5200);
+        return;
+      }
+      const issue = helper.classify(message, opts);
+      el.classList.add('guide-toast');
+      el.setAttribute('role', 'alert');
+      el.dataset.issueKind = issue.kind;
+      el.dataset.issueStage = issue.stage;
+
+      const heading = document.createElement('div');
+      heading.className = 'guide-toast-head';
+      const title = document.createElement('strong');
+      title.className = 'guide-toast-title';
+      title.textContent = issue.title;
+      const close = document.createElement('button');
+      close.className = 'guide-toast-close';
+      close.type = 'button';
+      close.setAttribute('aria-label', 'Đóng cảnh báo');
+      close.textContent = '×';
+      close.addEventListener('click', () => el.remove());
+      heading.append(title, close);
+      el.appendChild(heading);
+
+      const line = (name, content, extraClass = '') => {
+        const p = document.createElement('p');
+        p.className = 'guide-toast-detail ' + extraClass;
+        const label = document.createElement('b');
+        label.textContent = name + ': ';
+        p.append(label, document.createTextNode(content));
+        el.append(p);
+      };
+      line('Bước', issue.step);
+      line('Phân loại sơ bộ', issue.source);
+      line('Chi tiết', issue.details, 'guide-toast-error');
+      line('Bạn có thể kiểm tra', issue.action);
+
+      const actions = document.createElement('div');
+      actions.className = 'guide-toast-actions';
+      const email = document.createElement('a');
+      email.className = 'guide-toast-action';
+      email.href = helper.mailto(issue);
+      email.textContent = '✉ Email hỗ trợ';
+      const zalo = document.createElement('a');
+      zalo.className = 'guide-toast-action';
+      zalo.href = helper.SUPPORT_ZALO;
+      zalo.target = '_blank';
+      zalo.rel = 'noopener noreferrer';
+      zalo.textContent = 'Zalo hỗ trợ';
+      const copy = document.createElement('button');
+      copy.className = 'guide-toast-action';
+      copy.type = 'button';
+      copy.textContent = 'Sao chép mô tả lỗi';
+      copy.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(helper.supportSummary(issue));
+          copy.textContent = 'Đã sao chép';
+        } catch (_) {
+          copy.textContent = 'Không sao chép được — hãy chọn Email';
+        }
+      });
+      actions.append(email, zalo, copy);
+      if (issue.stage === 'validation' || issue.kind === 'validation') {
+        const details = document.createElement('button');
+        details.type = 'button';
+        details.className = 'guide-toast-action';
+        details.textContent = 'Xem lỗi từng dòng';
+        details.addEventListener('click', () => {
+          const target = $('validationDiagnostics');
+          if (target && !target.hidden) target.scrollIntoView({behavior:'smooth',block:'center'});
+        });
+        actions.prepend(details);
+      }
+      el.appendChild(actions);
+      const privacy = document.createElement('p');
+      privacy.className = 'guide-toast-privacy';
+      privacy.textContent = 'Không tự gửi file hoặc câu trả lời cho hỗ trợ. Email chỉ có mô tả chung; bạn chọn thông tin cần cung cấp. Thời gian phản hồi phụ thuộc nhân viên hỗ trợ.';
+      el.appendChild(privacy);
+      // Keep at most two persistent errors so the alert never covers the page.
+      holder.querySelectorAll('.toast.guide-toast').forEach((old, idx, list) => {
+        if (idx >= Math.max(0, list.length - 1)) return;
+        old.remove();
+      });
+      holder.appendChild(el);
     }
 
     function weightedChoice(options, weights) {
