@@ -53,6 +53,7 @@ try:
             "questions": sample_questions
         }
         bridge_operations = []
+        validation_mode = {"invalid_first_student_rows": 0}
         def click_import_form():
             # Keep the input centered below the sticky header. This is a real
             # Playwright click, not force=True or a synthetic DOM click.
@@ -67,9 +68,19 @@ try:
                 result = sample_form
             elif name == "validatePlan":
                 rows = request.get("args", [None, []])[1]
-                result = {"valid": True, "invalid": 0, "total": len(rows),
-                          "results": [{"index": i + 1, "valid": True, "issues": []}
-                                      for i in range(len(rows))]}
+                results = []
+                for i, record in enumerate(rows):
+                    code = str(record.get("answers", {}).get("211", ""))
+                    number = int(code[2:]) if code.startswith("HS") and code[2:].isdigit() else 0
+                    invalid = 0 < number <= validation_mode["invalid_first_student_rows"]
+                    results.append({
+                        "index": i + 1,
+                        "valid": not invalid,
+                        "issues": ["Nhóm: Không tìm thấy lựa chọn ĐC-Z"] if invalid else []
+                    })
+                result = {"valid": all(r["valid"] for r in results),
+                          "invalid": sum(not r["valid"] for r in results),
+                          "total": len(rows), "results": results}
             elif name == "getBillingProfile":
                 result = {"configured": True, "billingEnabled": False,
                           "availableCredits": 1000000, "unitPriceVnd": 0}
@@ -416,8 +427,40 @@ try:
         assert student_rows[215]["answers"] == {"211": "HS216", "212": "10"}
         assert len({row["answers"]["211"] for row in student_rows}) == 216
         assert [int(row["answers"]["212"]) for row in student_rows] == grades
+        # Regression from the user's screenshot: 216 rows, 196 rejected by the
+        # Google Form validation. Reasons must be readable, downloadable, and
+        # filtered on mobile instead of hidden in desktop-only title tooltips.
+        validation_mode["invalid_first_student_rows"] = 196
+        page.locator("#validatePlanBtn").click()
+        page.wait_for_function(
+            "window.PandaStudyQA.getRows().filter(x => x.status === 'invalid').length === 196")
+        assert "196 dòng chưa hợp lệ" in page.locator("#workflowResult").inner_text()
+        assert "196/216" in page.locator("#validationDiagnostics").inner_text()
+        assert "Nhóm: Không tìm thấy lựa chọn ĐC-Z" in page.locator("#validationDiagnostics").inner_text()
+        assert "196 dòng:" in page.locator("#validationDiagnostics").inner_text()
+        assert page.locator("#downloadPlanBtn").is_disabled()
+        assert page.locator("#downloadValidationErrorsBtn").is_enabled()
+        assert page.locator(".validation-row-error").count() > 0
+        page.locator("#planStatusFilter").select_option("valid")
+        assert "20 dòng" in page.locator("#planPageLabel").inner_text()
+        assert page.locator(".validation-row-error").count() == 0
+        page.locator("#planStatusFilter").select_option("invalid")
+        assert "196 dòng" in page.locator("#planPageLabel").inner_text()
+        assert page.locator(".validation-row-error").count() > 0
+        with page.expect_download(timeout=20000) as saved_errors:
+            page.locator("#downloadValidationErrorsBtn").click()
+        with open(saved_errors.value.path(), encoding="utf-8-sig", newline="") as f:
+            invalid_csv = list(csv.reader(f))
+        assert len(invalid_csv) == 197
+        assert invalid_csv[1][invalid_csv[0].index("Dòng kế hoạch")] == "1"
+        assert invalid_csv[-1][invalid_csv[0].index("Dòng kế hoạch")] == "196"
+        assert "Nhóm" in invalid_csv[1][invalid_csv[0].index("Câu hỏi / lỗi")]
+        validation_mode["invalid_first_student_rows"] = 0
         page.locator("#validatePlanBtn").click()
         page.wait_for_function("window.PandaStudyQA.getRows().every(x => x.status === 'valid')")
+        assert page.locator("#validationDiagnostics").is_hidden()
+        assert page.locator("#downloadValidationErrorsBtn").is_disabled()
+        page.locator("#planStatusFilter").select_option("all")
         with page.expect_download(timeout=20000) as saved:
             page.locator("#downloadPlanBtn").click()
         with open(saved.value.path(), encoding="utf-8-sig", newline="") as f:
