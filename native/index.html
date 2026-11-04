@@ -1073,7 +1073,7 @@
 
         <div id="workflowResult" class="workflow-result" role="status" aria-live="polite">Chưa có dữ liệu xem trước.</div>
         <div id="validationDiagnostics" class="warning-box" role="region" aria-label="Chi tiết các lỗi kiểm tra dữ liệu" hidden></div>
-        <div id="planViewToolbar" class="action-row" hidden style="gap:8px;flex-wrap:wrap;align-items:center">
+        <div id="planViewToolbar" class="action-row hidden" hidden style="gap:8px;flex-wrap:wrap;align-items:center">
           <label for="planStatusFilter" class="small"><b>Hiển thị dòng</b></label>
           <select id="planStatusFilter" style="max-width:185px">
             <option value="all">Tất cả</option>
@@ -2749,6 +2749,7 @@
         detail:{selected:selected.length,eligible:eligible.length,sent:state.plan.filter(r=>r.status==='sent').length}
       }));
       $('planViewToolbar').hidden = !hasPlan;
+      $('planViewToolbar').classList.toggle('hidden', !hasPlan);
       $('downloadValidationErrorsBtn').disabled =
         !state.plan.some(row => row.status === 'invalid');
       const filtered = state.plan.filter(row =>
