@@ -552,6 +552,26 @@ try:
         page.locator("#buildPlanBtn").click()
         assert page.locator('.mapping-select[data-qid="511"]').input_value() == ""
         assert "Câu bắt buộc" in page.locator("#workflowResult").inner_text()
+
+        # Partly required Likert grid: preserve blank optional rows rather than
+        # invent a random answer, but block missing required rows.
+        page.locator("#clearDataBtn").click()
+        sample_form["questions"] = [{
+            "id": "801", "index": 0, "title": "Khảo sát lưới", "helpText": "",
+            "required": True, "requiredRows": [True, False],
+            "supported": True, "type": "grid",
+            "rows": ["A", "B"], "columns": ["Có", "Không"],
+            "options": ["Có", "Không"], "entryIds": ["1001", "1002"]
+        }]
+        sample_form["supportedCount"] = 1
+        click_import_form()
+        page.locator("#pasteDataInput").fill("Khảo sát lưới / A\tKhảo sát lưới / B\nCó\t\nKhông\tCó")
+        page.locator("#buildPlanBtn").click()
+        assert [r["answers"]["801"] for r in page.evaluate("window.PandaStudyQA.getRows()")] == [
+            ["Có", ""], ["Không", "Có"]]
+        page.locator("#pasteDataInput").fill("Khảo sát lưới / A\tKhảo sát lưới / B\n\tCó")
+        page.locator("#buildPlanBtn").click()
+        assert "hàng “A”" in page.locator("#workflowResult").inner_text()
         assert "submitOneResponse" not in bridge_operations
         page.locator("#clearDataBtn").click()
         sample_form["questions"] = sample_questions
