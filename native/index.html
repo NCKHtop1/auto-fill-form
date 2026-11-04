@@ -647,7 +647,7 @@
     .toast.error { background: #9e2f28; }
     .toast.success { background: #16714f; }
     .toast.guide-toast {
-      pointer-events: auto;
+      pointer-events: none; /* Keep form controls clickable behind the alert. */
       padding: 14px 16px;
       background: #fff;
       color: #243a2b;
@@ -667,6 +667,7 @@
     .guide-toast-actions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
     .guide-toast-action{display:inline-flex;align-items:center;justify-content:center;padding:7px 9px;border:1px solid #b7d8c2;border-radius:7px;background:#f6faf7;color:#1e603b;text-decoration:none;font-weight:700;font-size:.77rem;cursor:pointer}
     .guide-toast-action:hover{background:#ebf4ed}
+    .guide-toast-close,.guide-toast-action{pointer-events:auto}
     .guide-toast-privacy{color:#62726a;font-size:.72rem;margin-top:10px;line-height:1.5}
     @media(max-width:650px){
       .toast-wrap{right:10px;bottom:calc(83px + env(safe-area-inset-bottom, 0px));width:calc(100% - 20px)}
