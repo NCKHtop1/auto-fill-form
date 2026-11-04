@@ -12,10 +12,19 @@ function node(tag,klass,label){
  if(label!==undefined)el.textContent=label;
  return el;
 }
+let lastSupportError='', lastSupportErrorAt=0;
 function status(message,error=false){
  const el=$('qaRunMessage');if(!el)return;
  el.textContent=message;el.className='workflow-result'+(error?' is-error':'');
  el.hidden=!message;
+ if(error && message && typeof window.toast==='function'){
+  const now=Date.now();
+  // Background verification may repeat the same failure: do not flood the page.
+  if(message!==lastSupportError || now-lastSupportErrorAt>60000){
+   lastSupportError=message;lastSupportErrorAt=now;
+   window.toast(message,'error',{stage:'submission'});
+  }
+ }
 }
 function billingNote(profile=window.PandaBilling?.getProfile()){
  const el=$('qaBillingNotice');if(!el)return;

@@ -42,11 +42,21 @@
       throw error;
     } finally { clearTimeout(timeout); }
   }
+  let lastSupportError = '', lastSupportErrorAt = 0;
   function say(text, kind = '') {
     if (!message) return;
     message.textContent = text || '';
     message.className = 'pb-status' + (text ? ' pb-notice' : '') + (kind ? ' pb-notice-' + kind : '');
     message.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    if (kind === 'error' && text && typeof window.toast === 'function') {
+      const now = Date.now();
+      // Polling failures can repeat every few seconds. Notify only when
+      // the problem changes, or once per minute for an unresolved failure.
+      if (text !== lastSupportError || now - lastSupportErrorAt > 60000) {
+        lastSupportError = text; lastSupportErrorAt = now;
+        window.toast(text, 'error', {stage:'payment'});
+      }
+    }
   }
   function loginLink() {
     const link = node('a', 'pb-button pb-button-primary', 'Kết nối Google');
