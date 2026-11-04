@@ -2467,15 +2467,22 @@
             // Once a column is mapped, a blank cell cannot silently become
             // a fabricated random answer. Unmapped questions may still use
             // intentionally configured generation rules.
-            const mappedColumns = ['grid', 'checkbox_grid'].includes(q.type)
-              ? Object.values(cfg.gridMappings || {}).filter(Boolean)
-              : (cfg.mapping ? [cfg.mapping] : []);
-            const emptyMapped = mappedColumns.find(col => isEmpty(row[col]));
-            if (emptyMapped) {
+            if (q.type === 'grid' || q.type === 'checkbox_grid') {
+              (q.rows || []).forEach((gridRow, rowIndex) => {
+                const col = cfg.gridMappings[rowIndex];
+                const isRequired = Array.isArray(q.requiredRows) &&
+                  q.requiredRows.length === q.rows.length
+                  ? q.requiredRows[rowIndex] : q.required;
+                if (col && isRequired && isEmpty(row[col])) {
+                  throw new Error('Lưới bắt buộc “' + q.title + '”, hàng “' +
+                    gridRow + '”: dòng dữ liệu ' + (dataIndex + 1) +
+                    ', cột “' + col + '” đang trống.');
+                }
+              });
+            } else if (cfg.mapping && isEmpty(row[cfg.mapping])) {
               if (q.required) {
                 throw new Error('Câu bắt buộc “' + q.title + '”: dòng dữ liệu ' +
-                  (dataIndex + 1) + ', cột “' + emptyMapped +
-                  '” đang trống. Bổ sung dữ liệu hoặc bỏ ghép cột để dùng quy tắc tạo mẫu.');
+                  (dataIndex + 1) + ', cột “' + cfg.mapping + '” đang trống.');
               }
               return;
             }
@@ -2552,12 +2559,13 @@
       if (q.type === 'grid') return q.rows.map((gridRow, index) => {
         const mapped = cfg.gridMappings[index];
         const value = mapped ? row[mapped] : '';
-        return !isEmpty(value) ? String(value).trim() : randomChoice(q.columns);
+        return mapped ? (isEmpty(value) ? '' : String(value).trim()) : randomChoice(q.columns);
       });
       if (q.type === 'checkbox_grid') return q.rows.map((gridRow, index) => {
         const mapped = cfg.gridMappings[index];
         const value = mapped ? row[mapped] : '';
-        return !isEmpty(value) ? splitMulti(value) : randomSubset(cfg.selectedOptions, cfg.minSelect, cfg.maxSelect);
+        return mapped ? (isEmpty(value) ? [] : splitMulti(value)) :
+          randomSubset(cfg.selectedOptions, cfg.minSelect, cfg.maxSelect);
       });
 
       const mappedValue = cfg.mapping ? row[cfg.mapping] : '';
