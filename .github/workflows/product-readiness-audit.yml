@@ -1,0 +1,42 @@
+name: PandaStudy independent product readiness audit
+on:
+  pull_request:
+    paths:
+      - 'tests/independent_readiness_audit.py'
+      - '.github/workflows/product-readiness-audit.yml'
+permissions:
+  contents: read
+jobs:
+  independent-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - name: Capture reviewed source without credentials
+        run: |
+          mkdir -p release-audit
+          git archive --format=zip -o release-audit/source-reviewed.zip HEAD native tests docs qa .github/workflows
+          git rev-parse HEAD > release-audit/audit-checkout-sha.txt
+          git rev-parse HEAD:native > release-audit/native-tree-sha.txt
+      - name: Install pinned audit tools
+        run: |
+          python3 -m venv .audit-venv
+          .audit-venv/bin/pip install playwright==1.55.0
+          .audit-venv/bin/python -m playwright install --with-deps chromium firefox webkit
+          npm install --prefix .audit-deps --ignore-scripts --package-lock=false axe-core@4.10.3 lighthouse@12.2.1
+      - name: Independent cross-browser, accessibility and visual audit
+        run: .audit-venv/bin/python tests/independent_readiness_audit.py
+      - name: Lighthouse production signed-out page only
+        if: always()
+        run: |
+          export CHROME_PATH="$(.audit-venv/bin/python -c 'from playwright.sync_api import sync_playwright; p=sync_playwright().start(); print(p.chromium.executable_path); p.stop()')"
+          node .audit-deps/node_modules/lighthouse/cli/index.js https://www.pandastudy.info.vn/ --chrome-flags="--headless --no-sandbox" --output=json --output-path=release-audit/lighthouse-signedout.json --only-categories=performance,accessibility,best-practices,seo --quiet
+      - name: Upload independent evidence even when defects are found
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: pandastudy-independent-release-audit
+          path: release-audit/
+          retention-days: 14
