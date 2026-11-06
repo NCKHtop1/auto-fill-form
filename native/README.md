@@ -35,11 +35,12 @@ Enter secrets directly in Vercel Settings > Environment Variables. Do not paste 
 
 PandaStudy now requires Google sign-in before the main application shell is shown. The login wall is a UX boundary; all privileged APIs continue to enforce their own server-side authorization.
 
-1. Sign in with Google.\n2. Upload Excel/CSV with data you are authorized to handle, or use a duplicate Form with synthetic QA data.
-2. Import the Google Form link, map its questions to data.
-3. Build the plan (4a), validate the data (4b).
-4. Step 5 exports PREVIEW CSV only, not a Google submission.
-5. Step 6 requires Google sign-in and consent: provide a link to the response Sheet, send 1 authorized test row, inspect the result, send the remaining rows, and download the submission report. Use a duplicate Form with synthetic data for testing.
+1. Sign in with Google.
+2. Upload Excel/CSV with data you are authorized to handle, or use a duplicate Form with synthetic QA data.
+3. Import the Google Form link, map its questions to data.
+4. Build the plan (4a), validate the data (4b).
+5. Step 5 exports PREVIEW CSV only, not a Google submission.
+6. Step 6 requires Google sign-in and consent: provide a link to the response Sheet, send 1 authorized test row, inspect the result, send the remaining rows, and download the submission report. Use a duplicate Form with synthetic data for testing.
 
 Results distinguish page-confirmed, failed and unverified. Google Forms response creation via the public formResponse URL is unofficial and may change. There is no official Forms API response.create endpoint. Never assume a 200 HTTP status implies a response was recorded. There are no automatic retries after ambiguous results.
 
@@ -55,9 +56,9 @@ CI browser tests include tests/qa_browser.py (mocked network, no real Google wri
 
 ## Manual bank top-ups and usage credits
 
-The new payment module is disabled by default and preserves the existing six-step flow. It adds a separate wallet modal and `/admin-topups.html`, a PostgreSQL ledger, durable email notifications, and server-side credit enforcement. The fixed price is 500 VND per credit. Approval only adds credits; it never resumes Form submission.
+The new payment module is disabled by default and preserves the existing six-step flow. It adds a separate wallet modal and `/admin-topups.html`, a PostgreSQL ledger, durable email notifications, and server-side credit enforcement. Custom quantities cost 500 VND per credit. Default packages are 20 credits / 10,000 VND, 100 / 45,000, 250 / 110,000 and 500 / 200,000; admins can manage the database catalog, and existing orders retain their price/credit snapshots. Approval only adds credits; it never resumes Form submission.
 
-See [the billing deployment and UAT runbook](../qa/BILLING_RELEASE.md) for configuration, evidence, release gates and the incident procedure. Provision the real database before enabling `BILLING_ENABLED`. Email notification delivery is optional operational support; missing email configuration does not authorize or block bank approval, ledgering or credits. Apply the migration explicitly with `npm run migrate:billing`; application requests do not run migrations.
+See [the billing deployment and UAT runbook](../qa/BILLING_RELEASE.md) for configuration, evidence, release gates and the incident procedure. Provision the real database before enabling `BILLING_ENABLED`. Email notification delivery is optional operational support; missing email configuration does not authorize or block bank approval, ledgering or credits. Apply the migration explicitly with `npm run migrate:billing`; application requests do not run migrations. The current release needs migrations 001 and 002; the health endpoint only checks version 1. Migration 002 seeds an enabled timed welcome promotion; authenticated profile requests can grant promotional credits even with billing disabled. Review the campaign with the project owner before migration or signed-in UAT.
 
 Merchant details, the approved QR URL and notification recipients are configured through the environment variables listed in `.env.example`; no real bank account or payment QR is included in this change. The QR asset must be served from the same origin as the application. Notification recipients and payment administrators are configured separately. Missing or invalid required configuration keeps purchases unavailable.
 
