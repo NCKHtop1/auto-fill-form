@@ -10,7 +10,6 @@
   if (root) root.PandaStudyErrorGuide = api;
 })(typeof window !== 'undefined' ? window : null, function () {
   const SUPPORT_EMAIL = 'trangnguyen11850.marketing@gmail.com';
-  const SUPPORT_ZALO = 'https://zalo.me/0349222590';
 
   const STEPS = {
     upload: 'Tải Excel/CSV/JSON', paste: 'Dán dữ liệu', mapping: 'Ghép cột',
@@ -98,7 +97,7 @@
       kind, title: guide.title, source: guide.source, action: guide.action,
       stage, step: STEPS[stage], details: raw || 'Không có mô tả chi tiết.',
       uncertain: kind === 'unknown' || kind === 'validation' || kind === 'mapping',
-      email: SUPPORT_EMAIL, zalo: SUPPORT_ZALO,
+      email: SUPPORT_EMAIL,
       // Do not label this as a support ticket: it is only for user reference.
       time: new Date().toISOString()
     };
@@ -123,5 +122,5 @@
       '?subject=' + encodeURIComponent(subject) +
       '&body=' + encodeURIComponent(supportSummary(issue));
   }
-  return { classify, supportSummary, mailto, SUPPORT_EMAIL, SUPPORT_ZALO };
+  return { classify, supportSummary, mailto, SUPPORT_EMAIL };
 });
