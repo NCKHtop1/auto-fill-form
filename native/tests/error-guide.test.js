@@ -1,7 +1,7 @@
 'use strict';
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { classify, mailto, supportSummary, SUPPORT_EMAIL, SUPPORT_ZALO } = require('../error-guide');
+const { classify, mailto, supportSummary, SUPPORT_EMAIL } = require('../error-guide');
 
 test('data formats, row count, CSV, Excel and headers classify as input', () => {
   for (const message of [
@@ -42,9 +42,8 @@ test('support contact is grounded and reports never leak private inputs', () => 
   const issue=classify('student HS216 user@example.com token=secret123 https://docs.google.com/forms/d/SECRET/edit',{stage:'upload'});
   const text=supportSummary(issue),email=mailto(issue);
   assert.equal(issue.email,SUPPORT_EMAIL);
-  assert.equal(issue.zalo,SUPPORT_ZALO);
   assert.equal(issue.email,'trangnguyen11850.marketing@gmail.com');
-  assert.equal(issue.zalo,'https://zalo.me/0349222590');
+  assert.equal(Object.hasOwn(issue,'zalo'),false);
   assert.ok(email.startsWith('mailto:'+SUPPORT_EMAIL+'?subject='));
   for (const secret of ['HS216','user@example.com','secret123','SECRET','docs.google.com']) {
     assert.equal(text.includes(secret),false);
